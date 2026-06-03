@@ -7,7 +7,7 @@ import { Plus, Car, Settings, BarChart2 } from 'lucide-react'
 export const metadata: Metadata = { title: 'My Garage' }
 
 export default async function GaragePage() {
-  const supabase = await createClient()
+  const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 

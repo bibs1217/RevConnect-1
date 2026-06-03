@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: 'Auctions' }
 const AUCTION_TYPES = ['All', 'Public', 'Collector', 'Online', 'Dealer', 'Specialty']
 
 export default async function AuctionsPage() {
-  const supabase = await createClient()
+  const supabase = createClient()
   const { data: auctions } = await supabase
     .from('auctions')
     .select('*')

@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: 'Merch Store' }
 const CATEGORIES = ['All', 'Apparel', 'Headwear', 'Outerwear', 'Drinkware', 'Garage Gear', 'Vehicle Accessories', 'Stickers', 'Collectibles', 'Digital Goods']
 
 export default async function StorePage() {
-  const supabase = await createClient()
+  const supabase = createClient()
   const { data: products } = await supabase.from('products').select('*').eq('is_active', true).order('created_at', { ascending: false }).limit(24)
 
   return (

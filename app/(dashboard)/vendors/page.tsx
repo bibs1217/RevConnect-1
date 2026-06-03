@@ -10,7 +10,7 @@ const VENDOR_CATEGORIES = [
 ]
 
 export default async function VendorsPage() {
-  const supabase = await createClient()
+  const supabase = createClient()
   const { data: vendors } = await supabase.from('vendors').select('*').order('is_featured', { ascending: false }).limit(20)
 
   return (

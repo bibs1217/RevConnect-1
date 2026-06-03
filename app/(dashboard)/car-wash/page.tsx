@@ -5,7 +5,7 @@ import { Droplets, MapPin, AlertTriangle, Star } from 'lucide-react'
 export const metadata: Metadata = { title: 'Car Wash Locator' }
 
 export default async function CarWashPage() {
-  const supabase = await createClient()
+  const supabase = createClient()
   const { data: washes } = await supabase.from('car_washes').select('*').limit(12)
 
   return (

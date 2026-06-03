@@ -5,7 +5,7 @@ import { MapPin, Calendar, Plus, Filter } from 'lucide-react'
 export const metadata: Metadata = { title: 'Events & Meets' }
 
 export default async function EventsPage() {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const { data: events } = await supabase
     .from('events')
