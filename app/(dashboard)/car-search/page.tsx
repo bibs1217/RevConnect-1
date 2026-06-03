@@ -147,7 +147,7 @@ export default function CarSearchPage() {
                 </div>
                 <div style={{ display:'flex', flexDirection:'column', gap:'0.75rem' }}>
                   <button style={{ background:'#E63946', color:'white', border:'none', padding:'0.875rem', borderRadius:'0.75rem', fontWeight:700, fontSize:'1rem' }}>Contact Seller</button>
-                  <button style={{ background:'#1a1a2e', color:'white', border:'1px solid #E63946', padding:'0.75rem', borderRadius:'0.75rem', fontWeight:600, color:'#E63946' }}>+ Save to My Garage</button>
+                  <button style={{ background:'rgba(230,57,70,0.08)', border:'1px solid rgba(230,57,70,0.25)', padding:'0.75rem', borderRadius:'0.75rem', fontWeight:600, color:'#E63946' }}>+ Save to My Garage</button>
                   <button style={{ background:'transparent', color:'#aaa', border:'1px solid #2a2a3e', padding:'0.75rem', borderRadius:'0.75rem' }}>Get Financing Estimate</button>
                 </div>
               </div>
