@@ -176,7 +176,7 @@ export default function CarSearchPage() {
                     {l.distance !== null && <span>📍 {l.distance}mi away</span>}
                     {l.exterior_color && <span>🎨 {l.exterior_color}</span>}
                   </div>
-                  <p style={{ fontSize:'0.75rem', color:'#555', truncate:'ellipsis', overflow:'hidden', whiteSpace:'nowrap' }}>🏪 {l.dealer_name ?? l.source}</p>
+                  <p style={{ fontSize:'0.75rem', color:'#555', overflow:'hidden', whiteSpace:'nowrap' }}>🏪 {l.dealer_name ?? l.source}</p>
                   {l.is_certified && <span style={{ display:'inline-block', marginTop:'0.375rem', background:'rgba(34,197,94,0.1)', color:'#22c55e', padding:'0.15rem 0.5rem', borderRadius:'9999px', fontSize:'0.7rem', border:'1px solid rgba(34,197,94,0.2)' }}>✓ Certified</span>}
                 </div>
               </div>
