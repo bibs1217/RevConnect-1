@@ -13,7 +13,7 @@ const MOCK_EVENTS = [
   { id:'6', title:'Lone Star Autocross Series Round 4', event_type:'autocross', city:'San Antonio', state:'TX', starts_at:'2026-07-12T09:00:00', entry_fee:45, current_attendees:72, cover:'⚡', organizer:'@lone_star_ac' },
 ]
 
-const TYPE_COLORS: Record<string,string> = { street_meet:'#FF4500', car_show:'#FFD700', track_day:'#22c55e', cruise:'#3b82f6', drag:'#a855f7', autocross:'#ec4899', hpde:'#14b8a6' }
+const TYPE_COLORS: Record<string,string> = { street_meet:'#CC0000', car_show:'#FFD700', track_day:'#22c55e', cruise:'#3b82f6', drag:'#a855f7', autocross:'#ec4899', hpde:'#14b8a6' }
 const TYPE_LABELS: Record<string,string> = { street_meet:'Street Meet', car_show:'Car Show', track_day:'Track Day', cruise:'Cruise', drag:'Drag', autocross:'Autocross', hpde:'HPDE' }
 const TYPES = ['All', 'street_meet', 'car_show', 'track_day', 'cruise', 'drag', 'autocross']
 
@@ -37,48 +37,48 @@ export default function EventsPage() {
           <h1 style={{ fontSize:'1.75rem', fontWeight:800 }}>📍 Events & Car Meets</h1>
           <p style={{ color:'#666', marginTop:'0.25rem' }}>Discover meets, shows, track days, and cruises near you</p>
         </div>
-        {user && <button onClick={() => setShowCreate(!showCreate)} style={{ background:'#FF4500', color:'white', border:'none', padding:'0.75rem 1.5rem', borderRadius:'0.75rem', fontWeight:700 }}>+ Create Event</button>}
+        {user && <button onClick={() => setShowCreate(!showCreate)} style={{ background:'#CC0000', color:'white', border:'none', padding:'0.75rem 1.5rem', borderRadius:'0.75rem', fontWeight:700 }}>+ Create Event</button>}
       </div>
 
       {/* Filters */}
       <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap', marginBottom:'1.5rem' }}>
         {TYPES.map(t => (
-          <button key={t} onClick={() => setFilter(t)} style={{ padding:'0.4rem 0.875rem', borderRadius:'9999px', border:`1px solid ${filter === t ? TYPE_COLORS[t] ?? '#FF4500' : '#1A3A6B'}`, background: filter === t ? `${TYPE_COLORS[t] ?? '#FF4500'}15` : 'transparent', color: filter === t ? (TYPE_COLORS[t] ?? '#FF4500') : '#aaa', fontSize:'0.8rem', fontWeight: filter === t ? 600 : 400, cursor:'pointer' }}>
+          <button key={t} onClick={() => setFilter(t)} style={{ padding:'0.4rem 0.875rem', borderRadius:'9999px', border:`1px solid ${filter === t ? TYPE_COLORS[t] ?? '#CC0000' : '#1E3A6E'}`, background: filter === t ? `${TYPE_COLORS[t] ?? '#CC0000'}15` : 'transparent', color: filter === t ? (TYPE_COLORS[t] ?? '#CC0000') : '#aaa', fontSize:'0.8rem', fontWeight: filter === t ? 600 : 400, cursor:'pointer' }}>
             {t === 'All' ? 'All Events' : TYPE_LABELS[t]}
           </button>
         ))}
       </div>
 
       {/* Map placeholder */}
-      <div style={{ background:'#071428', border:'1px solid #1A3A6B', borderRadius:'1rem', height:'200px', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'1.5rem' }}>
+      <div style={{ background:'#152234', border:'1px solid #1E3A6E', borderRadius:'1rem', height:'200px', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'1.5rem' }}>
         <div style={{ textAlign:'center' }}>
           <p style={{ fontSize:'2rem', marginBottom:'0.5rem' }}>🗺️</p>
           <p style={{ color:'#666', fontSize:'0.875rem' }}>Interactive map — enable location to find nearby events</p>
-          <button style={{ marginTop:'0.75rem', background:'transparent', border:'1px solid #FF4500', color:'#FF4500', padding:'0.4rem 1rem', borderRadius:'0.5rem', fontSize:'0.8rem', cursor:'pointer' }}>Enable Location</button>
+          <button style={{ marginTop:'0.75rem', background:'transparent', border:'1px solid #CC0000', color:'#CC0000', padding:'0.4rem 1rem', borderRadius:'0.5rem', fontSize:'0.8rem', cursor:'pointer' }}>Enable Location</button>
         </div>
       </div>
 
       {/* Create event form */}
       {showCreate && (
-        <div style={{ background:'#071428', border:'1px solid #1A3A6B', borderRadius:'1rem', padding:'1.5rem', marginBottom:'1.5rem' }}>
+        <div style={{ background:'#152234', border:'1px solid #1E3A6E', borderRadius:'1rem', padding:'1.5rem', marginBottom:'1.5rem' }}>
           <h2 style={{ fontWeight:700, marginBottom:'1rem' }}>Create an Event</h2>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:'1rem' }}>
             {[['title','Event Name','DFW Summer Meet','text'],['city','City','Dallas','text'],['state','State','TX','text'],['address','Address','123 Main St','text'],['starts_at','Date & Time','','datetime-local'],['entry_fee','Entry Fee ($)','0','number']].map(([k,l,p,t]) => (
               <div key={k as string}>
                 <label style={{ display:'block', fontSize:'0.75rem', color:'#aaa', marginBottom:'0.375rem' }}>{l as string}</label>
-                <input type={t as string} value={(newEvent as any)[k as string]} onChange={e => setNewEvent(v => ({ ...v, [k as string]: e.target.value }))} placeholder={p as string} style={{ width:'100%', background:'#0D0D0D', border:'1px solid #1A3A6B', borderRadius:'0.625rem', padding:'0.625rem 0.75rem', color:'white', fontSize:'0.875rem', outline:'none' }} />
+                <input type={t as string} value={(newEvent as any)[k as string]} onChange={e => setNewEvent(v => ({ ...v, [k as string]: e.target.value }))} placeholder={p as string} style={{ width:'100%', background:'#0D0D0D', border:'1px solid #1E3A6E', borderRadius:'0.625rem', padding:'0.625rem 0.75rem', color:'white', fontSize:'0.875rem', outline:'none' }} />
               </div>
             ))}
             <div>
               <label style={{ display:'block', fontSize:'0.75rem', color:'#aaa', marginBottom:'0.375rem' }}>Event Type</label>
-              <select value={newEvent.event_type} onChange={e => setNewEvent(v => ({ ...v, event_type: e.target.value }))} style={{ width:'100%', background:'#0D0D0D', border:'1px solid #1A3A6B', borderRadius:'0.625rem', padding:'0.625rem 0.75rem', color:'white', fontSize:'0.875rem', outline:'none' }}>
+              <select value={newEvent.event_type} onChange={e => setNewEvent(v => ({ ...v, event_type: e.target.value }))} style={{ width:'100%', background:'#0D0D0D', border:'1px solid #1E3A6E', borderRadius:'0.625rem', padding:'0.625rem 0.75rem', color:'white', fontSize:'0.875rem', outline:'none' }}>
                 {Object.entries(TYPE_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
           </div>
           <div style={{ display:'flex', gap:'0.75rem', marginTop:'1rem' }}>
-            <button style={{ background:'#FF4500', color:'white', border:'none', padding:'0.75rem 1.5rem', borderRadius:'0.75rem', fontWeight:700 }}>Publish Event</button>
-            <button onClick={() => setShowCreate(false)} style={{ background:'transparent', color:'#aaa', border:'1px solid #1A3A6B', padding:'0.75rem 1.5rem', borderRadius:'0.75rem' }}>Cancel</button>
+            <button style={{ background:'#CC0000', color:'white', border:'none', padding:'0.75rem 1.5rem', borderRadius:'0.75rem', fontWeight:700 }}>Publish Event</button>
+            <button onClick={() => setShowCreate(false)} style={{ background:'transparent', color:'#aaa', border:'1px solid #1E3A6E', padding:'0.75rem 1.5rem', borderRadius:'0.75rem' }}>Cancel</button>
           </div>
         </div>
       )}
@@ -86,11 +86,11 @@ export default function EventsPage() {
       {/* Events grid */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))', gap:'1.25rem' }}>
         {filtered.map(ev => {
-          const typeColor = TYPE_COLORS[ev.event_type] ?? '#FF4500'
+          const typeColor = TYPE_COLORS[ev.event_type] ?? '#CC0000'
           const date = new Date(ev.starts_at)
           const isRsvpd = rsvpd.has(ev.id)
           return (
-            <div key={ev.id} style={{ background:'#071428', border:'1px solid #1A3A6B', borderRadius:'1rem', overflow:'hidden' }}>
+            <div key={ev.id} style={{ background:'#152234', border:'1px solid #1E3A6E', borderRadius:'1rem', overflow:'hidden' }}>
               <div style={{ height:'120px', background:`linear-gradient(135deg, ${typeColor}15, transparent)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'3.5rem', position:'relative' }}>
                 {ev.cover}
                 <span style={{ position:'absolute', top:'0.75rem', left:'0.75rem', background:`${typeColor}20`, border:`1px solid ${typeColor}40`, color:typeColor, padding:'0.2rem 0.625rem', borderRadius:'9999px', fontSize:'0.7rem', fontWeight:600 }}>{TYPE_LABELS[ev.event_type]}</span>
@@ -108,7 +108,7 @@ export default function EventsPage() {
                   <button onClick={() => toggleRsvp(ev.id)} style={{ flex:1, background: isRsvpd ? `${typeColor}20` : 'transparent', border:`1px solid ${typeColor}${isRsvpd ? '60' : '40'}`, color: isRsvpd ? typeColor : '#aaa', padding:'0.5rem', borderRadius:'0.5rem', fontSize:'0.8rem', fontWeight:600, cursor:'pointer' }}>
                     {isRsvpd ? '✓ Going' : 'RSVP'}
                   </button>
-                  <button style={{ flex:1, background:'transparent', border:'1px solid #1A3A6B', color:'#aaa', padding:'0.5rem', borderRadius:'0.5rem', fontSize:'0.8rem', cursor:'pointer' }}>Details</button>
+                  <button style={{ flex:1, background:'transparent', border:'1px solid #1E3A6E', color:'#aaa', padding:'0.5rem', borderRadius:'0.5rem', fontSize:'0.8rem', cursor:'pointer' }}>Details</button>
                 </div>
               </div>
             </div>

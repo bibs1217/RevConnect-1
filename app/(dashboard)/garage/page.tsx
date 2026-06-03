@@ -60,7 +60,7 @@ export default function GaragePage() {
     loadVehicles()
   }
 
-  const inp: React.CSSProperties = { width:'100%', background:'#0D0D0D', border:'1px solid #1A3A6B', borderRadius:'0.75rem', padding:'0.625rem 0.875rem', color:'white', fontSize:'0.875rem', outline:'none' }
+  const inp: React.CSSProperties = { width:'100%', background:'#0D0D0D', border:'1px solid #1E3A6E', borderRadius:'0.75rem', padding:'0.625rem 0.875rem', color:'white', fontSize:'0.875rem', outline:'none' }
   const lbl: React.CSSProperties = { display:'block', fontSize:'0.75rem', color:'#aaa', marginBottom:'0.375rem' }
 
   const STATUS_COLORS: Record<string, string> = { active:'#22c55e', project:'#FFD700', for_sale:'#facc15', sold:'#888', archived:'#555' }
@@ -68,10 +68,10 @@ export default function GaragePage() {
   return (
     <div style={{ maxWidth:'1100px', margin:'0 auto' }}>
       {/* Profile header */}
-      <div style={{ background:'linear-gradient(135deg, #071428, #0D0D0D)', border:'1px solid #1A3A6B', borderRadius:'1rem', padding:'2rem', marginBottom:'2rem', position:'relative', overflow:'hidden' }}>
-        <div style={{ position:'absolute', top:0, right:0, width:'300px', height:'100%', background:'linear-gradient(90deg, transparent, rgba(255,69,0,0.05))', pointerEvents:'none' }} />
+      <div style={{ background:'linear-gradient(135deg, #152234, #0D0D0D)', border:'1px solid #1E3A6E', borderRadius:'1rem', padding:'2rem', marginBottom:'2rem', position:'relative', overflow:'hidden' }}>
+        <div style={{ position:'absolute', top:0, right:0, width:'300px', height:'100%', background:'linear-gradient(90deg, transparent, rgba(204,0,0,0.05))', pointerEvents:'none' }} />
         <div style={{ display:'flex', alignItems:'flex-end', gap:'1.5rem', flexWrap:'wrap' }}>
-          <div style={{ width:'80px', height:'80px', background:'rgba(255,69,0,0.15)', border:'3px solid rgba(255,69,0,0.3)', borderRadius:'1rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2.5rem', flexShrink:0 }}>🚗</div>
+          <div style={{ width:'80px', height:'80px', background:'rgba(204,0,0,0.15)', border:'3px solid rgba(204,0,0,0.3)', borderRadius:'1rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2.5rem', flexShrink:0 }}>🚗</div>
           <div style={{ flex:1 }}>
             <h1 style={{ fontSize:'1.5rem', fontWeight:800 }}>
               {profile?.display_name ?? profile?.username ?? user?.email?.split('@')[0] ?? 'My Garage'}
@@ -84,7 +84,7 @@ export default function GaragePage() {
             </div>
           </div>
           {user && (
-            <button onClick={() => setShowAdd(!showAdd)} style={{ background:'#FF4500', color:'white', border:'none', padding:'0.75rem 1.5rem', borderRadius:'0.75rem', fontWeight:700, fontSize:'0.9rem' }}>
+            <button onClick={() => setShowAdd(!showAdd)} style={{ background:'#CC0000', color:'white', border:'none', padding:'0.75rem 1.5rem', borderRadius:'0.75rem', fontWeight:700, fontSize:'0.9rem' }}>
               + Add Vehicle
             </button>
           )}
@@ -93,7 +93,7 @@ export default function GaragePage() {
 
       {/* Add vehicle form */}
       {showAdd && (
-        <div style={{ background:'#071428', border:'1px solid #1A3A6B', borderRadius:'1rem', padding:'1.5rem', marginBottom:'2rem' }}>
+        <div style={{ background:'#152234', border:'1px solid #1E3A6E', borderRadius:'1rem', padding:'1.5rem', marginBottom:'2rem' }}>
           <h2 style={{ fontSize:'1.125rem', fontWeight:700, marginBottom:'1.25rem' }}>Add a Vehicle</h2>
           <form onSubmit={addVehicle}>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(180px, 1fr))', gap:'1rem', marginBottom:'1rem' }}>
@@ -112,10 +112,10 @@ export default function GaragePage() {
               ))}
             </div>
             <div style={{ display:'flex', gap:'0.75rem' }}>
-              <button type="submit" disabled={saving} style={{ background:'#FF4500', color:'white', border:'none', padding:'0.75rem 1.5rem', borderRadius:'0.75rem', fontWeight:700 }}>
+              <button type="submit" disabled={saving} style={{ background:'#CC0000', color:'white', border:'none', padding:'0.75rem 1.5rem', borderRadius:'0.75rem', fontWeight:700 }}>
                 {saving ? 'Saving…' : 'Save Vehicle'}
               </button>
-              <button type="button" onClick={() => setShowAdd(false)} style={{ background:'transparent', color:'#aaa', border:'1px solid #1A3A6B', padding:'0.75rem 1.5rem', borderRadius:'0.75rem' }}>Cancel</button>
+              <button type="button" onClick={() => setShowAdd(false)} style={{ background:'transparent', color:'#aaa', border:'1px solid #1E3A6E', padding:'0.75rem 1.5rem', borderRadius:'0.75rem' }}>Cancel</button>
             </div>
           </form>
         </div>
@@ -123,32 +123,32 @@ export default function GaragePage() {
 
       {/* Guest prompt */}
       {!user && (
-        <div style={{ textAlign:'center', padding:'4rem 2rem', background:'#071428', border:'1px dashed #1A3A6B', borderRadius:'1rem', marginBottom:'2rem' }}>
+        <div style={{ textAlign:'center', padding:'4rem 2rem', background:'#152234', border:'1px dashed #1E3A6E', borderRadius:'1rem', marginBottom:'2rem' }}>
           <p style={{ fontSize:'3rem', marginBottom:'1rem' }}>🚗</p>
           <h2 style={{ fontSize:'1.25rem', fontWeight:700, marginBottom:'0.5rem' }}>Your Digital Garage Awaits</h2>
           <p style={{ color:'#666', marginBottom:'1.5rem' }}>Sign in to catalog your vehicles, track mods, and document your builds.</p>
           <div style={{ display:'flex', gap:'1rem', justifyContent:'center' }}>
-            <Link href="/register" style={{ background:'#FF4500', color:'white', padding:'0.75rem 1.5rem', borderRadius:'0.75rem', fontWeight:700 }}>Join Free</Link>
-            <Link href="/login" style={{ background:'#071428', color:'white', border:'1px solid #1A3A6B', padding:'0.75rem 1.5rem', borderRadius:'0.75rem' }}>Sign In</Link>
+            <Link href="/register" style={{ background:'#CC0000', color:'white', padding:'0.75rem 1.5rem', borderRadius:'0.75rem', fontWeight:700 }}>Join Free</Link>
+            <Link href="/login" style={{ background:'#152234', color:'white', border:'1px solid #1E3A6E', padding:'0.75rem 1.5rem', borderRadius:'0.75rem' }}>Sign In</Link>
           </div>
         </div>
       )}
 
       {/* Vehicles grid */}
       {user && !loading && vehicles.length === 0 && (
-        <div style={{ textAlign:'center', padding:'4rem 2rem', background:'#071428', border:'1px dashed #1A3A6B', borderRadius:'1rem' }}>
+        <div style={{ textAlign:'center', padding:'4rem 2rem', background:'#152234', border:'1px dashed #1E3A6E', borderRadius:'1rem' }}>
           <p style={{ fontSize:'3rem', marginBottom:'1rem' }}>🏎️</p>
           <h2 style={{ fontSize:'1.25rem', fontWeight:700, marginBottom:'0.5rem' }}>No vehicles yet</h2>
           <p style={{ color:'#666', marginBottom:'1.5rem' }}>Add your first vehicle to start building your digital garage.</p>
-          <button onClick={() => setShowAdd(true)} style={{ background:'#FF4500', color:'white', border:'none', padding:'0.75rem 1.5rem', borderRadius:'0.75rem', fontWeight:700 }}>Add Your First Vehicle</button>
+          <button onClick={() => setShowAdd(true)} style={{ background:'#CC0000', color:'white', border:'none', padding:'0.75rem 1.5rem', borderRadius:'0.75rem', fontWeight:700 }}>Add Your First Vehicle</button>
         </div>
       )}
 
       {vehicles.length > 0 && (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:'1.25rem' }}>
           {vehicles.map(v => (
-            <div key={v.id} style={{ background:'#071428', border:'1px solid #1A3A6B', borderRadius:'1rem', overflow:'hidden' }}>
-              <div style={{ height:'160px', background:'linear-gradient(135deg, rgba(255,69,0,0.1), rgba(244,162,97,0.05))', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem' }}>
+            <div key={v.id} style={{ background:'#152234', border:'1px solid #1E3A6E', borderRadius:'1rem', overflow:'hidden' }}>
+              <div style={{ height:'160px', background:'linear-gradient(135deg, rgba(204,0,0,0.1), rgba(244,162,97,0.05))', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem' }}>
                 {v.hero_image_url ? <img src={v.hero_image_url} alt={v.nickname ?? ''} style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : '🚗'}
               </div>
               <div style={{ padding:'1rem' }}>
@@ -164,8 +164,8 @@ export default function GaragePage() {
                 {v.mileage && <p style={{ fontSize:'0.8rem', color:'#666', marginBottom:'0.5rem' }}>📍 {v.mileage.toLocaleString()} mi</p>}
                 {v.total_build_cost > 0 && <p style={{ fontSize:'0.8rem', color:'#FFD700' }}>💰 ${v.total_build_cost.toLocaleString()} build</p>}
                 <div style={{ display:'flex', gap:'0.5rem', marginTop:'0.875rem' }}>
-                  <Link href={`/garage/${v.id}`} style={{ flex:1, textAlign:'center', background:'rgba(255,69,0,0.1)', border:'1px solid rgba(255,69,0,0.2)', color:'#FF4500', padding:'0.5rem', borderRadius:'0.5rem', fontSize:'0.8rem', fontWeight:600 }}>View Build</Link>
-                  <button style={{ flex:1, background:'#0D0D0D', border:'1px solid #1A3A6B', color:'#aaa', padding:'0.5rem', borderRadius:'0.5rem', fontSize:'0.8rem' }}>Edit</button>
+                  <Link href={`/garage/${v.id}`} style={{ flex:1, textAlign:'center', background:'rgba(204,0,0,0.1)', border:'1px solid rgba(204,0,0,0.2)', color:'#CC0000', padding:'0.5rem', borderRadius:'0.5rem', fontSize:'0.8rem', fontWeight:600 }}>View Build</Link>
+                  <button style={{ flex:1, background:'#0D0D0D', border:'1px solid #1E3A6E', color:'#aaa', padding:'0.5rem', borderRadius:'0.5rem', fontSize:'0.8rem' }}>Edit</button>
                 </div>
               </div>
             </div>

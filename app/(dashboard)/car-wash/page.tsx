@@ -11,7 +11,7 @@ const WASHES = [
 ]
 
 const TYPE_LABELS: Record<string,string> = { tunnel_touchless:'Touchless', tunnel_soft:'Soft Touch', tunnel_hybrid:'Hybrid Tunnel', hand_wash:'Hand Wash', mobile_detailer:'Mobile Detailer', full_detail:'Full Detail' }
-const PRICE_COLORS: Record<string,string> = { '$':'#22c55e', '$$':'#FFD700', '$$$':'#FF4500', '$$$$':'#a855f7' }
+const PRICE_COLORS: Record<string,string> = { '$':'#22c55e', '$$':'#FFD700', '$$$':'#CC0000', '$$$$':'#a855f7' }
 
 export default function CarWashPage() {
   const [filterType, setFilterType] = useState('All')
@@ -42,7 +42,7 @@ export default function CarWashPage() {
       {/* Filters */}
       <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap', marginBottom:'1rem', alignItems:'center' }}>
         {['All','tunnel_touchless','tunnel_soft','hand_wash','mobile_detailer','full_detail'].map(t => (
-          <button key={t} onClick={() => setFilterType(t)} style={{ padding:'0.375rem 0.75rem', borderRadius:'9999px', border:`1px solid ${filterType===t ? '#FF4500' : '#1A3A6B'}`, background: filterType===t ? 'rgba(255,69,0,0.1)' : 'transparent', color: filterType===t ? '#FF4500' : '#aaa', fontSize:'0.8rem', cursor:'pointer' }}>
+          <button key={t} onClick={() => setFilterType(t)} style={{ padding:'0.375rem 0.75rem', borderRadius:'9999px', border:`1px solid ${filterType===t ? '#CC0000' : '#1E3A6E'}`, background: filterType===t ? 'rgba(204,0,0,0.1)' : 'transparent', color: filterType===t ? '#CC0000' : '#aaa', fontSize:'0.8rem', cursor:'pointer' }}>
             {t === 'All' ? 'All Types' : TYPE_LABELS[t]}
           </button>
         ))}
@@ -53,17 +53,17 @@ export default function CarWashPage() {
       </div>
 
       {/* Map */}
-      <div style={{ background:'#071428', border:'1px solid #1A3A6B', borderRadius:'1rem', height:'180px', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'1.5rem' }}>
+      <div style={{ background:'#152234', border:'1px solid #1E3A6E', borderRadius:'1rem', height:'180px', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'1.5rem' }}>
         <div style={{ textAlign:'center' }}>
           <p style={{ fontSize:'2rem', marginBottom:'0.5rem' }}>🗺️</p>
-          <button style={{ background:'transparent', border:'1px solid #FF4500', color:'#FF4500', padding:'0.4rem 1rem', borderRadius:'0.5rem', fontSize:'0.8rem', cursor:'pointer' }}>Enable Location for Map View</button>
+          <button style={{ background:'transparent', border:'1px solid #CC0000', color:'#CC0000', padding:'0.4rem 1rem', borderRadius:'0.5rem', fontSize:'0.8rem', cursor:'pointer' }}>Enable Location for Map View</button>
         </div>
       </div>
 
       <div style={{ display:'grid', gridTemplateColumns: selected ? '1fr 1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap:'1.25rem' }}>
         <div style={{ display:'grid', gridTemplateColumns: selected ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))', gap:'1rem' }}>
           {filtered.map(w => (
-            <div key={w.id} onClick={() => setSelected(w)} style={{ background:'#071428', border:`1px solid ${selected?.id === w.id ? '#FF4500' : '#1A3A6B'}`, borderRadius:'1rem', padding:'1rem', cursor:'pointer' }}>
+            <div key={w.id} onClick={() => setSelected(w)} style={{ background:'#152234', border:`1px solid ${selected?.id === w.id ? '#CC0000' : '#1E3A6E'}`, borderRadius:'1rem', padding:'1rem', cursor:'pointer' }}>
               <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'0.5rem' }}>
                 <h3 style={{ fontWeight:700, fontSize:'0.95rem' }}>{w.name}</h3>
                 <span style={{ fontWeight:700, color: PRICE_COLORS[w.price] ?? '#aaa' }}>{w.price}</span>
@@ -81,7 +81,7 @@ export default function CarWashPage() {
         </div>
 
         {selected && (
-          <div style={{ background:'#071428', border:'1px solid #FF4500', borderRadius:'1rem', padding:'1.5rem', height:'fit-content' }}>
+          <div style={{ background:'#152234', border:'1px solid #CC0000', borderRadius:'1rem', padding:'1.5rem', height:'fit-content' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'1rem' }}>
               <h2 style={{ fontWeight:800, fontSize:'1.1rem' }}>{selected.name}</h2>
               <button onClick={() => setSelected(null)} style={{ background:'transparent', border:'none', color:'#555', fontSize:'1.25rem', cursor:'pointer', lineHeight:1 }}>×</button>
@@ -94,13 +94,13 @@ export default function CarWashPage() {
               {[['Ceramic Coating', selected.ceramic],['PPF', selected.ppf],['Vinyl Wrap', selected.ppf],['Wax/Sealant', true]].map(([label, safe]) => (
                 <div key={label as string} style={{ display:'flex', justifyContent:'space-between', marginBottom:'0.25rem' }}>
                   <span style={{ fontSize:'0.8rem', color:'#aaa' }}>{label as string}</span>
-                  <span style={{ fontSize:'0.8rem', color: safe ? '#22c55e' : '#FF4500', fontWeight:600 }}>{safe ? '✓ Safe' : '✗ Risk'}</span>
+                  <span style={{ fontSize:'0.8rem', color: safe ? '#22c55e' : '#CC0000', fontWeight:600 }}>{safe ? '✓ Safe' : '✗ Risk'}</span>
                 </div>
               ))}
             </div>
             <div style={{ display:'flex', flexDirection:'column', gap:'0.625rem' }}>
-              <button style={{ background:'#FF4500', color:'white', border:'none', padding:'0.75rem', borderRadius:'0.75rem', fontWeight:700, cursor:'pointer' }}>Get Directions</button>
-              <button style={{ background:'transparent', border:'1px solid #1A3A6B', color:'#aaa', padding:'0.625rem', borderRadius:'0.75rem', cursor:'pointer' }}>Report Damage Issue</button>
+              <button style={{ background:'#CC0000', color:'white', border:'none', padding:'0.75rem', borderRadius:'0.75rem', fontWeight:700, cursor:'pointer' }}>Get Directions</button>
+              <button style={{ background:'transparent', border:'1px solid #1E3A6E', color:'#aaa', padding:'0.625rem', borderRadius:'0.75rem', cursor:'pointer' }}>Report Damage Issue</button>
             </div>
           </div>
         )}

@@ -90,7 +90,7 @@ export default function MechanicPage() {
     <div style={{ maxWidth:'900px', margin:'0 auto', height:'calc(100vh - 8rem)', display:'flex', flexDirection:'column' }}>
       {/* Header */}
       <div style={{ textAlign:'center', padding:'1rem 0 1.5rem' }}>
-        <div style={{ width:'64px', height:'64px', background:'rgba(255,69,0,0.1)', border:'2px solid rgba(255,69,0,0.2)', borderRadius:'1rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2rem', margin:'0 auto 0.75rem' }}>🔧</div>
+        <div style={{ width:'64px', height:'64px', background:'rgba(204,0,0,0.1)', border:'2px solid rgba(204,0,0,0.2)', borderRadius:'1rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2rem', margin:'0 auto 0.75rem' }}>🔧</div>
         <h1 style={{ fontSize:'1.5rem', fontWeight:800 }}>AI Mechanic</h1>
         <p style={{ color:'#666', fontSize:'0.875rem' }}>Your personal 30-year ASE master tech — available 24/7</p>
       </div>
@@ -102,34 +102,34 @@ export default function MechanicPage() {
       )}
 
       {/* Chat area */}
-      <div style={{ flex:1, background:'rgba(13,27,42,0.4)', border:'1px solid #1A3A6B', borderRadius:'1rem', overflowY:'auto', padding:'1.5rem', marginBottom:'1rem', display:'flex', flexDirection:'column', gap:'1rem' }}>
+      <div style={{ flex:1, background:'rgba(13,27,42,0.4)', border:'1px solid #1E3A6E', borderRadius:'1rem', overflowY:'auto', padding:'1.5rem', marginBottom:'1rem', display:'flex', flexDirection:'column', gap:'1rem' }}>
         {messages.length === 0 ? (
           <div>
             <div style={{ display:'flex', gap:'0.75rem', marginBottom:'1.5rem' }}>
-              <div style={{ width:'36px', height:'36px', background:'rgba(255,69,0,0.15)', border:'1px solid rgba(255,69,0,0.2)', borderRadius:'0.75rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.25rem', flexShrink:0 }}>🔧</div>
-              <div style={{ background:'#071428', border:'1px solid #1A3A6B', borderRadius:'0.75rem', borderTopLeftRadius:'0.25rem', padding:'1rem', maxWidth:'80%' }}>
-                <p style={{ fontWeight:600, marginBottom:'0.5rem', color:'#FF4500' }}>RevConnect-1 AI Mechanic</p>
+              <div style={{ width:'36px', height:'36px', background:'rgba(204,0,0,0.15)', border:'1px solid rgba(204,0,0,0.2)', borderRadius:'0.75rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.25rem', flexShrink:0 }}>🔧</div>
+              <div style={{ background:'#152234', border:'1px solid #1E3A6E', borderRadius:'0.75rem', borderTopLeftRadius:'0.25rem', padding:'1rem', maxWidth:'80%' }}>
+                <p style={{ fontWeight:600, marginBottom:'0.5rem', color:'#CC0000' }}>RevConnect-1 AI Mechanic</p>
                 <p style={{ color:'#ccc', lineHeight:1.6 }}>Hey! I&apos;m your personal master mechanic. Tell me what vehicle you&apos;re working on and what you need help with — I&apos;ll walk you through every step with torque specs, wiring diagrams, and everything you need.</p>
               </div>
             </div>
             <p style={{ fontSize:'0.75rem', color:'#555', marginBottom:'0.75rem' }}>Try asking:</p>
             <div style={{ display:'flex', flexWrap:'wrap', gap:'0.5rem' }}>
               {QUICK_PROMPTS.map(p => (
-                <button key={p} onClick={() => sendMessage(p)} style={{ background:'rgba(13,27,42,0.8)', border:'1px solid #1A3A6B', color:'#aaa', padding:'0.5rem 0.875rem', borderRadius:'9999px', fontSize:'0.8rem', cursor:'pointer' }}>{p}</button>
+                <button key={p} onClick={() => sendMessage(p)} style={{ background:'rgba(13,27,42,0.8)', border:'1px solid #1E3A6E', color:'#aaa', padding:'0.5rem 0.875rem', borderRadius:'9999px', fontSize:'0.8rem', cursor:'pointer' }}>{p}</button>
               ))}
             </div>
           </div>
         ) : (
           messages.map((msg, i) => (
             <div key={i} style={{ display:'flex', gap:'0.75rem', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row' }}>
-              <div style={{ width:'32px', height:'32px', background: msg.role === 'user' ? 'rgba(255,69,0,0.15)' : 'rgba(244,162,97,0.12)', border:`1px solid ${msg.role === 'user' ? 'rgba(255,69,0,0.2)' : 'rgba(244,162,97,0.15)'}`, borderRadius:'0.625rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1rem', flexShrink:0 }}>
+              <div style={{ width:'32px', height:'32px', background: msg.role === 'user' ? 'rgba(204,0,0,0.15)' : 'rgba(244,162,97,0.12)', border:`1px solid ${msg.role === 'user' ? 'rgba(204,0,0,0.2)' : 'rgba(244,162,97,0.15)'}`, borderRadius:'0.625rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1rem', flexShrink:0 }}>
                 {msg.role === 'user' ? '👤' : '🔧'}
               </div>
-              <div style={{ background: msg.role === 'user' ? 'rgba(255,69,0,0.08)' : '#071428', border:`1px solid ${msg.role === 'user' ? 'rgba(255,69,0,0.15)' : '#1A3A6B'}`, borderRadius:'0.75rem', borderTopRightRadius: msg.role === 'user' ? '0.25rem' : '0.75rem', borderTopLeftRadius: msg.role === 'user' ? '0.75rem' : '0.25rem', padding:'0.875rem 1rem', maxWidth:'80%', fontSize:'0.9rem' }}>
+              <div style={{ background: msg.role === 'user' ? 'rgba(204,0,0,0.08)' : '#152234', border:`1px solid ${msg.role === 'user' ? 'rgba(204,0,0,0.15)' : '#1E3A6E'}`, borderRadius:'0.75rem', borderTopRightRadius: msg.role === 'user' ? '0.25rem' : '0.75rem', borderTopLeftRadius: msg.role === 'user' ? '0.75rem' : '0.25rem', padding:'0.875rem 1rem', maxWidth:'80%', fontSize:'0.9rem' }}>
                 {msg.role === 'assistant' ? formatMessage(msg.content) : <p style={{ lineHeight:1.6 }}>{msg.content}</p>}
                 {msg.role === 'assistant' && loading && i === messages.length - 1 && !msg.content && (
                   <span style={{ display:'inline-flex', gap:'0.3rem' }}>
-                    {[0,1,2].map(n => <span key={n} style={{ width:'6px', height:'6px', background:'#FF4500', borderRadius:'50%', animation:'pulse 1s ease-in-out infinite', animationDelay:`${n*0.15}s` }}>·</span>)}
+                    {[0,1,2].map(n => <span key={n} style={{ width:'6px', height:'6px', background:'#CC0000', borderRadius:'50%', animation:'pulse 1s ease-in-out infinite', animationDelay:`${n*0.15}s` }}>·</span>)}
                   </span>
                 )}
               </div>
@@ -141,10 +141,10 @@ export default function MechanicPage() {
 
       {/* Input */}
       <div style={{ display:'flex', gap:'0.75rem' }}>
-        <div style={{ flex:1, display:'flex', alignItems:'center', gap:'0.75rem', background:'#071428', border:'1px solid #1A3A6B', borderRadius:'0.875rem', padding:'0.75rem 1rem' }}>
+        <div style={{ flex:1, display:'flex', alignItems:'center', gap:'0.75rem', background:'#152234', border:'1px solid #1E3A6E', borderRadius:'0.875rem', padding:'0.75rem 1rem' }}>
           <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage(input))} placeholder="Ask about your vehicle… (e.g. 'My 2022 WRX needs new brake pads')" style={{ flex:1, background:'transparent', border:'none', color:'white', fontSize:'0.9rem', outline:'none' }} disabled={loading} />
         </div>
-        <button onClick={() => sendMessage(input)} disabled={loading || !input.trim()} style={{ background: loading || !input.trim() ? '#333' : '#FF4500', color:'white', border:'none', width:'48px', height:'48px', borderRadius:'0.875rem', fontSize:'1.25rem', cursor: loading || !input.trim() ? 'default' : 'pointer', transition:'background 0.15s' }}>
+        <button onClick={() => sendMessage(input)} disabled={loading || !input.trim()} style={{ background: loading || !input.trim() ? '#333' : '#CC0000', color:'white', border:'none', width:'48px', height:'48px', borderRadius:'0.875rem', fontSize:'1.25rem', cursor: loading || !input.trim() ? 'default' : 'pointer', transition:'background 0.15s' }}>
           {loading ? '⏳' : '→'}
         </button>
       </div>

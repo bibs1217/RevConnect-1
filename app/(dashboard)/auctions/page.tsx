@@ -10,7 +10,7 @@ const AUCTIONS = [
   { id:'5', title:'2022 Subaru WRX — Stage 2 Built', source:'Mecum', year:2022, make:'Subaru', model:'WRX', trim:'Base', mileage:22000, current_bid:38000, reserve_met:null, ends_at:'2026-06-20T12:00:00', img:'🚙', buyer_premium:10, location:'Illinois', type:'collector' },
 ]
 
-const SOURCE_COLORS: Record<string,string> = { 'Bring a Trailer':'#FF4500','Cars & Bids':'#FFD700','Copart':'#3b82f6','eBay Motors':'#a855f7','Mecum':'#22c55e' }
+const SOURCE_COLORS: Record<string,string> = { 'Bring a Trailer':'#CC0000','Cars & Bids':'#FFD700','Copart':'#3b82f6','eBay Motors':'#a855f7','Mecum':'#22c55e' }
 
 function timeLeft(dateStr: string) {
   const diff = new Date(dateStr).getTime() - Date.now()
@@ -35,7 +35,7 @@ export default function AuctionsPage() {
 
       <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap', marginBottom:'1.5rem' }}>
         {['All','collector','public','online','dealer'].map(t => (
-          <button key={t} onClick={() => setFilter(t)} style={{ padding:'0.375rem 0.875rem', borderRadius:'9999px', border:`1px solid ${filter===t ? '#FF4500' : '#1A3A6B'}`, background: filter===t ? 'rgba(255,69,0,0.1)' : 'transparent', color: filter===t ? '#FF4500' : '#aaa', fontSize:'0.8rem', cursor:'pointer', textTransform:'capitalize' }}>
+          <button key={t} onClick={() => setFilter(t)} style={{ padding:'0.375rem 0.875rem', borderRadius:'9999px', border:`1px solid ${filter===t ? '#CC0000' : '#1E3A6E'}`, background: filter===t ? 'rgba(204,0,0,0.1)' : 'transparent', color: filter===t ? '#CC0000' : '#aaa', fontSize:'0.8rem', cursor:'pointer', textTransform:'capitalize' }}>
             {t === 'All' ? 'All Types' : `${t.charAt(0).toUpperCase()}${t.slice(1)}`}
           </button>
         ))}
@@ -54,11 +54,11 @@ export default function AuctionsPage() {
             const srcColor = SOURCE_COLORS[a.source] ?? '#aaa'
             const allIn = a.current_bid * (1 + a.buyer_premium / 100)
             return (
-              <div key={a.id} onClick={() => setSelected(a)} style={{ background:'#071428', border:`1px solid ${selected?.id===a.id ? '#FF4500' : '#1A3A6B'}`, borderRadius:'1rem', overflow:'hidden', cursor:'pointer' }}>
-                <div style={{ height:'140px', background:'linear-gradient(135deg, rgba(255,69,0,0.08), transparent)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem', position:'relative' }}>
+              <div key={a.id} onClick={() => setSelected(a)} style={{ background:'#152234', border:`1px solid ${selected?.id===a.id ? '#CC0000' : '#1E3A6E'}`, borderRadius:'1rem', overflow:'hidden', cursor:'pointer' }}>
+                <div style={{ height:'140px', background:'linear-gradient(135deg, rgba(204,0,0,0.08), transparent)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem', position:'relative' }}>
                   {a.img}
                   <span style={{ position:'absolute', top:'0.5rem', left:'0.5rem', background:`${srcColor}20`, border:`1px solid ${srcColor}40`, color:srcColor, padding:'0.2rem 0.5rem', borderRadius:'9999px', fontSize:'0.7rem', fontWeight:600 }}>{a.source}</span>
-                  <span style={{ position:'absolute', top:'0.5rem', right:'0.5rem', background:'rgba(0,0,0,0.6)', padding:'0.2rem 0.5rem', borderRadius:'9999px', fontSize:'0.7rem', color: timeLeft(a.ends_at).includes('h') || timeLeft(a.ends_at).includes('m') ? '#FF4500' : '#FFD700' }}>{timeLeft(a.ends_at)}</span>
+                  <span style={{ position:'absolute', top:'0.5rem', right:'0.5rem', background:'rgba(0,0,0,0.6)', padding:'0.2rem 0.5rem', borderRadius:'9999px', fontSize:'0.7rem', color: timeLeft(a.ends_at).includes('h') || timeLeft(a.ends_at).includes('m') ? '#CC0000' : '#FFD700' }}>{timeLeft(a.ends_at)}</span>
                 </div>
                 <div style={{ padding:'1rem' }}>
                   <h3 style={{ fontWeight:700, fontSize:'0.9rem', marginBottom:'0.375rem' }}>{a.title}</h3>
@@ -66,12 +66,12 @@ export default function AuctionsPage() {
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end' }}>
                     <div>
                       <p style={{ fontSize:'0.7rem', color:'#666' }}>Current Bid</p>
-                      <p style={{ fontWeight:900, color:'#FF4500', fontSize:'1.25rem' }}>${a.current_bid.toLocaleString()}</p>
+                      <p style={{ fontWeight:900, color:'#CC0000', fontSize:'1.25rem' }}>${a.current_bid.toLocaleString()}</p>
                       <p style={{ fontSize:'0.75rem', color:'#FFD700' }}>All-in: ~${Math.round(allIn).toLocaleString()}</p>
                     </div>
                     <div style={{ textAlign:'right' }}>
                       {a.reserve_met === true && <span style={{ background:'rgba(34,197,94,0.1)', color:'#22c55e', padding:'0.2rem 0.5rem', borderRadius:'9999px', fontSize:'0.7rem', border:'1px solid rgba(34,197,94,0.2)' }}>Reserve Met</span>}
-                      {a.reserve_met === false && <span style={{ background:'rgba(255,69,0,0.1)', color:'#FF4500', padding:'0.2rem 0.5rem', borderRadius:'9999px', fontSize:'0.7rem', border:'1px solid rgba(255,69,0,0.2)' }}>No Reserve</span>}
+                      {a.reserve_met === false && <span style={{ background:'rgba(204,0,0,0.1)', color:'#CC0000', padding:'0.2rem 0.5rem', borderRadius:'9999px', fontSize:'0.7rem', border:'1px solid rgba(204,0,0,0.2)' }}>No Reserve</span>}
                       {a.reserve_met === null && <span style={{ background:'rgba(244,162,97,0.1)', color:'#FFD700', padding:'0.2rem 0.5rem', borderRadius:'9999px', fontSize:'0.7rem', border:'1px solid rgba(244,162,97,0.2)' }}>Reserve?</span>}
                     </div>
                   </div>
@@ -82,7 +82,7 @@ export default function AuctionsPage() {
         </div>
 
         {selected && (
-          <div style={{ background:'#071428', border:'1px solid #FF4500', borderRadius:'1rem', padding:'1.5rem', height:'fit-content', position:'sticky', top:'5rem' }}>
+          <div style={{ background:'#152234', border:'1px solid #CC0000', borderRadius:'1rem', padding:'1.5rem', height:'fit-content', position:'sticky', top:'5rem' }}>
             <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'1rem' }}>
               <h2 style={{ fontWeight:800, fontSize:'1rem' }}>Bid Calculator</h2>
               <button onClick={() => setSelected(null)} style={{ background:'transparent', border:'none', color:'#555', fontSize:'1.25rem', cursor:'pointer' }}>×</button>
@@ -93,13 +93,13 @@ export default function AuctionsPage() {
             <div style={{ background:'#0D0D0D', borderRadius:'0.75rem', padding:'1rem', marginBottom:'1rem' }}>
               <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'0.5rem' }}>
                 <span style={{ fontSize:'0.8rem', color:'#aaa' }}>Current Bid</span>
-                <span style={{ fontWeight:700, color:'#FF4500' }}>${selected.current_bid.toLocaleString()}</span>
+                <span style={{ fontWeight:700, color:'#CC0000' }}>${selected.current_bid.toLocaleString()}</span>
               </div>
               <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'0.5rem' }}>
                 <span style={{ fontSize:'0.8rem', color:'#aaa' }}>Buyer Premium ({selected.buyer_premium}%)</span>
                 <span style={{ fontWeight:600, color:'#aaa' }}>${Math.round(selected.current_bid * selected.buyer_premium / 100).toLocaleString()}</span>
               </div>
-              <div style={{ height:'1px', background:'#1A3A6B', margin:'0.5rem 0' }} />
+              <div style={{ height:'1px', background:'#1E3A6E', margin:'0.5rem 0' }} />
               <div style={{ display:'flex', justifyContent:'space-between' }}>
                 <span style={{ fontSize:'0.875rem', fontWeight:700 }}>All-In Cost</span>
                 <span style={{ fontWeight:800, color:'#22c55e', fontSize:'1.1rem' }}>${Math.round(selected.current_bid * (1 + selected.buyer_premium / 100)).toLocaleString()}</span>
@@ -108,7 +108,7 @@ export default function AuctionsPage() {
 
             <div style={{ marginBottom:'1rem' }}>
               <label style={{ display:'block', fontSize:'0.75rem', color:'#aaa', marginBottom:'0.375rem' }}>What would you bid?</label>
-              <input value={bidAmount} onChange={e => setBidAmount(e.target.value)} placeholder="Enter your max bid" type="number" style={{ width:'100%', background:'#0D0D0D', border:'1px solid #1A3A6B', borderRadius:'0.625rem', padding:'0.625rem 0.875rem', color:'white', fontSize:'0.9rem', outline:'none' }} />
+              <input value={bidAmount} onChange={e => setBidAmount(e.target.value)} placeholder="Enter your max bid" type="number" style={{ width:'100%', background:'#0D0D0D', border:'1px solid #1E3A6E', borderRadius:'0.625rem', padding:'0.625rem 0.875rem', color:'white', fontSize:'0.9rem', outline:'none' }} />
               {bidAmount && (
                 <p style={{ fontSize:'0.8rem', color:'#FFD700', marginTop:'0.375rem' }}>
                   Your all-in cost: ${Math.round(parseInt(bidAmount) * (1 + selected.buyer_premium / 100)).toLocaleString()}
@@ -117,8 +117,8 @@ export default function AuctionsPage() {
             </div>
 
             <div style={{ display:'flex', flexDirection:'column', gap:'0.625rem' }}>
-              <a href="#" style={{ background:'#FF4500', color:'white', padding:'0.75rem', borderRadius:'0.75rem', fontWeight:700, textAlign:'center', textDecoration:'none', fontSize:'0.9rem' }}>View on {selected.source} →</a>
-              <button style={{ background:'transparent', border:'1px solid #1A3A6B', color:'#aaa', padding:'0.625rem', borderRadius:'0.75rem', cursor:'pointer', fontSize:'0.8rem' }}>♡ Watch This Lot</button>
+              <a href="#" style={{ background:'#CC0000', color:'white', padding:'0.75rem', borderRadius:'0.75rem', fontWeight:700, textAlign:'center', textDecoration:'none', fontSize:'0.9rem' }}>View on {selected.source} →</a>
+              <button style={{ background:'transparent', border:'1px solid #1E3A6E', color:'#aaa', padding:'0.625rem', borderRadius:'0.75rem', cursor:'pointer', fontSize:'0.8rem' }}>♡ Watch This Lot</button>
             </div>
           </div>
         )}

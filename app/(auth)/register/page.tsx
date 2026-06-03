@@ -38,19 +38,19 @@ export default function RegisterPage() {
     }
   }
 
-  const inp: React.CSSProperties = { width:'100%', background:'#030B1A', border:'1px solid #1A3A6B', borderRadius:'0.75rem', padding:'0.75rem 1rem', color:'white', fontSize:'0.875rem', outline:'none' }
+  const inp: React.CSSProperties = { width:'100%', background:'#0E1825', border:'1px solid #1E3A6E', borderRadius:'0.75rem', padding:'0.75rem 1rem', color:'white', fontSize:'0.875rem', outline:'none' }
   const lbl: React.CSSProperties = { display:'block', fontSize:'0.75rem', color:'#aaa', marginBottom:'0.5rem' }
 
   return (
-    <div style={{ minHeight:'100vh', background:'#030B1A', display:'flex', alignItems:'center', justifyContent:'center', padding:'2rem' }}>
+    <div style={{ minHeight:'100vh', background:'#0E1825', display:'flex', alignItems:'center', justifyContent:'center', padding:'2rem' }}>
       <div style={{ width:'100%', maxWidth:'420px' }}>
         <div style={{ textAlign:'center', marginBottom:'2rem' }}>
           <Link href="/" style={{ fontSize:'2rem', fontWeight:900 }}>
-            <span style={{ color:'white' }}>Rev</span><span style={{ color:'#FF4500' }}>Connect</span><span style={{ color:'#FFD700' }}>-1</span>
+            <span style={{ color:'white' }}>Rev</span><span style={{ color:'#CC0000' }}>Connect</span><span style={{ color:'#FFD700' }}>-1</span>
           </Link>
           <p style={{ color:'#777', marginTop:'0.5rem' }}>Create your free account</p>
         </div>
-        <div style={{ background:'#071428', border:'1px solid #1A3A6B', borderRadius:'1rem', padding:'2rem' }}>
+        <div style={{ background:'#152234', border:'1px solid #1E3A6E', borderRadius:'1rem', padding:'2rem' }}>
           <form onSubmit={handleRegister} style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
             <div>
               <label style={lbl}>Username</label>
@@ -65,17 +65,17 @@ export default function RegisterPage() {
               <label style={lbl}>Password</label>
               <input type="password" value={form.password} onChange={e => set('password', e.target.value)} required minLength={8} placeholder="Min. 8 characters" style={inp} />
             </div>
-            {error && <div style={{ background:'rgba(255,69,0,0.1)', border:'1px solid rgba(255,69,0,0.3)', borderRadius:'0.5rem', padding:'0.75rem', fontSize:'0.875rem', color:'#FF4500' }}>{error}</div>}
-            <button type="submit" disabled={loading} style={{ background:'#FF4500', color:'white', border:'none', padding:'0.875rem', borderRadius:'0.75rem', fontWeight:700, fontSize:'1rem', opacity: loading ? 0.6 : 1 }}>
+            {error && <div style={{ background:'rgba(204,0,0,0.1)', border:'1px solid rgba(204,0,0,0.3)', borderRadius:'0.5rem', padding:'0.75rem', fontSize:'0.875rem', color:'#CC0000' }}>{error}</div>}
+            <button type="submit" disabled={loading} style={{ background:'#CC0000', color:'white', border:'none', padding:'0.875rem', borderRadius:'0.75rem', fontWeight:700, fontSize:'1rem', opacity: loading ? 0.6 : 1 }}>
               {loading ? 'Creating account…' : 'Join RevConnect-1'}
             </button>
             <p style={{ fontSize:'0.7rem', color:'#555', textAlign:'center' }}>
-              By joining you agree to our <Link href="/terms" style={{ color:'#FF4500' }}>Terms</Link> and <Link href="/privacy" style={{ color:'#FF4500' }}>Privacy Policy</Link>
+              By joining you agree to our <Link href="/terms" style={{ color:'#CC0000' }}>Terms</Link> and <Link href="/privacy" style={{ color:'#CC0000' }}>Privacy Policy</Link>
             </p>
           </form>
         </div>
         <p style={{ textAlign:'center', color:'#666', marginTop:'1.5rem', fontSize:'0.875rem' }}>
-          Already have an account? <Link href="/login" style={{ color:'#FF4500', fontWeight:600 }}>Sign in</Link>
+          Already have an account? <Link href="/login" style={{ color:'#CC0000', fontWeight:600 }}>Sign in</Link>
         </p>
       </div>
     </div>

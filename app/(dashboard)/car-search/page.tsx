@@ -63,7 +63,7 @@ export default function CarSearchPage() {
     finally { setLoading(false) }
   }
 
-  const inp: React.CSSProperties = { width:'100%', background:'#030B1A', border:'1px solid #1A3A6B', borderRadius:'0.625rem', padding:'0.625rem 0.75rem', color:'white', fontSize:'0.875rem', outline:'none' }
+  const inp: React.CSSProperties = { width:'100%', background:'#0E1825', border:'1px solid #1E3A6E', borderRadius:'0.625rem', padding:'0.625rem 0.75rem', color:'white', fontSize:'0.875rem', outline:'none' }
   const lbl: React.CSSProperties = { display:'block', fontSize:'0.75rem', color:'#A0B4CC', marginBottom:'0.375rem' }
 
   return (
@@ -76,7 +76,7 @@ export default function CarSearchPage() {
       </div>
 
       {/* Search form */}
-      <div style={{ background:'#071428', border:'1px solid #1A3A6B', borderRadius:'1rem', padding:'1.5rem', marginBottom:'1.5rem' }}>
+      <div style={{ background:'#152234', border:'1px solid #1E3A6E', borderRadius:'1rem', padding:'1.5rem', marginBottom:'1.5rem' }}>
         <form onSubmit={handleSearch}>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(155px, 1fr))', gap:'1rem', marginBottom:'1rem' }}>
             <div>
@@ -119,8 +119,8 @@ export default function CarSearchPage() {
           </div>
           <div style={{ display:'flex', gap:'0.75rem', alignItems:'center', flexWrap:'wrap' }}>
             {['new','used','cpo'].map(c => (
-              <label key={c} style={{ display:'flex', alignItems:'center', gap:'0.375rem', cursor:'pointer', fontSize:'0.875rem', color: filters.condition===c ? '#FF4500' : '#A0B4CC' }}>
-                <input type="radio" name="cond" value={c} checked={filters.condition===c} onChange={e => set('condition', e.target.value)} style={{ accentColor:'#FF4500' }} />
+              <label key={c} style={{ display:'flex', alignItems:'center', gap:'0.375rem', cursor:'pointer', fontSize:'0.875rem', color: filters.condition===c ? '#CC0000' : '#A0B4CC' }}>
+                <input type="radio" name="cond" value={c} checked={filters.condition===c} onChange={e => set('condition', e.target.value)} style={{ accentColor:'#CC0000' }} />
                 {c === 'cpo' ? 'CPO' : c.charAt(0).toUpperCase()+c.slice(1)}
               </label>
             ))}
@@ -131,7 +131,7 @@ export default function CarSearchPage() {
                 <option value="mileage-asc">Lowest Mileage</option>
               </select>
             </div>
-            <button type="submit" disabled={loading} style={{ background: loading ? '#1A3A6B' : '#FF4500', color:'white', border:'none', padding:'0.625rem 1.75rem', borderRadius:'0.75rem', fontWeight:700, fontSize:'0.9rem', whiteSpace:'nowrap', cursor: loading ? 'default' : 'pointer' }}>
+            <button type="submit" disabled={loading} style={{ background: loading ? '#1E3A6E' : '#CC0000', color:'white', border:'none', padding:'0.625rem 1.75rem', borderRadius:'0.75rem', fontWeight:700, fontSize:'0.9rem', whiteSpace:'nowrap', cursor: loading ? 'default' : 'pointer' }}>
               {loading ? 'Searching…' : 'Search Cars'}
             </button>
           </div>
@@ -139,7 +139,7 @@ export default function CarSearchPage() {
       </div>
 
       {error && (
-        <div style={{ background:'rgba(255,69,0,0.08)', border:'1px solid rgba(255,69,0,0.2)', borderRadius:'0.75rem', padding:'1rem', marginBottom:'1rem', color:'#FF4500', fontSize:'0.875rem' }}>⚠️ {error}</div>
+        <div style={{ background:'rgba(204,0,0,0.08)', border:'1px solid rgba(204,0,0,0.2)', borderRadius:'0.75rem', padding:'1rem', marginBottom:'1rem', color:'#CC0000', fontSize:'0.875rem' }}>⚠️ {error}</div>
       )}
 
       {!searched && !loading && (
@@ -147,7 +147,7 @@ export default function CarSearchPage() {
           <p style={{ fontSize:'4rem', marginBottom:'1rem' }}>🚗</p>
           <h2 style={{ fontSize:'1.25rem', fontWeight:700, marginBottom:'0.75rem' }}>Search live inventory</h2>
           <div style={{ display:'flex', gap:'1rem', justifyContent:'center', flexWrap:'wrap' }}>
-            <span style={{ background:'rgba(0,153,255,0.1)', border:'1px solid rgba(0,153,255,0.2)', color:'#0099FF', padding:'0.375rem 0.875rem', borderRadius:'9999px', fontSize:'0.8rem' }}>🏪 Dealer Inventory via Marketcheck</span>
+            <span style={{ background:'rgba(34,85,238,0.1)', border:'1px solid rgba(34,85,238,0.2)', color:'#2255EE', padding:'0.375rem 0.875rem', borderRadius:'9999px', fontSize:'0.8rem' }}>🏪 Dealer Inventory via Marketcheck</span>
             <span style={{ background:'rgba(255,215,0,0.08)', border:'1px solid rgba(255,215,0,0.2)', color:'#FFD700', padding:'0.375rem 0.875rem', borderRadius:'9999px', fontSize:'0.8rem' }}>🏁 eBay Motors Auctions & Buy-It-Now</span>
           </div>
         </div>
@@ -166,30 +166,30 @@ export default function CarSearchPage() {
             <p style={{ color:'#7090B0', fontSize:'0.875rem' }}>{total} vehicles found</p>
             {sources && (
               <div style={{ display:'flex', gap:'0.625rem' }}>
-                <span style={{ background:'rgba(0,153,255,0.08)', border:'1px solid rgba(0,153,255,0.15)', color:'#0099FF', padding:'0.2rem 0.625rem', borderRadius:'9999px', fontSize:'0.75rem' }}>🏪 {sources.marketcheck} dealers</span>
+                <span style={{ background:'rgba(34,85,238,0.08)', border:'1px solid rgba(34,85,238,0.15)', color:'#2255EE', padding:'0.2rem 0.625rem', borderRadius:'9999px', fontSize:'0.75rem' }}>🏪 {sources.marketcheck} dealers</span>
                 <span style={{ background:'rgba(255,215,0,0.06)', border:'1px solid rgba(255,215,0,0.15)', color:'#FFD700', padding:'0.2rem 0.625rem', borderRadius:'9999px', fontSize:'0.75rem' }}>🏁 {sources.ebay} eBay</span>
               </div>
             )}
           </div>
 
           {listings.length === 0 ? (
-            <div style={{ textAlign:'center', padding:'3rem', background:'#071428', border:'1px solid #1A3A6B', borderRadius:'1rem' }}>
+            <div style={{ textAlign:'center', padding:'3rem', background:'#152234', border:'1px solid #1E3A6E', borderRadius:'1rem' }}>
               <p style={{ color:'#7090B0' }}>No vehicles found. Try broadening your search — different make, higher price, wider radius.</p>
             </div>
           ) : (
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:'1.25rem' }}>
               {listings.map(l => (
                 <div key={l.id} onClick={() => setSelected(l)}
-                  style={{ background:'#071428', border:'1px solid #1A3A6B', borderRadius:'1rem', overflow:'hidden', cursor:'pointer', transition:'border-color 0.15s' }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = l.listing_type === 'auction' ? '#FFD700' : '#0099FF')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = '#1A3A6B')}>
-                  <div style={{ height:'180px', background:'linear-gradient(135deg, rgba(0,153,255,0.06), transparent)', position:'relative', overflow:'hidden' }}>
+                  style={{ background:'#152234', border:'1px solid #1E3A6E', borderRadius:'1rem', overflow:'hidden', cursor:'pointer', transition:'border-color 0.15s' }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = l.listing_type === 'auction' ? '#FFD700' : '#2255EE')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = '#1E3A6E')}>
+                  <div style={{ height:'180px', background:'linear-gradient(135deg, rgba(34,85,238,0.06), transparent)', position:'relative', overflow:'hidden' }}>
                     {l.images?.[0]
                       ? <img src={l.images[0]} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
                       : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem' }}>🚗</div>
                     }
                     {/* Source badge */}
-                    <span style={{ position:'absolute', top:'0.5rem', right:'0.5rem', background:'rgba(5,10,20,0.9)', border:'1px solid #1A3A6B', padding:'0.2rem 0.5rem', borderRadius:'9999px', fontSize:'0.7rem', color:'#A0B4CC' }}>
+                    <span style={{ position:'absolute', top:'0.5rem', right:'0.5rem', background:'rgba(5,10,20,0.9)', border:'1px solid #1E3A6E', padding:'0.2rem 0.5rem', borderRadius:'9999px', fontSize:'0.7rem', color:'#A0B4CC' }}>
                       {l.source_badge} {l.source_name}
                     </span>
                     {/* Auction badge */}
@@ -199,7 +199,7 @@ export default function CarSearchPage() {
                       </span>
                     )}
                     {l.price_drop && (
-                      <span style={{ position:'absolute', top:'0.5rem', left:'0.5rem', background:'rgba(255,69,0,0.85)', padding:'0.2rem 0.5rem', borderRadius:'9999px', fontSize:'0.7rem', color:'white', fontWeight:600 }}>↓ Price Drop</span>
+                      <span style={{ position:'absolute', top:'0.5rem', left:'0.5rem', background:'rgba(204,0,0,0.85)', padding:'0.2rem 0.5rem', borderRadius:'9999px', fontSize:'0.7rem', color:'white', fontWeight:600 }}>↓ Price Drop</span>
                     )}
                   </div>
                   <div style={{ padding:'1rem' }}>
@@ -209,7 +209,7 @@ export default function CarSearchPage() {
                         <p style={{ color:'#7090B0', fontSize:'0.8rem', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis', maxWidth:'160px' }}>{l.trim}</p>
                       </div>
                       <div style={{ textAlign:'right' }}>
-                        <p style={{ fontWeight:800, color:'#FF4500', fontSize:'1.1rem' }}>{l.price ? `$${l.price.toLocaleString()}` : 'Call'}</p>
+                        <p style={{ fontWeight:800, color:'#CC0000', fontSize:'1.1rem' }}>{l.price ? `$${l.price.toLocaleString()}` : 'Call'}</p>
                         {l.price && l.listing_type !== 'auction' && <p style={{ color:'#FFD700', fontSize:'0.75rem' }}>~${monthly(l.price).toLocaleString()}/mo</p>}
                         {l.listing_type === 'auction' && l.time_left && <p style={{ color:'#FFD700', fontSize:'0.7rem' }}>⏱ {l.time_left.replace('P','').replace('T',' ').replace('H','h ').replace('M','m').replace('D','d ')}</p>}
                       </div>
@@ -228,13 +228,13 @@ export default function CarSearchPage() {
       )}
 
       {selected && (
-        <div style={{ background:'#071428', border:'1px solid #1A3A6B', borderRadius:'1rem', padding:'2rem' }}>
-          <button onClick={() => setSelected(null)} style={{ background:'transparent', border:'1px solid #1A3A6B', color:'#A0B4CC', padding:'0.4rem 0.875rem', borderRadius:'0.5rem', marginBottom:'1.5rem', fontSize:'0.8rem', cursor:'pointer' }}>← Back to Results</button>
+        <div style={{ background:'#152234', border:'1px solid #1E3A6E', borderRadius:'1rem', padding:'2rem' }}>
+          <button onClick={() => setSelected(null)} style={{ background:'transparent', border:'1px solid #1E3A6E', color:'#A0B4CC', padding:'0.4rem 0.875rem', borderRadius:'0.5rem', marginBottom:'1.5rem', fontSize:'0.8rem', cursor:'pointer' }}>← Back to Results</button>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'2rem' }}>
             <div>
               {selected.images?.[0]
                 ? <img src={selected.images[0]} alt="" style={{ width:'100%', borderRadius:'0.75rem', marginBottom:'0.75rem' }} />
-                : <div style={{ height:'260px', background:'rgba(0,153,255,0.06)', borderRadius:'0.75rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'5rem', marginBottom:'0.75rem' }}>🚗</div>
+                : <div style={{ height:'260px', background:'rgba(34,85,238,0.06)', borderRadius:'0.75rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'5rem', marginBottom:'0.75rem' }}>🚗</div>
               }
               {selected.images && selected.images.length > 1 && (
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:'0.375rem' }}>
@@ -246,13 +246,13 @@ export default function CarSearchPage() {
             </div>
             <div>
               <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.5rem' }}>
-                <span style={{ background: selected.listing_type === 'auction' ? 'rgba(255,215,0,0.1)' : 'rgba(0,153,255,0.1)', border:`1px solid ${selected.listing_type === 'auction' ? 'rgba(255,215,0,0.25)' : 'rgba(0,153,255,0.25)'}`, color: selected.listing_type === 'auction' ? '#FFD700' : '#0099FF', padding:'0.2rem 0.625rem', borderRadius:'9999px', fontSize:'0.75rem', fontWeight:600 }}>
+                <span style={{ background: selected.listing_type === 'auction' ? 'rgba(255,215,0,0.1)' : 'rgba(34,85,238,0.1)', border:`1px solid ${selected.listing_type === 'auction' ? 'rgba(255,215,0,0.25)' : 'rgba(34,85,238,0.25)'}`, color: selected.listing_type === 'auction' ? '#FFD700' : '#2255EE', padding:'0.2rem 0.625rem', borderRadius:'9999px', fontSize:'0.75rem', fontWeight:600 }}>
                   {selected.source_badge} {selected.source_name} {selected.listing_type === 'auction' ? '· Auction' : '· Buy Now'}
                 </span>
               </div>
               <h2 style={{ fontSize:'1.5rem', fontWeight:800, marginBottom:'0.25rem' }}>{selected.year} {selected.make} {selected.model}</h2>
               <p style={{ color:'#A0B4CC', marginBottom:'0.75rem' }}>{selected.trim}</p>
-              <p style={{ fontSize:'2.25rem', fontWeight:900, color:'#FF4500', marginBottom:'0.25rem' }}>
+              <p style={{ fontSize:'2.25rem', fontWeight:900, color:'#CC0000', marginBottom:'0.25rem' }}>
                 {selected.price ? `$${selected.price.toLocaleString()}` : 'Call for Price'}
               </p>
               {selected.price && selected.listing_type !== 'auction' && <p style={{ color:'#FFD700', marginBottom:'1.25rem' }}>~${monthly(selected.price).toLocaleString()}/mo est.</p>}
@@ -269,7 +269,7 @@ export default function CarSearchPage() {
                   ['🎨','Color', selected.exterior_color || '—'],
                   ['📅','Days Listed', selected.days_on_market ? `${selected.days_on_market}d` : '—'],
                 ].map(([icon, label, val]) => (
-                  <div key={label as string} style={{ background:'#030B1A', borderRadius:'0.5rem', padding:'0.625rem', border:'1px solid #1A3A6B' }}>
+                  <div key={label as string} style={{ background:'#0E1825', borderRadius:'0.5rem', padding:'0.625rem', border:'1px solid #1E3A6E' }}>
                     <p style={{ fontSize:'0.7rem', color:'#7090B0' }}>{icon} {label as string}</p>
                     <p style={{ fontSize:'0.875rem', fontWeight:600, marginTop:'0.125rem' }}>{val as string}</p>
                   </div>
@@ -281,12 +281,12 @@ export default function CarSearchPage() {
 
               <div style={{ display:'flex', flexDirection:'column', gap:'0.625rem' }}>
                 {selected.listing_url
-                  ? <a href={selected.listing_url} target="_blank" rel="noopener" style={{ background:'#FF4500', color:'white', padding:'0.875rem', borderRadius:'0.75rem', fontWeight:700, textAlign:'center', textDecoration:'none', fontSize:'0.95rem' }}>
+                  ? <a href={selected.listing_url} target="_blank" rel="noopener" style={{ background:'#CC0000', color:'white', padding:'0.875rem', borderRadius:'0.75rem', fontWeight:700, textAlign:'center', textDecoration:'none', fontSize:'0.95rem' }}>
                       {selected.listing_type === 'auction' ? '🏁 Bid on eBay Motors →' : 'View Full Listing →'}
                     </a>
-                  : <button style={{ background:'#FF4500', color:'white', border:'none', padding:'0.875rem', borderRadius:'0.75rem', fontWeight:700, cursor:'pointer' }}>Contact Dealer</button>
+                  : <button style={{ background:'#CC0000', color:'white', border:'none', padding:'0.875rem', borderRadius:'0.75rem', fontWeight:700, cursor:'pointer' }}>Contact Dealer</button>
                 }
-                <button style={{ background:'rgba(0,153,255,0.08)', border:'1px solid rgba(0,153,255,0.2)', color:'#0099FF', padding:'0.75rem', borderRadius:'0.75rem', fontWeight:600, cursor:'pointer' }}>+ Save to My Garage</button>
+                <button style={{ background:'rgba(34,85,238,0.08)', border:'1px solid rgba(34,85,238,0.2)', color:'#2255EE', padding:'0.75rem', borderRadius:'0.75rem', fontWeight:600, cursor:'pointer' }}>+ Save to My Garage</button>
               </div>
             </div>
           </div>

@@ -4,10 +4,9 @@ module.exports = {
   eslint: { ignoreDuringBuilds: true },
   images: {
     remotePatterns: [
+      { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: '*.supabase.co' },
       { protocol: 'https', hostname: '*.ebayimg.com' },
-      { protocol: 'https', hostname: '*.marketcheck.com' },
-      { protocol: 'https', hostname: 'images.unsplash.com' },
     ],
   },
 }
