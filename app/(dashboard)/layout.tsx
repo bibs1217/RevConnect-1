@@ -15,6 +15,8 @@ const NAV = [
   { href:'/insurance', icon:'🛡️', label:'Insurance' },
   { href:'/vendors', icon:'🏪', label:'Vendors' },
   { href:'/store', icon:'👕', label:'Store' },
+  { href:'/membership', icon:'⚡', label:'Membership' },
+  { href:'/admin', icon:'⚙️', label:'Admin' },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
