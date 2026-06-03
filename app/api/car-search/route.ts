@@ -8,8 +8,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Marketcheck API key not configured' }, { status: 400 })
   }
 
-  // Build Marketcheck query params
-  const params = new URLSearchParams({ api_key: apiKey, rows: '24', start: '0', seller_type: 'dealer' })
+  const params = new URLSearchParams({
+    api_key: apiKey,
+    rows: '24',
+    start: '0',
+    seller_type: 'dealer',
+  })
 
   const zip = searchParams.get('zip')
   const radius = searchParams.get('radius') || '100'
@@ -23,24 +27,33 @@ export async function GET(req: NextRequest) {
   const sortBy = searchParams.get('sortBy') || 'price_asc'
 
   if (zip) { params.set('zip', zip); params.set('radius', radius) }
-  if (make) params.set('make', make)
-  if (model) params.set('model', model)
+  if (make) params.set('make', make.toLowerCase())
+  if (model) params.set('model', model.toLowerCase())
+
+  // Year filters — Marketcheck uses year_min / year_max
   if (yearMin) params.set('year_min', yearMin)
   if (yearMax) params.set('year_max', yearMax)
-  if (priceMax) params.set('price_max', priceMax)
-  if (mileageMax) params.set('miles_max', mileageMax)
+
+  // Price and mileage
+  if (priceMax && !isNaN(parseInt(priceMax))) params.set('price_max', priceMax)
+  if (mileageMax && !isNaN(parseInt(mileageMax))) params.set('miles_max', mileageMax)
+
+  // Condition
   if (condition === 'new') params.set('car_type', 'new')
   else if (condition === 'cpo') params.set('car_type', 'certified')
   else params.set('car_type', 'used')
 
+  // Sort
   if (sortBy === 'price-asc') { params.set('sort_by', 'price'); params.set('sort_order', 'asc') }
   else if (sortBy === 'price-desc') { params.set('sort_by', 'price'); params.set('sort_order', 'desc') }
   else if (sortBy === 'mileage-asc') { params.set('sort_by', 'miles'); params.set('sort_order', 'asc') }
 
+  console.log('Marketcheck query:', params.toString())
+
   try {
     const res = await fetch(`https://mc-api.marketcheck.com/v2/search/car/active?${params}`, {
       headers: { 'Accept': 'application/json' },
-      next: { revalidate: 300 } // cache 5 min
+      next: { revalidate: 300 }
     })
 
     if (!res.ok) {
@@ -49,8 +62,7 @@ export async function GET(req: NextRequest) {
     }
 
     const data = await res.json()
-    
-    // Normalize listings to our format
+
     const listings = (data.listings ?? []).map((l: any) => ({
       id: l.id,
       year: l.build?.year,
@@ -79,7 +91,14 @@ export async function GET(req: NextRequest) {
       price_change: l.price_change,
     }))
 
-    return NextResponse.json({ listings, total: data.num_found ?? listings.length })
+    // Client-side year enforcement as safety net in case API doesn't filter perfectly
+    const filtered = listings.filter((l: any) => {
+      if (yearMin && l.year && l.year < parseInt(yearMin)) return false
+      if (yearMax && l.year && l.year > parseInt(yearMax)) return false
+      return true
+    })
+
+    return NextResponse.json({ listings: filtered, total: data.num_found ?? filtered.length })
   } catch (err) {
     return NextResponse.json({ error: 'Failed to fetch listings', detail: String(err) }, { status: 500 })
   }
