@@ -101,7 +101,7 @@ export default function Home() {
                     style={{ width:'100%', height:'100%', objectFit:'cover', transition:'transform 0.4s ease' }}
                     onMouseEnter={e => (e.currentTarget.style.transform='scale(1.08)')}
                     onMouseLeave={e => (e.currentTarget.style.transform='scale(1)')}
-                    onError={e => { const t = e.currentTarget.parentElement!; t.style.background = `linear-gradient(135deg,${m.color}20,#152234)`; e.currentTarget.style.display='none'; t.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:3rem">🏎️</div>`; }}
+                    onError={e => { (e.target as HTMLImageElement).style.opacity='0' }}
                   />
                   {/* Chrome overlay gradient */}
                   <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg, transparent 40%, rgba(21,34,52,0.9) 100%)' }} />

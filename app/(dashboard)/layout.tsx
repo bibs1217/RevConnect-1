@@ -37,11 +37,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Nav — chrome gradient border */}
       <header style={{
         background:'rgba(14,24,37,0.97)', backdropFilter:'blur(16px)',
-        borderBottom:'2px solid transparent',
-        backgroundImage:'linear-gradient(rgba(14,24,37,0.97),rgba(14,24,37,0.97)), linear-gradient(90deg,#CC0000,#888,#fff,#888,#2255EE)',
-        backgroundOrigin:'border-box', backgroundClip:'padding-box, border-box',
+        borderBottom:'2px solid #CC0000',
         padding:'0 1.5rem', height:'4rem', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:50,
-        boxShadow:'0 4px 20px rgba(0,0,0,0.4)'
+        boxShadow:'0 4px 20px rgba(0,0,0,0.4), 0 2px 0 #CC000050'
       }}>
         <Link href="/" style={{ fontSize:'1.25rem', fontWeight:900, letterSpacing:'-0.5px', display:'flex', alignItems:'center' }}>
           <span style={{ color:'white' }}>Rev</span>
