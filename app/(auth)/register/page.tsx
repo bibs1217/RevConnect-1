@@ -38,19 +38,19 @@ export default function RegisterPage() {
     }
   }
 
-  const inp: React.CSSProperties = { width:'100%', background:'#0D0D0D', border:'1px solid #2a2a3e', borderRadius:'0.75rem', padding:'0.75rem 1rem', color:'white', fontSize:'0.875rem', outline:'none' }
+  const inp: React.CSSProperties = { width:'100%', background:'#050A14', border:'1px solid #1E3A5F', borderRadius:'0.75rem', padding:'0.75rem 1rem', color:'white', fontSize:'0.875rem', outline:'none' }
   const lbl: React.CSSProperties = { display:'block', fontSize:'0.75rem', color:'#aaa', marginBottom:'0.5rem' }
 
   return (
-    <div style={{ minHeight:'100vh', background:'#0D0D0D', display:'flex', alignItems:'center', justifyContent:'center', padding:'2rem' }}>
+    <div style={{ minHeight:'100vh', background:'#050A14', display:'flex', alignItems:'center', justifyContent:'center', padding:'2rem' }}>
       <div style={{ width:'100%', maxWidth:'420px' }}>
         <div style={{ textAlign:'center', marginBottom:'2rem' }}>
           <Link href="/" style={{ fontSize:'2rem', fontWeight:900 }}>
-            <span style={{ color:'white' }}>Rev</span><span style={{ color:'#E63946' }}>Connect</span><span style={{ color:'#F4A261' }}>-1</span>
+            <span style={{ color:'white' }}>Rev</span><span style={{ color:'#E63946' }}>Connect</span><span style={{ color:'#FACC15' }}>-1</span>
           </Link>
           <p style={{ color:'#777', marginTop:'0.5rem' }}>Create your free account</p>
         </div>
-        <div style={{ background:'#1a1a2e', border:'1px solid #2a2a3e', borderRadius:'1rem', padding:'2rem' }}>
+        <div style={{ background:'#0D1B2A', border:'1px solid #1E3A5F', borderRadius:'1rem', padding:'2rem' }}>
           <form onSubmit={handleRegister} style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
             <div>
               <label style={lbl}>Username</label>

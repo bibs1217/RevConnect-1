@@ -74,7 +74,7 @@ const TIERS = [
     name: 'Legend',
     price: 39.99,
     annual: 399,
-    color: '#F4A261',
+    color: '#FACC15',
     badge: '👑',
     points: '2×',
     popular: false,
@@ -129,7 +129,7 @@ export default function MembershipPage() {
         <p style={{ color: '#666', marginBottom: '1.5rem' }}>Unlock the full platform. Earn more Rev Points. Rep harder.</p>
 
         {/* Billing toggle */}
-        <div style={{ display: 'inline-flex', background: '#1a1a2e', border: '1px solid #2a2a3e', borderRadius: '9999px', padding: '0.25rem' }}>
+        <div style={{ display: 'inline-flex', background: '#0D1B2A', border: '1px solid #1E3A5F', borderRadius: '9999px', padding: '0.25rem' }}>
           {(['monthly', 'annual'] as const).map(b => (
             <button key={b} onClick={() => setBilling(b)} style={{ padding: '0.5rem 1.5rem', borderRadius: '9999px', border: 'none', background: billing === b ? '#E63946' : 'transparent', color: billing === b ? 'white' : '#aaa', fontWeight: billing === b ? 700 : 400, fontSize: '0.875rem', cursor: 'pointer', transition: 'all 0.15s' }}>
               {b === 'monthly' ? 'Monthly' : 'Annual (save 20%)'}
@@ -143,7 +143,7 @@ export default function MembershipPage() {
           const isCurrent = currentTier === tier.id
           const displayPrice = billing === 'annual' && tier.annual ? tier.annual / 12 : tier.price
           return (
-            <div key={tier.id} style={{ background: '#1a1a2e', border: `1px solid ${isCurrent ? tier.color + '60' : tier.popular ? tier.color + '40' : '#2a2a3e'}`, borderRadius: '1rem', padding: '1.5rem', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+            <div key={tier.id} style={{ background: '#0D1B2A', border: `1px solid ${isCurrent ? tier.color + '60' : tier.popular ? tier.color + '40' : '#1E3A5F'}`, borderRadius: '1rem', padding: '1.5rem', position: 'relative', display: 'flex', flexDirection: 'column' }}>
               {tier.popular && (
                 <div style={{ position: 'absolute', top: '-1px', left: '50%', transform: 'translateX(-50%)', background: tier.color, color: 'white', padding: '0.2rem 1rem', borderRadius: '0 0 0.75rem 0.75rem', fontSize: '0.7rem', fontWeight: 700, whiteSpace: 'nowrap' }}>MOST POPULAR</div>
               )}
@@ -167,7 +167,7 @@ export default function MembershipPage() {
                     </>
                   )}
                 </div>
-                <p style={{ fontSize: '0.75rem', color: '#F4A261', marginTop: '0.375rem' }}>⚡ {tier.points} Rev Points</p>
+                <p style={{ fontSize: '0.75rem', color: '#FACC15', marginTop: '0.375rem' }}>⚡ {tier.points} Rev Points</p>
               </div>
 
               <ul style={{ flex: 1, listStyle: 'none', marginBottom: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>

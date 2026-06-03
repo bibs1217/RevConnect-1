@@ -15,7 +15,7 @@ const PRODUCTS = [
 ]
 
 const CATS = ['All','Apparel','Headwear','Stickers','Collectibles','Drinkware','Garage Gear','Vehicle Accessories']
-const TIERS = { cruiser:{ mult:1, color:'#aaa' }, builder:{ mult:1.25, color:'#3b82f6' }, racer:{ mult:1.5, color:'#a855f7' }, legend:{ mult:2, color:'#F4A261' } }
+const TIERS = { cruiser:{ mult:1, color:'#aaa' }, builder:{ mult:1.25, color:'#3b82f6' }, racer:{ mult:1.5, color:'#a855f7' }, legend:{ mult:2, color:'#FACC15' } }
 
 export default function StorePage() {
   const { profile } = useAuth()
@@ -64,14 +64,14 @@ export default function StorePage() {
       {/* Category filters */}
       <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap', marginBottom:'1.5rem' }}>
         {CATS.map(c => (
-          <button key={c} onClick={() => setCat(c)} style={{ padding:'0.375rem 0.875rem', borderRadius:'9999px', border:`1px solid ${cat===c ? '#E63946' : '#2a2a3e'}`, background: cat===c ? 'rgba(230,57,70,0.1)' : 'transparent', color: cat===c ? '#E63946' : '#aaa', fontSize:'0.8rem', cursor:'pointer' }}>{c}</button>
+          <button key={c} onClick={() => setCat(c)} style={{ padding:'0.375rem 0.875rem', borderRadius:'9999px', border:`1px solid ${cat===c ? '#E63946' : '#1E3A5F'}`, background: cat===c ? 'rgba(230,57,70,0.1)' : 'transparent', color: cat===c ? '#E63946' : '#aaa', fontSize:'0.8rem', cursor:'pointer' }}>{c}</button>
         ))}
       </div>
 
       {/* Product detail modal */}
       {selected && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.8)', zIndex:100, display:'flex', alignItems:'center', justifyContent:'center', padding:'2rem' }} onClick={() => setSelected(null)}>
-          <div style={{ background:'#1a1a2e', border:'1px solid #2a2a3e', borderRadius:'1.25rem', padding:'2rem', maxWidth:'600px', width:'100%' }} onClick={e => e.stopPropagation()}>
+          <div style={{ background:'#0D1B2A', border:'1px solid #1E3A5F', borderRadius:'1.25rem', padding:'2rem', maxWidth:'600px', width:'100%' }} onClick={e => e.stopPropagation()}>
             <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'1.25rem' }}>
               <h2 style={{ fontWeight:800, fontSize:'1.25rem' }}>{selected.name}</h2>
               <button onClick={() => setSelected(null)} style={{ background:'transparent', border:'none', color:'#555', fontSize:'1.5rem', cursor:'pointer', lineHeight:1 }}>×</button>
@@ -83,7 +83,7 @@ export default function StorePage() {
                 <label style={{ display:'block', fontSize:'0.75rem', color:'#aaa', marginBottom:'0.5rem' }}>Size</label>
                 <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap' }}>
                   {selected.sizes.map(s => (
-                    <button key={s} onClick={() => setSelectedSize(s)} style={{ padding:'0.375rem 0.875rem', borderRadius:'0.5rem', border:`1px solid ${selectedSize===s ? '#E63946' : '#2a2a3e'}`, background: selectedSize===s ? 'rgba(230,57,70,0.1)' : 'transparent', color: selectedSize===s ? '#E63946' : '#aaa', fontSize:'0.8rem', cursor:'pointer' }}>{s}</button>
+                    <button key={s} onClick={() => setSelectedSize(s)} style={{ padding:'0.375rem 0.875rem', borderRadius:'0.5rem', border:`1px solid ${selectedSize===s ? '#E63946' : '#1E3A5F'}`, background: selectedSize===s ? 'rgba(230,57,70,0.1)' : 'transparent', color: selectedSize===s ? '#E63946' : '#aaa', fontSize:'0.8rem', cursor:'pointer' }}>{s}</button>
                   ))}
                 </div>
               </div>
@@ -107,7 +107,7 @@ export default function StorePage() {
         {filtered.map(p => {
           const isAdded = addedIds.has(p.id)
           return (
-            <div key={p.id} style={{ background:'#1a1a2e', border:`1px solid ${p.isLimited ? 'rgba(230,57,70,0.3)' : '#2a2a3e'}`, borderRadius:'1rem', overflow:'hidden', cursor:'pointer' }} onClick={() => { setSelected(p); setSelectedSize('') }}>
+            <div key={p.id} style={{ background:'#0D1B2A', border:`1px solid ${p.isLimited ? 'rgba(230,57,70,0.3)' : '#1E3A5F'}`, borderRadius:'1rem', overflow:'hidden', cursor:'pointer' }} onClick={() => { setSelected(p); setSelectedSize('') }}>
               <div style={{ height:'180px', background:'linear-gradient(135deg, rgba(230,57,70,0.06), transparent)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'5rem', position:'relative' }}>
                 {p.img}
                 <div style={{ position:'absolute', top:'0.625rem', left:'0.625rem', display:'flex', gap:'0.375rem', flexWrap:'wrap' }}>

@@ -12,13 +12,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <style>{`
           *{box-sizing:border-box;margin:0;padding:0}
-          body{background:#0D0D0D;color:white;font-family:system-ui,-apple-system,sans-serif}
+          body{background:#050A14;color:white;font-family:system-ui,-apple-system,sans-serif}
           a{color:inherit;text-decoration:none}
           input,select,textarea{font-family:inherit}
           button{font-family:inherit;cursor:pointer}
           ::-webkit-scrollbar{width:6px}
-          ::-webkit-scrollbar-track{background:#1a1a2e}
+          ::-webkit-scrollbar-track{background:#0D1B2A}
           ::-webkit-scrollbar-thumb{background:#E63946;border-radius:3px}
+          ::selection{background:#E63946;color:white}
         `}</style>
       </head>
       <body>

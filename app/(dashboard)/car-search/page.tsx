@@ -42,7 +42,7 @@ export default function CarSearchPage() {
     finally { setLoading(false) }
   }
 
-  const inp: React.CSSProperties = { width:'100%', background:'#0D0D0D', border:'1px solid #2a2a3e', borderRadius:'0.625rem', padding:'0.625rem 0.75rem', color:'white', fontSize:'0.875rem', outline:'none' }
+  const inp: React.CSSProperties = { width:'100%', background:'#0D0D0D', border:'1px solid #1E3A5F', borderRadius:'0.625rem', padding:'0.625rem 0.75rem', color:'white', fontSize:'0.875rem', outline:'none' }
   const lbl: React.CSSProperties = { display:'block', fontSize:'0.75rem', color:'#aaa', marginBottom:'0.375rem' }
 
   return (
@@ -53,7 +53,7 @@ export default function CarSearchPage() {
       </div>
 
       {/* Search form */}
-      <div style={{ background:'#1a1a2e', border:'1px solid #2a2a3e', borderRadius:'1rem', padding:'1.5rem', marginBottom:'1.5rem' }}>
+      <div style={{ background:'#0D1B2A', border:'1px solid #1E3A5F', borderRadius:'1rem', padding:'1.5rem', marginBottom:'1.5rem' }}>
         <form onSubmit={handleSearch}>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(160px, 1fr))', gap:'1rem', marginBottom:'1rem' }}>
             <div>
@@ -143,9 +143,9 @@ export default function CarSearchPage() {
           </p>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:'1.25rem' }}>
             {listings.map(l => (
-              <div key={l.id} onClick={() => setSelected(l)} style={{ background:'#1a1a2e', border:'1px solid #2a2a3e', borderRadius:'1rem', overflow:'hidden', cursor:'pointer' }}
+              <div key={l.id} onClick={() => setSelected(l)} style={{ background:'#0D1B2A', border:'1px solid #1E3A5F', borderRadius:'1rem', overflow:'hidden', cursor:'pointer' }}
                 onMouseEnter={e => (e.currentTarget.style.borderColor='#E63946')}
-                onMouseLeave={e => (e.currentTarget.style.borderColor='#2a2a3e')}>
+                onMouseLeave={e => (e.currentTarget.style.borderColor='#1E3A5F')}>
                 <div style={{ height:'180px', background:'linear-gradient(135deg, rgba(230,57,70,0.06), transparent)', position:'relative', overflow:'hidden' }}>
                   {l.images?.[0]
                     ? <img src={l.images[0]} alt={`${l.year} ${l.make} ${l.model}`} style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
@@ -168,7 +168,7 @@ export default function CarSearchPage() {
                     </div>
                     <div style={{ textAlign:'right' }}>
                       <p style={{ fontWeight:800, color:'#E63946', fontSize:'1.1rem' }}>{l.price ? `$${l.price.toLocaleString()}` : 'Call'}</p>
-                      {l.price && <p style={{ color:'#F4A261', fontSize:'0.75rem' }}>~${monthly(l.price).toLocaleString()}/mo</p>}
+                      {l.price && <p style={{ color:'#FACC15', fontSize:'0.75rem' }}>~${monthly(l.price).toLocaleString()}/mo</p>}
                     </div>
                   </div>
                   <div style={{ display:'flex', gap:'0.75rem', fontSize:'0.8rem', color:'#666', marginBottom:'0.625rem', flexWrap:'wrap' }}>
@@ -186,8 +186,8 @@ export default function CarSearchPage() {
       )}
 
       {selected && (
-        <div style={{ background:'#1a1a2e', border:'1px solid #2a2a3e', borderRadius:'1rem', padding:'2rem' }}>
-          <button onClick={() => setSelected(null)} style={{ background:'transparent', border:'1px solid #2a2a3e', color:'#aaa', padding:'0.4rem 0.875rem', borderRadius:'0.5rem', marginBottom:'1.5rem', fontSize:'0.8rem', cursor:'pointer' }}>← Back to Results</button>
+        <div style={{ background:'#0D1B2A', border:'1px solid #1E3A5F', borderRadius:'1rem', padding:'2rem' }}>
+          <button onClick={() => setSelected(null)} style={{ background:'transparent', border:'1px solid #1E3A5F', color:'#aaa', padding:'0.4rem 0.875rem', borderRadius:'0.5rem', marginBottom:'1.5rem', fontSize:'0.8rem', cursor:'pointer' }}>← Back to Results</button>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'2rem' }}>
             <div>
               {selected.images?.[0]
@@ -208,7 +208,7 @@ export default function CarSearchPage() {
               <p style={{ fontSize:'2.25rem', fontWeight:900, color:'#E63946', marginBottom:'0.25rem' }}>
                 {selected.price ? `$${selected.price.toLocaleString()}` : 'Call for Price'}
               </p>
-              {selected.price && <p style={{ color:'#F4A261', marginBottom:'1.25rem' }}>~${monthly(selected.price).toLocaleString()}/mo est. (60mo)</p>}
+              {selected.price && <p style={{ color:'#FACC15', marginBottom:'1.25rem' }}>~${monthly(selected.price).toLocaleString()}/mo est. (60mo)</p>}
 
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.625rem', marginBottom:'1.5rem' }}>
                 {[

@@ -11,7 +11,7 @@ const MOCK_RESULTS = [
   { id:'4', name:'EBC Redstuff Brake Pads - Front', brand:'EBC', condition:'new_aftermarket', price:82.00, shipping:0, source:'RockAuto', inStock:false, rating:4.7, reviews:204, warranty:'1 Year', partNumber:'DP31552C', fitment:'2020-2023 Toyota Supra' },
 ]
 
-const SOURCE_COLORS: Record<string,string> = { Amazon:'#F90', AutoZone:'#E63946', 'Summit Racing':'#3b82f6', RockAuto:'#22c55e', JEGS:'#a855f7', NAPA:'#F4A261' }
+const SOURCE_COLORS: Record<string,string> = { Amazon:'#F90', AutoZone:'#E63946', 'Summit Racing':'#3b82f6', RockAuto:'#22c55e', JEGS:'#a855f7', NAPA:'#FACC15' }
 
 export default function PartsPage() {
   const [query, setQuery] = useState('')
@@ -41,12 +41,12 @@ export default function PartsPage() {
             <p style={{ fontSize:'0.75rem', color:'#666' }}>Add your vehicle to filter by fitment</p>
           </div>
         </div>
-        <button style={{ background:'transparent', border:'1px solid #2a2a3e', color:'#aaa', padding:'0.375rem 0.75rem', borderRadius:'0.5rem', fontSize:'0.8rem', cursor:'pointer' }}>Select Vehicle</button>
+        <button style={{ background:'transparent', border:'1px solid #1E3A5F', color:'#aaa', padding:'0.375rem 0.75rem', borderRadius:'0.5rem', fontSize:'0.8rem', cursor:'pointer' }}>Select Vehicle</button>
       </div>
 
       {/* Search */}
       <form onSubmit={handleSearch} style={{ display:'flex', gap:'0.75rem', marginBottom:'1.5rem' }}>
-        <div style={{ flex:1, display:'flex', alignItems:'center', gap:'0.75rem', background:'#1a1a2e', border:'1px solid #2a2a3e', borderRadius:'0.875rem', padding:'0.75rem 1rem' }}>
+        <div style={{ flex:1, display:'flex', alignItems:'center', gap:'0.75rem', background:'#0D1B2A', border:'1px solid #1E3A5F', borderRadius:'0.875rem', padding:'0.75rem 1rem' }}>
           <span style={{ color:'#555' }}>🔍</span>
           <input value={query} onChange={e => setQuery(e.target.value)} placeholder='Search parts, part numbers, brands… (e.g. "EBC brake pads", "K&N air filter")' style={{ flex:1, background:'transparent', border:'none', color:'white', fontSize:'0.9rem', outline:'none' }} />
         </div>
@@ -56,7 +56,7 @@ export default function PartsPage() {
       <div style={{ display:'grid', gridTemplateColumns:'200px 1fr', gap:'1.5rem' }}>
         {/* Filters */}
         <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
-          <div style={{ background:'#1a1a2e', border:'1px solid #2a2a3e', borderRadius:'0.875rem', padding:'1rem' }}>
+          <div style={{ background:'#0D1B2A', border:'1px solid #1E3A5F', borderRadius:'0.875rem', padding:'1rem' }}>
             <h3 style={{ fontSize:'0.875rem', fontWeight:700, marginBottom:'0.75rem' }}>Category</h3>
             {CATEGORIES.map(c => (
               <label key={c} style={{ display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer', marginBottom:'0.5rem' }}>
@@ -65,7 +65,7 @@ export default function PartsPage() {
               </label>
             ))}
           </div>
-          <div style={{ background:'#1a1a2e', border:'1px solid #2a2a3e', borderRadius:'0.875rem', padding:'1rem' }}>
+          <div style={{ background:'#0D1B2A', border:'1px solid #1E3A5F', borderRadius:'0.875rem', padding:'1rem' }}>
             <h3 style={{ fontSize:'0.875rem', fontWeight:700, marginBottom:'0.75rem' }}>Condition</h3>
             {['New OEM','New Aftermarket','Remanufactured','Used','Performance'].map(c => (
               <label key={c} style={{ display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer', marginBottom:'0.5rem' }}>
@@ -85,8 +85,8 @@ export default function PartsPage() {
               <p style={{ color:'#666' }}>We compare prices from 15+ retailers simultaneously.</p>
             </div>
           ) : selected ? (
-            <div style={{ background:'#1a1a2e', border:'1px solid #2a2a3e', borderRadius:'1rem', padding:'1.5rem' }}>
-              <button onClick={() => setSelected(null)} style={{ background:'transparent', border:'1px solid #2a2a3e', color:'#aaa', padding:'0.4rem 0.875rem', borderRadius:'0.5rem', marginBottom:'1rem', fontSize:'0.8rem', cursor:'pointer' }}>← Back</button>
+            <div style={{ background:'#0D1B2A', border:'1px solid #1E3A5F', borderRadius:'1rem', padding:'1.5rem' }}>
+              <button onClick={() => setSelected(null)} style={{ background:'transparent', border:'1px solid #1E3A5F', color:'#aaa', padding:'0.4rem 0.875rem', borderRadius:'0.5rem', marginBottom:'1rem', fontSize:'0.8rem', cursor:'pointer' }}>← Back</button>
               <h2 style={{ fontWeight:700, marginBottom:'0.25rem' }}>{selected.name}</h2>
               <p style={{ color:'#666', fontSize:'0.875rem', marginBottom:'1rem' }}>Part #: {selected.partNumber} · Fits: {selected.fitment}</p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem', marginBottom:'1rem' }}>
@@ -105,8 +105,8 @@ export default function PartsPage() {
               </div>
               <div style={{ display:'flex', gap:'0.75rem' }}>
                 <a href="#" style={{ flex:1, background:'#E63946', color:'white', padding:'0.875rem', borderRadius:'0.75rem', fontWeight:700, textAlign:'center', textDecoration:'none', fontSize:'0.9rem' }}>Buy on {selected.source} →</a>
-                <button style={{ background:'#1a1a2e', border:'1px solid #2a2a3e', color:'white', padding:'0.875rem 1.25rem', borderRadius:'0.75rem', cursor:'pointer' }}>+ Build List</button>
-                <button style={{ background:'#1a1a2e', border:'1px solid #2a2a3e', color:'white', padding:'0.875rem 1.25rem', borderRadius:'0.75rem', cursor:'pointer' }}>♡ Save</button>
+                <button style={{ background:'#0D1B2A', border:'1px solid #1E3A5F', color:'white', padding:'0.875rem 1.25rem', borderRadius:'0.75rem', cursor:'pointer' }}>+ Build List</button>
+                <button style={{ background:'#0D1B2A', border:'1px solid #1E3A5F', color:'white', padding:'0.875rem 1.25rem', borderRadius:'0.75rem', cursor:'pointer' }}>♡ Save</button>
               </div>
             </div>
           ) : (
@@ -122,7 +122,7 @@ export default function PartsPage() {
               )}
               <div style={{ display:'flex', flexDirection:'column', gap:'0.75rem' }}>
                 {results.map(r => (
-                  <div key={r.id} onClick={() => setSelected(r)} style={{ background:'#1a1a2e', border:`1px solid ${(r.price + r.shipping) === Math.min(...results.map(x => x.price + x.shipping)) ? 'rgba(34,197,94,0.3)' : '#2a2a3e'}`, borderRadius:'0.875rem', padding:'1rem', cursor:'pointer', display:'flex', alignItems:'center', gap:'1rem' }}>
+                  <div key={r.id} onClick={() => setSelected(r)} style={{ background:'#0D1B2A', border:`1px solid ${(r.price + r.shipping) === Math.min(...results.map(x => x.price + x.shipping)) ? 'rgba(34,197,94,0.3)' : '#1E3A5F'}`, borderRadius:'0.875rem', padding:'1rem', cursor:'pointer', display:'flex', alignItems:'center', gap:'1rem' }}>
                     <div style={{ width:'40px', height:'40px', background:`${SOURCE_COLORS[r.source] ?? '#555'}20`, border:`1px solid ${SOURCE_COLORS[r.source] ?? '#555'}30`, borderRadius:'0.5rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.65rem', fontWeight:700, color: SOURCE_COLORS[r.source] ?? '#aaa', textAlign:'center', flexShrink:0 }}>
                       {r.source.split(' ')[0]}
                     </div>

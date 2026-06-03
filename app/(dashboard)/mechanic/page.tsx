@@ -78,7 +78,7 @@ export default function MechanicPage() {
 
   function formatMessage(text: string) {
     return text.split('\n').map((line, i) => {
-      if (line.startsWith('**') && line.endsWith('**')) return <p key={i} style={{ fontWeight:700, color:'#F4A261', marginBottom:'0.5rem' }}>{line.slice(2,-2)}</p>
+      if (line.startsWith('**') && line.endsWith('**')) return <p key={i} style={{ fontWeight:700, color:'#FACC15', marginBottom:'0.5rem' }}>{line.slice(2,-2)}</p>
       if (/^\d+\./.test(line)) return <p key={i} style={{ paddingLeft:'1rem', marginBottom:'0.375rem', color:'#e0e0e0' }}>{line}</p>
       if (line.startsWith('- ') || line.startsWith('• ')) return <p key={i} style={{ paddingLeft:'1rem', marginBottom:'0.25rem', color:'#aaa' }}>{line}</p>
       if (line.startsWith('#')) return <p key={i} style={{ fontWeight:700, fontSize:'1rem', marginBottom:'0.5rem', marginTop:'0.75rem' }}>{line.replace(/^#+\s/, '')}</p>
@@ -96,18 +96,18 @@ export default function MechanicPage() {
       </div>
 
       {!hasKey && (
-        <div style={{ background:'rgba(244,162,97,0.1)', border:'1px solid rgba(244,162,97,0.3)', borderRadius:'0.75rem', padding:'1rem', marginBottom:'1rem', fontSize:'0.875rem', color:'#F4A261' }}>
+        <div style={{ background:'rgba(244,162,97,0.1)', border:'1px solid rgba(244,162,97,0.3)', borderRadius:'0.75rem', padding:'1rem', marginBottom:'1rem', fontSize:'0.875rem', color:'#FACC15' }}>
           ⚠️ OpenAI API key not configured. Go to Vercel → Settings → Environment Variables and add <code style={{ background:'rgba(0,0,0,0.3)', padding:'0.1rem 0.4rem', borderRadius:'0.25rem' }}>OPENAI_API_KEY</code> to enable the AI Mechanic.
         </div>
       )}
 
       {/* Chat area */}
-      <div style={{ flex:1, background:'rgba(26,26,46,0.4)', border:'1px solid #2a2a3e', borderRadius:'1rem', overflowY:'auto', padding:'1.5rem', marginBottom:'1rem', display:'flex', flexDirection:'column', gap:'1rem' }}>
+      <div style={{ flex:1, background:'rgba(13,27,42,0.4)', border:'1px solid #1E3A5F', borderRadius:'1rem', overflowY:'auto', padding:'1.5rem', marginBottom:'1rem', display:'flex', flexDirection:'column', gap:'1rem' }}>
         {messages.length === 0 ? (
           <div>
             <div style={{ display:'flex', gap:'0.75rem', marginBottom:'1.5rem' }}>
               <div style={{ width:'36px', height:'36px', background:'rgba(230,57,70,0.15)', border:'1px solid rgba(230,57,70,0.2)', borderRadius:'0.75rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.25rem', flexShrink:0 }}>🔧</div>
-              <div style={{ background:'#1a1a2e', border:'1px solid #2a2a3e', borderRadius:'0.75rem', borderTopLeftRadius:'0.25rem', padding:'1rem', maxWidth:'80%' }}>
+              <div style={{ background:'#0D1B2A', border:'1px solid #1E3A5F', borderRadius:'0.75rem', borderTopLeftRadius:'0.25rem', padding:'1rem', maxWidth:'80%' }}>
                 <p style={{ fontWeight:600, marginBottom:'0.5rem', color:'#E63946' }}>RevConnect-1 AI Mechanic</p>
                 <p style={{ color:'#ccc', lineHeight:1.6 }}>Hey! I&apos;m your personal master mechanic. Tell me what vehicle you&apos;re working on and what you need help with — I&apos;ll walk you through every step with torque specs, wiring diagrams, and everything you need.</p>
               </div>
@@ -115,7 +115,7 @@ export default function MechanicPage() {
             <p style={{ fontSize:'0.75rem', color:'#555', marginBottom:'0.75rem' }}>Try asking:</p>
             <div style={{ display:'flex', flexWrap:'wrap', gap:'0.5rem' }}>
               {QUICK_PROMPTS.map(p => (
-                <button key={p} onClick={() => sendMessage(p)} style={{ background:'rgba(26,26,46,0.8)', border:'1px solid #2a2a3e', color:'#aaa', padding:'0.5rem 0.875rem', borderRadius:'9999px', fontSize:'0.8rem', cursor:'pointer' }}>{p}</button>
+                <button key={p} onClick={() => sendMessage(p)} style={{ background:'rgba(13,27,42,0.8)', border:'1px solid #1E3A5F', color:'#aaa', padding:'0.5rem 0.875rem', borderRadius:'9999px', fontSize:'0.8rem', cursor:'pointer' }}>{p}</button>
               ))}
             </div>
           </div>
@@ -125,7 +125,7 @@ export default function MechanicPage() {
               <div style={{ width:'32px', height:'32px', background: msg.role === 'user' ? 'rgba(230,57,70,0.15)' : 'rgba(244,162,97,0.12)', border:`1px solid ${msg.role === 'user' ? 'rgba(230,57,70,0.2)' : 'rgba(244,162,97,0.15)'}`, borderRadius:'0.625rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1rem', flexShrink:0 }}>
                 {msg.role === 'user' ? '👤' : '🔧'}
               </div>
-              <div style={{ background: msg.role === 'user' ? 'rgba(230,57,70,0.08)' : '#1a1a2e', border:`1px solid ${msg.role === 'user' ? 'rgba(230,57,70,0.15)' : '#2a2a3e'}`, borderRadius:'0.75rem', borderTopRightRadius: msg.role === 'user' ? '0.25rem' : '0.75rem', borderTopLeftRadius: msg.role === 'user' ? '0.75rem' : '0.25rem', padding:'0.875rem 1rem', maxWidth:'80%', fontSize:'0.9rem' }}>
+              <div style={{ background: msg.role === 'user' ? 'rgba(230,57,70,0.08)' : '#0D1B2A', border:`1px solid ${msg.role === 'user' ? 'rgba(230,57,70,0.15)' : '#1E3A5F'}`, borderRadius:'0.75rem', borderTopRightRadius: msg.role === 'user' ? '0.25rem' : '0.75rem', borderTopLeftRadius: msg.role === 'user' ? '0.75rem' : '0.25rem', padding:'0.875rem 1rem', maxWidth:'80%', fontSize:'0.9rem' }}>
                 {msg.role === 'assistant' ? formatMessage(msg.content) : <p style={{ lineHeight:1.6 }}>{msg.content}</p>}
                 {msg.role === 'assistant' && loading && i === messages.length - 1 && !msg.content && (
                   <span style={{ display:'inline-flex', gap:'0.3rem' }}>
@@ -141,7 +141,7 @@ export default function MechanicPage() {
 
       {/* Input */}
       <div style={{ display:'flex', gap:'0.75rem' }}>
-        <div style={{ flex:1, display:'flex', alignItems:'center', gap:'0.75rem', background:'#1a1a2e', border:'1px solid #2a2a3e', borderRadius:'0.875rem', padding:'0.75rem 1rem' }}>
+        <div style={{ flex:1, display:'flex', alignItems:'center', gap:'0.75rem', background:'#0D1B2A', border:'1px solid #1E3A5F', borderRadius:'0.875rem', padding:'0.75rem 1rem' }}>
           <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage(input))} placeholder="Ask about your vehicle… (e.g. 'My 2022 WRX needs new brake pads')" style={{ flex:1, background:'transparent', border:'none', color:'white', fontSize:'0.9rem', outline:'none' }} disabled={loading} />
         </div>
         <button onClick={() => sendMessage(input)} disabled={loading || !input.trim()} style={{ background: loading || !input.trim() ? '#333' : '#E63946', color:'white', border:'none', width:'48px', height:'48px', borderRadius:'0.875rem', fontSize:'1.25rem', cursor: loading || !input.trim() ? 'default' : 'pointer', transition:'background 0.15s' }}>

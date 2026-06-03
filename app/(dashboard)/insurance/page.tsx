@@ -28,7 +28,7 @@ export default function InsurancePage() {
     return true
   })
 
-  const TYPE_COLORS: Record<string,string> = { Enthusiast:'#E63946', Standard:'#3b82f6', Military:'#22c55e', Collector:'#F4A261' }
+  const TYPE_COLORS: Record<string,string> = { Enthusiast:'#E63946', Standard:'#3b82f6', Military:'#22c55e', Collector:'#FACC15' }
 
   return (
     <div style={{ maxWidth:'1000px', margin:'0 auto' }}>
@@ -46,18 +46,18 @@ export default function InsurancePage() {
       </div>
 
       {step === 'form' ? (
-        <div style={{ background:'#1a1a2e', border:'1px solid #2a2a3e', borderRadius:'1rem', padding:'2rem' }}>
+        <div style={{ background:'#0D1B2A', border:'1px solid #1E3A5F', borderRadius:'1rem', padding:'2rem' }}>
           <h2 style={{ fontWeight:700, marginBottom:'1.5rem' }}>Get Your Quotes</h2>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:'1rem', marginBottom:'1.5rem' }}>
             {[['vehicle','Vehicle','Select from your garage'],['zip','Garage ZIP','e.g. 75201'],['mileage','Annual Mileage','e.g. 5000']].map(([k,l,p]) => (
               <div key={k as string}>
                 <label style={{ display:'block', fontSize:'0.75rem', color:'#aaa', marginBottom:'0.375rem' }}>{l as string}</label>
-                <input value={(form as any)[k as string]} onChange={e => set(k as string, e.target.value)} placeholder={p as string} style={{ width:'100%', background:'#0D0D0D', border:'1px solid #2a2a3e', borderRadius:'0.625rem', padding:'0.625rem 0.875rem', color:'white', fontSize:'0.875rem', outline:'none' }} />
+                <input value={(form as any)[k as string]} onChange={e => set(k as string, e.target.value)} placeholder={p as string} style={{ width:'100%', background:'#0D0D0D', border:'1px solid #1E3A5F', borderRadius:'0.625rem', padding:'0.625rem 0.875rem', color:'white', fontSize:'0.875rem', outline:'none' }} />
               </div>
             ))}
             <div>
               <label style={{ display:'block', fontSize:'0.75rem', color:'#aaa', marginBottom:'0.375rem' }}>Primary Use</label>
-              <select value={form.use} onChange={e => set('use', e.target.value)} style={{ width:'100%', background:'#0D0D0D', border:'1px solid #2a2a3e', borderRadius:'0.625rem', padding:'0.625rem 0.875rem', color:'white', fontSize:'0.875rem', outline:'none' }}>
+              <select value={form.use} onChange={e => set('use', e.target.value)} style={{ width:'100%', background:'#0D0D0D', border:'1px solid #1E3A5F', borderRadius:'0.625rem', padding:'0.625rem 0.875rem', color:'white', fontSize:'0.875rem', outline:'none' }}>
                 {['daily','pleasure','show','track','collector'].map(u => <option key={u} value={u}>{u.charAt(0).toUpperCase()+u.slice(1)}</option>)}
               </select>
             </div>
@@ -78,7 +78,7 @@ export default function InsurancePage() {
         <div>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1rem' }}>
             <p style={{ color:'#666', fontSize:'0.875rem' }}>{filtered.length} carriers matched your requirements</p>
-            <button onClick={() => setStep('form')} style={{ background:'transparent', border:'1px solid #2a2a3e', color:'#aaa', padding:'0.4rem 0.875rem', borderRadius:'0.5rem', fontSize:'0.8rem', cursor:'pointer' }}>← Edit Filters</button>
+            <button onClick={() => setStep('form')} style={{ background:'transparent', border:'1px solid #1E3A5F', color:'#aaa', padding:'0.4rem 0.875rem', borderRadius:'0.5rem', fontSize:'0.8rem', cursor:'pointer' }}>← Edit Filters</button>
           </div>
 
           {compare.length >= 2 && (
@@ -93,12 +93,12 @@ export default function InsurancePage() {
               const isComparing = compare.includes(c.name)
               const isBest = i === 0
               return (
-                <div key={c.name} style={{ background:'#1a1a2e', border:`1px solid ${isBest ? 'rgba(34,197,94,0.3)' : '#2a2a3e'}`, borderRadius:'1rem', padding:'1.25rem', display:'flex', alignItems:'center', gap:'1.25rem' }}>
+                <div key={c.name} style={{ background:'#0D1B2A', border:`1px solid ${isBest ? 'rgba(34,197,94,0.3)' : '#1E3A5F'}`, borderRadius:'1rem', padding:'1.25rem', display:'flex', alignItems:'center', gap:'1.25rem' }}>
                   {isBest && <span style={{ position:'absolute', fontSize:'0.7rem' }} />}
                   <div style={{ minWidth:'120px' }}>
                     <p style={{ fontWeight:800, fontSize:'1rem' }}>{c.name}</p>
                     <span style={{ background:`${TYPE_COLORS[c.type] ?? '#aaa'}15`, color: TYPE_COLORS[c.type] ?? '#aaa', padding:'0.15rem 0.5rem', borderRadius:'9999px', fontSize:'0.7rem', border:`1px solid ${TYPE_COLORS[c.type] ?? '#aaa'}25` }}>{c.type}</span>
-                    {c.badge && <p style={{ fontSize:'0.7rem', color:'#F4A261', marginTop:'0.25rem' }}>{c.badge}</p>}
+                    {c.badge && <p style={{ fontSize:'0.7rem', color:'#FACC15', marginTop:'0.25rem' }}>{c.badge}</p>}
                   </div>
                   <div style={{ flex:1, display:'flex', gap:'1rem', flexWrap:'wrap' }}>
                     {[['Agreed Value', c.agreed],['Mod Coverage', c.mods],['Track Day', c.track]].map(([label, val]) => (
@@ -109,7 +109,7 @@ export default function InsurancePage() {
                     ))}
                     <div style={{ textAlign:'center' }}>
                       <p style={{ fontSize:'0.7rem', color:'#555', marginBottom:'0.2rem' }}>AM Best</p>
-                      <p style={{ fontSize:'0.85rem', fontWeight:700, color:'#F4A261' }}>{c.am_best}</p>
+                      <p style={{ fontSize:'0.85rem', fontWeight:700, color:'#FACC15' }}>{c.am_best}</p>
                     </div>
                   </div>
                   <div style={{ textAlign:'right', minWidth:'100px' }}>
@@ -119,7 +119,7 @@ export default function InsurancePage() {
                   </div>
                   <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem' }}>
                     <button style={{ background:'#E63946', color:'white', border:'none', padding:'0.5rem 1rem', borderRadius:'0.5rem', fontSize:'0.8rem', fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>Get Quote</button>
-                    <button onClick={() => setCompare(prev => prev.includes(c.name) ? prev.filter(x=>x!==c.name) : prev.length < 4 ? [...prev, c.name] : prev)} style={{ background: isComparing ? 'rgba(34,197,94,0.1)' : 'transparent', border:`1px solid ${isComparing ? 'rgba(34,197,94,0.3)' : '#2a2a3e'}`, color: isComparing ? '#22c55e' : '#aaa', padding:'0.375rem 0.75rem', borderRadius:'0.5rem', fontSize:'0.75rem', cursor:'pointer', whiteSpace:'nowrap' }}>
+                    <button onClick={() => setCompare(prev => prev.includes(c.name) ? prev.filter(x=>x!==c.name) : prev.length < 4 ? [...prev, c.name] : prev)} style={{ background: isComparing ? 'rgba(34,197,94,0.1)' : 'transparent', border:`1px solid ${isComparing ? 'rgba(34,197,94,0.3)' : '#1E3A5F'}`, color: isComparing ? '#22c55e' : '#aaa', padding:'0.375rem 0.75rem', borderRadius:'0.5rem', fontSize:'0.75rem', cursor:'pointer', whiteSpace:'nowrap' }}>
                       {isComparing ? '✓ Comparing' : 'Compare'}
                     </button>
                   </div>
