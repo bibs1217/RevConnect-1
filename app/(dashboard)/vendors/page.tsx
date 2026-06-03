@@ -14,7 +14,7 @@ const VENDORS = [
 ]
 
 const CATS = ['All','Performance Parts','Wheels & Tires','Car Care','Insurance & Finance','Automotive Services','Audio & Electronics','Clothing','Fuel & Lubricants']
-const CAT_COLORS: Record<string,string> = { 'Performance Parts':'#E63946','Wheels & Tires':'#3b82f6','Car Care':'#22c55e','Insurance & Finance':'#a855f7','Automotive Services':'#FACC15','Audio & Electronics':'#14b8a6' }
+const CAT_COLORS: Record<string,string> = { 'Performance Parts':'#FF4500','Wheels & Tires':'#3b82f6','Car Care':'#22c55e','Insurance & Finance':'#a855f7','Automotive Services':'#FFD700','Audio & Electronics':'#14b8a6' }
 
 export default function VendorsPage() {
   const [cat, setCat] = useState('All')
@@ -34,13 +34,13 @@ export default function VendorsPage() {
       </div>
 
       <div style={{ display:'flex', gap:'0.75rem', marginBottom:'1.25rem' }}>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search vendors, brands, products…" style={{ flex:1, background:'#0D1B2A', border:'1px solid #1E3A5F', borderRadius:'0.75rem', padding:'0.625rem 1rem', color:'white', fontSize:'0.875rem', outline:'none' }} />
-        <button style={{ background:'#E63946', color:'white', border:'none', padding:'0.625rem 1.25rem', borderRadius:'0.75rem', fontWeight:600, fontSize:'0.875rem', cursor:'pointer' }}>Advertise Here</button>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search vendors, brands, products…" style={{ flex:1, background:'#071428', border:'1px solid #1A3A6B', borderRadius:'0.75rem', padding:'0.625rem 1rem', color:'white', fontSize:'0.875rem', outline:'none' }} />
+        <button style={{ background:'#FF4500', color:'white', border:'none', padding:'0.625rem 1.25rem', borderRadius:'0.75rem', fontWeight:600, fontSize:'0.875rem', cursor:'pointer' }}>Advertise Here</button>
       </div>
 
       <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap', marginBottom:'1.5rem' }}>
         {CATS.map(c => (
-          <button key={c} onClick={() => setCat(c)} style={{ padding:'0.375rem 0.875rem', borderRadius:'9999px', border:`1px solid ${cat===c ? (CAT_COLORS[c] ?? '#E63946') : '#1E3A5F'}`, background: cat===c ? `${CAT_COLORS[c] ?? '#E63946'}15` : 'transparent', color: cat===c ? (CAT_COLORS[c] ?? '#E63946') : '#aaa', fontSize:'0.8rem', cursor:'pointer' }}>
+          <button key={c} onClick={() => setCat(c)} style={{ padding:'0.375rem 0.875rem', borderRadius:'9999px', border:`1px solid ${cat===c ? (CAT_COLORS[c] ?? '#FF4500') : '#1A3A6B'}`, background: cat===c ? `${CAT_COLORS[c] ?? '#FF4500'}15` : 'transparent', color: cat===c ? (CAT_COLORS[c] ?? '#FF4500') : '#aaa', fontSize:'0.8rem', cursor:'pointer' }}>
             {c}
           </button>
         ))}
@@ -50,7 +50,7 @@ export default function VendorsPage() {
         {filtered.map(v => {
           const catColor = CAT_COLORS[v.category] ?? '#aaa'
           return (
-            <div key={v.id} style={{ background:'#0D1B2A', border:`1px solid ${v.featured ? catColor+'40' : '#1E3A5F'}`, borderRadius:'1rem', padding:'1.5rem', position:'relative' }}>
+            <div key={v.id} style={{ background:'#071428', border:`1px solid ${v.featured ? catColor+'40' : '#1A3A6B'}`, borderRadius:'1rem', padding:'1.5rem', position:'relative' }}>
               {v.featured && <div style={{ position:'absolute', top:'-1px', left:'1.5rem', background:catColor, color:'white', padding:'0.15rem 0.625rem', borderRadius:'0 0 0.5rem 0.5rem', fontSize:'0.65rem', fontWeight:700 }}>FEATURED</div>}
               <div style={{ display:'flex', gap:'1rem', alignItems:'flex-start', marginBottom:'0.875rem' }}>
                 <div style={{ width:'52px', height:'52px', background:`${catColor}15`, border:`1px solid ${catColor}25`, borderRadius:'0.75rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.75rem', flexShrink:0 }}>{v.logo}</div>
@@ -69,11 +69,11 @@ export default function VendorsPage() {
                 </div>
               )}
               {'local' in v && v.local && (
-                <p style={{ fontSize:'0.75rem', color:'#FACC15', marginBottom:'0.5rem' }}>📍 Local: {v.city}</p>
+                <p style={{ fontSize:'0.75rem', color:'#FFD700', marginBottom:'0.5rem' }}>📍 Local: {v.city}</p>
               )}
               <div style={{ display:'flex', gap:'0.5rem' }}>
                 <a href={`https://${v.website}`} target="_blank" rel="noopener" style={{ flex:1, background:`${catColor}15`, border:`1px solid ${catColor}30`, color:catColor, padding:'0.5rem', borderRadius:'0.5rem', fontSize:'0.8rem', fontWeight:600, textAlign:'center', textDecoration:'none' }}>Visit Site →</a>
-                <button style={{ background:'transparent', border:'1px solid #1E3A5F', color:'#aaa', padding:'0.5rem 0.75rem', borderRadius:'0.5rem', fontSize:'0.8rem', cursor:'pointer' }}>Save</button>
+                <button style={{ background:'transparent', border:'1px solid #1A3A6B', color:'#aaa', padding:'0.5rem 0.75rem', borderRadius:'0.5rem', fontSize:'0.8rem', cursor:'pointer' }}>Save</button>
               </div>
             </div>
           )

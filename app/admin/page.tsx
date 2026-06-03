@@ -68,7 +68,7 @@ export default function AdminPage() {
     { id: 'store', label: '👕 Store' },
   ] as const
 
-  const TIER_COLORS: Record<string, string> = { cruiser: '#aaa', builder: '#3b82f6', racer: '#a855f7', legend: '#FACC15' }
+  const TIER_COLORS: Record<string, string> = { cruiser: '#aaa', builder: '#3b82f6', racer: '#a855f7', legend: '#FFD700' }
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -77,15 +77,15 @@ export default function AdminPage() {
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>⚙️ Admin Dashboard</h1>
           <p style={{ color: '#666', marginTop: '0.25rem' }}>Platform management and analytics</p>
         </div>
-        <button onClick={loadData} style={{ background: '#0D1B2A', border: '1px solid #1E3A5F', color: '#aaa', padding: '0.5rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+        <button onClick={loadData} style={{ background: '#071428', border: '1px solid #1A3A6B', color: '#aaa', padding: '0.5rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
           🔄 Refresh
         </button>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid #1E3A5F', paddingBottom: '0.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid #1A3A6B', paddingBottom: '0.5rem' }}>
         {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem 0.5rem 0 0', border: 'none', background: tab === t.id ? '#E63946' : 'transparent', color: tab === t.id ? 'white' : '#aaa', fontWeight: tab === t.id ? 700 : 400, fontSize: '0.875rem', cursor: 'pointer' }}>
+          <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem 0.5rem 0 0', border: 'none', background: tab === t.id ? '#FF4500' : 'transparent', color: tab === t.id ? 'white' : '#aaa', fontWeight: tab === t.id ? 700 : 400, fontSize: '0.875rem', cursor: 'pointer' }}>
             {t.label}
           </button>
         ))}
@@ -97,12 +97,12 @@ export default function AdminPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
             {[
               { label: 'Total Users', value: stats.users, icon: '👥', color: '#3b82f6' },
-              { label: 'Vehicles', value: stats.vehicles, icon: '🚗', color: '#E63946' },
+              { label: 'Vehicles', value: stats.vehicles, icon: '🚗', color: '#FF4500' },
               { label: 'Events', value: stats.events, icon: '📍', color: '#22c55e' },
-              { label: 'Orders', value: stats.orders, icon: '📦', color: '#FACC15' },
+              { label: 'Orders', value: stats.orders, icon: '📦', color: '#FFD700' },
               { label: 'Revenue', value: `$${stats.revenue.toFixed(2)}`, icon: '💰', color: '#a855f7' },
             ].map(s => (
-              <div key={s.label} style={{ background: '#0D1B2A', border: `1px solid ${s.color}25`, borderRadius: '1rem', padding: '1.25rem' }}>
+              <div key={s.label} style={{ background: '#071428', border: `1px solid ${s.color}25`, borderRadius: '1rem', padding: '1.25rem' }}>
                 <p style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>{s.icon}</p>
                 <p style={{ fontSize: '1.5rem', fontWeight: 900, color: s.color }}>{loading ? '…' : s.value}</p>
                 <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.25rem' }}>{s.label}</p>
@@ -111,7 +111,7 @@ export default function AdminPage() {
           </div>
 
           {/* Tier breakdown */}
-          <div style={{ background: '#0D1B2A', border: '1px solid #1E3A5F', borderRadius: '1rem', padding: '1.5rem' }}>
+          <div style={{ background: '#071428', border: '1px solid #1A3A6B', borderRadius: '1rem', padding: '1.5rem' }}>
             <h2 style={{ fontWeight: 700, marginBottom: '1rem', fontSize: '1rem' }}>Membership Tier Breakdown</h2>
             {['cruiser', 'builder', 'racer', 'legend'].map(tier => {
               const count = users.filter(u => u.membership_tier === tier).length
@@ -132,10 +132,10 @@ export default function AdminPage() {
 
       {tab === 'users' && (
         <div>
-          <div style={{ background: '#0D1B2A', border: '1px solid #1E3A5F', borderRadius: '1rem', overflow: 'hidden' }}>
+          <div style={{ background: '#071428', border: '1px solid #1A3A6B', borderRadius: '1rem', overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: '#0D0D0D', borderBottom: '1px solid #1E3A5F' }}>
+                <tr style={{ background: '#0D0D0D', borderBottom: '1px solid #1A3A6B' }}>
                   {['Username', 'Tier', 'Rev Points', 'Joined', 'Actions'].map(h => (
                     <th key={h} style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.75rem', color: '#666', fontWeight: 600 }}>{h}</th>
                   ))}
@@ -147,15 +147,15 @@ export default function AdminPage() {
                 ) : users.length === 0 ? (
                   <tr><td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: '#555' }}>No users yet</td></tr>
                 ) : users.map(u => (
-                  <tr key={u.id} style={{ borderBottom: '1px solid #0D1B2A' }}>
+                  <tr key={u.id} style={{ borderBottom: '1px solid #071428' }}>
                     <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem', fontWeight: 600 }}>@{u.username}</td>
                     <td style={{ padding: '0.75rem 1rem' }}>
                       <span style={{ background: `${TIER_COLORS[u.membership_tier]}15`, color: TIER_COLORS[u.membership_tier], padding: '0.15rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', textTransform: 'capitalize', border: `1px solid ${TIER_COLORS[u.membership_tier]}25` }}>{u.membership_tier}</span>
                     </td>
-                    <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#FACC15' }}>⚡ {u.rev_points ?? 0}</td>
+                    <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#FFD700' }}>⚡ {u.rev_points ?? 0}</td>
                     <td style={{ padding: '0.75rem 1rem', fontSize: '0.8rem', color: '#666' }}>{new Date(u.created_at).toLocaleDateString()}</td>
                     <td style={{ padding: '0.75rem 1rem' }}>
-                      <button style={{ background: 'transparent', border: '1px solid #1E3A5F', color: '#aaa', padding: '0.25rem 0.625rem', borderRadius: '0.375rem', fontSize: '0.75rem', cursor: 'pointer' }}>View</button>
+                      <button style={{ background: 'transparent', border: '1px solid #1A3A6B', color: '#aaa', padding: '0.25rem 0.625rem', borderRadius: '0.375rem', fontSize: '0.75rem', cursor: 'pointer' }}>View</button>
                     </td>
                   </tr>
                 ))}
@@ -166,7 +166,7 @@ export default function AdminPage() {
       )}
 
       {(tab === 'events' || tab === 'store') && (
-        <div style={{ textAlign: 'center', padding: '4rem', background: '#0D1B2A', border: '1px solid #1E3A5F', borderRadius: '1rem' }}>
+        <div style={{ textAlign: 'center', padding: '4rem', background: '#071428', border: '1px solid #1A3A6B', borderRadius: '1rem' }}>
           <p style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>{tab === 'events' ? '📍' : '👕'}</p>
           <h2 style={{ fontWeight: 700, marginBottom: '0.5rem' }}>{tab === 'events' ? 'Event Management' : 'Store Management'}</h2>
           <p style={{ color: '#666' }}>Coming soon — full CRUD for {tab === 'events' ? 'events, approval queue, featured picks' : 'products, inventory, orders, drops'}.</p>
