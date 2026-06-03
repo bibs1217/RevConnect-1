@@ -99,7 +99,6 @@ export default function Home() {
                     src={m.url}
                     alt={`${m.year} Ford Mustang ${m.name}`}
                     style={{ width:'100%', height:'100%', objectFit:'cover', transition:'transform 0.4s ease' }}
-                    onError={e => { (e.target as HTMLImageElement).style.opacity='0' }}
                   />
                   {/* Chrome overlay gradient */}
                   <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg, transparent 40%, rgba(21,34,52,0.9) 100%)' }} />
