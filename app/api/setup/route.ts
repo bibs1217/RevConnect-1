@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   }
 
   const projectRef = 'likxahlegjguyowcfvzr'
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KE
 
   if (!serviceKey) {
     return NextResponse.json({ error: 'Missing service role key' }, { status: 400 })
