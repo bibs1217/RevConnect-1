@@ -27,8 +27,20 @@ export default function RegisterPage() {
 
     if (signUpError) { setError(signUpError.message); setLoading(false); return }
     if (data.user && !data.session) {
+      // Try to auto-confirm so user doesn't need email
+      try {
+        const confirmRes = await fetch('/api/confirm-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: data.user.id })
+        })
+        if (confirmRes.ok) {
+          const { error: signInErr } = await supabase.auth.signInWithPassword({ email: form.email, password: form.password })
+          if (!signInErr) { router.push('/garage'); return }
+        }
+      } catch {}
       setLoading(false)
-      setError('✅ Account created! Check your email and click the confirmation link to sign in.')
+      setError('✅ Account created! Please check your email to confirm, then sign in.')
       return
     }
 
