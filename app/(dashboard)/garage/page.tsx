@@ -8,16 +8,7 @@ import Link from 'next/link'
 interface Vehicle {
   id: string; year: number; make: string; model: string; trim: string | null
   nickname: string | null; status: string; hero_image_url: string | null
-  mileage: number | null; total_build_cost: number; paint_protection: string | null
-  gallery_images: string[]
-}
-
-interface UploadState {
-  vehicleId: string | null
-  mode: 'idle' | 'choosing' | 'uploading' | 'done'
-  urlInput: string
-  error: string
-  tab: 'upload' | 'url'
+  mileage: number | null; total_build_cost: number
 }
 
 export default function GaragePage() {
@@ -27,15 +18,23 @@ export default function GaragePage() {
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm] = useState({ year:'', make:'', model:'', trim:'', nickname:'', mileage:'' })
   const [saving, setSaving] = useState(false)
-  const [upload, setUpload] = useState<UploadState>({ vehicleId:null, mode:'idle', urlInput:'', error:'', tab:'upload' })
+
+  // Upload state
+  const [uploadVehicleId, setUploadVehicleId] = useState<string|null>(null)
+  const [uploadTab, setUploadTab] = useState<'device'|'url'>('device')
+  const [urlInput, setUrlInput] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const [uploadDone, setUploadDone] = useState(false)
+  const [uploadError, setUploadError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
+
   const supabase = createClient()
 
   useEffect(() => { if (user) loadVehicles() }, [user])
 
   async function loadVehicles() {
     setLoading(true)
-    const { data } = await supabase.from('vehicles').select('*').eq('owner_id', user!.id).order('is_primary', { ascending: false })
+    const { data } = await supabase.from('vehicles').select('*').eq('owner_id', user!.id).order('created_at', { ascending: false })
     setVehicles((data ?? []) as Vehicle[])
     setLoading(false)
   }
@@ -53,141 +52,111 @@ export default function GaragePage() {
     setShowAdd(false); setSaving(false); loadVehicles()
   }
 
-  function openUpload(vehicleId: string) {
-    setUpload({ vehicleId, mode:'choosing', urlInput:'', error:'', tab:'upload' })
+  function openUpload(vid: string) {
+    setUploadVehicleId(vid); setUploadTab('device')
+    setUrlInput(''); setUploading(false); setUploadDone(false); setUploadError('')
   }
+  function closeUpload() { setUploadVehicleId(null) }
 
-  function closeUpload() {
-    setUpload({ vehicleId:null, mode:'idle', urlInput:'', error:'', tab:'upload' })
-  }
-
-  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (!file || !upload.vehicleId || !user) return
-
-    // Validate
-    if (!file.type.startsWith('image/')) { setUpload(u => ({ ...u, error:'Please select an image file (JPG, PNG, WEBP, etc.)' })); return }
-    if (file.size > 10 * 1024 * 1024) { setUpload(u => ({ ...u, error:'Image must be under 10MB' })); return }
-
-    setUpload(u => ({ ...u, mode:'uploading', error:'' }))
-
+    if (!file || !uploadVehicleId || !user) return
+    if (!file.type.startsWith('image/')) { setUploadError('Please select an image file'); return }
+    if (file.size > 15 * 1024 * 1024) { setUploadError('File must be under 15MB'); return }
+    setUploading(true); setUploadError('')
     const ext = file.name.split('.').pop()
-    const path = `${user.id}/${upload.vehicleId}/hero_${Date.now()}.${ext}`
-
-    const { data, error } = await supabase.storage.from('vehicles').upload(path, file, { upsert: true, contentType: file.type })
-
-    if (error) { setUpload(u => ({ ...u, mode:'choosing', error: `Upload failed: ${error.message}` })); return }
-
+    const path = `${user.id}/${uploadVehicleId}/hero_${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('vehicles').upload(path, file, { upsert:true, contentType:file.type })
+    if (error) { setUploadError(`Upload failed: ${error.message}`); setUploading(false); return }
     const { data: urlData } = supabase.storage.from('vehicles').getPublicUrl(path)
-    const publicUrl = urlData.publicUrl
-
-    await supabase.from('vehicles').update({ hero_image_url: publicUrl }).eq('id', upload.vehicleId)
-    setUpload(u => ({ ...u, mode:'done' }))
-    loadVehicles()
-    setTimeout(closeUpload, 1500)
+    await supabase.from('vehicles').update({ hero_image_url: urlData.publicUrl }).eq('id', uploadVehicleId)
+    setUploadDone(true); setUploading(false); loadVehicles()
+    setTimeout(() => { closeUpload(); setUploadDone(false) }, 1500)
   }
 
-  async function handleUrlSave() {
-    if (!upload.urlInput.trim() || !upload.vehicleId) return
-    const url = upload.urlInput.trim()
-    // Basic URL validation
-    if (!url.startsWith('http')) { setUpload(u => ({ ...u, error:'Please enter a valid URL starting with http://' })); return }
-    setUpload(u => ({ ...u, mode:'uploading', error:'' }))
-    await supabase.from('vehicles').update({ hero_image_url: url }).eq('id', upload.vehicleId)
-    setUpload(u => ({ ...u, mode:'done' }))
-    loadVehicles()
-    setTimeout(closeUpload, 1500)
+  async function handleUrl() {
+    if (!urlInput.trim() || !uploadVehicleId) return
+    if (!urlInput.startsWith('http')) { setUploadError('Please enter a valid URL (must start with http)'); return }
+    setUploading(true); setUploadError('')
+    await supabase.from('vehicles').update({ hero_image_url: urlInput.trim() }).eq('id', uploadVehicleId)
+    setUploadDone(true); setUploading(false); loadVehicles()
+    setTimeout(() => { closeUpload(); setUploadDone(false) }, 1500)
   }
 
-  async function removePhoto(vehicleId: string) {
-    await supabase.from('vehicles').update({ hero_image_url: null }).eq('id', vehicleId)
-    loadVehicles()
+  async function removePhoto(vid: string) {
+    await supabase.from('vehicles').update({ hero_image_url: null }).eq('id', vid); loadVehicles()
   }
 
   const inp: React.CSSProperties = { width:'100%', background:'#0D1E30', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'0.75rem', padding:'0.625rem 0.875rem', color:'white', fontSize:'0.875rem', outline:'none' }
   const lbl: React.CSSProperties = { display:'block', fontSize:'0.75rem', color:'rgba(255,255,255,0.4)', marginBottom:'0.375rem' }
-  const STATUS_COLORS: Record<string,string> = { active:'#22c55e', project:'#F4A261', for_sale:'#FFD700', sold:'#888', archived:'#555' }
 
   return (
     <div style={{ maxWidth:'1100px', margin:'0 auto' }}>
 
-      {/* Upload modal */}
-      {upload.vehicleId && upload.mode !== 'idle' && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:100, display:'flex', alignItems:'center', justifyContent:'center', padding:'2rem' }} onClick={closeUpload}>
-          <div style={{ background:'#243547', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'1.25rem', padding:'2rem', maxWidth:'480px', width:'100%' }} onClick={e => e.stopPropagation()}>
+      {/* ── UPLOAD MODAL ── */}
+      {uploadVehicleId && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.85)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:'1.5rem' }} onClick={closeUpload}>
+          <div style={{ background:'#243547', border:'2px solid #CC0000', borderRadius:'1.25rem', padding:'2rem', maxWidth:'460px', width:'100%', position:'relative' }} onClick={e => e.stopPropagation()}>
 
-            {upload.mode === 'uploading' && (
-              <div style={{ textAlign:'center', padding:'2rem' }}>
-                <p style={{ fontSize:'2.5rem', marginBottom:'1rem' }}>⬆️</p>
-                <p style={{ fontWeight:600 }}>Uploading photo…</p>
-                <div style={{ height:'4px', background:'rgba(255,255,255,0.1)', borderRadius:'9999px', marginTop:'1.5rem', overflow:'hidden' }}>
-                  <div style={{ height:'100%', width:'60%', background:'linear-gradient(90deg, #CC0000, #FFD700)', borderRadius:'9999px', animation:'slide 1.5s ease-in-out infinite' }} />
+            {uploadDone ? (
+              <div style={{ textAlign:'center', padding:'1rem' }}>
+                <p style={{ fontSize:'4rem', marginBottom:'0.75rem' }}>✅</p>
+                <p style={{ fontWeight:800, fontSize:'1.25rem', color:'#22c55e' }}>Photo Saved!</p>
+              </div>
+            ) : uploading ? (
+              <div style={{ textAlign:'center', padding:'1rem' }}>
+                <p style={{ fontSize:'3rem', marginBottom:'1rem' }}>⬆️</p>
+                <p style={{ fontWeight:600, marginBottom:'1.5rem' }}>Uploading your photo…</p>
+                <div style={{ height:'6px', background:'rgba(255,255,255,0.1)', borderRadius:'9999px', overflow:'hidden' }}>
+                  <div style={{ height:'100%', width:'70%', background:'linear-gradient(90deg, #CC0000, #FFD700)', borderRadius:'9999px', animation:'pulse 1.5s ease-in-out infinite' }} />
                 </div>
               </div>
-            )}
-
-            {upload.mode === 'done' && (
-              <div style={{ textAlign:'center', padding:'2rem' }}>
-                <p style={{ fontSize:'3rem', marginBottom:'1rem' }}>✅</p>
-                <p style={{ fontWeight:700, color:'#22c55e' }}>Photo saved!</p>
-              </div>
-            )}
-
-            {upload.mode === 'choosing' && (
+            ) : (
               <>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1.5rem' }}>
-                  <h2 style={{ fontWeight:800, fontSize:'1.125rem' }}>📸 Add Car Photo</h2>
-                  <button onClick={closeUpload} style={{ background:'transparent', border:'none', color:'rgba(255,255,255,0.4)', fontSize:'1.5rem', cursor:'pointer', lineHeight:1 }}>×</button>
+                  <h2 style={{ fontWeight:900, fontSize:'1.2rem' }}>📸 Upload Car Photo</h2>
+                  <button onClick={closeUpload} style={{ background:'transparent', border:'none', color:'rgba(255,255,255,0.5)', fontSize:'1.75rem', cursor:'pointer', lineHeight:1, padding:'0.25rem' }}>×</button>
                 </div>
 
-                {/* Tabs */}
-                <div style={{ display:'flex', background:'rgba(0,0,0,0.3)', borderRadius:'0.75rem', padding:'0.25rem', marginBottom:'1.5rem' }}>
-                  {(['upload','url'] as const).map(t => (
-                    <button key={t} onClick={() => setUpload(u => ({ ...u, tab:t }))} style={{ flex:1, padding:'0.625rem', borderRadius:'0.5rem', border:'none', background: upload.tab === t ? '#CC0000' : 'transparent', color: upload.tab === t ? 'white' : 'rgba(255,255,255,0.5)', fontWeight: upload.tab === t ? 700 : 400, cursor:'pointer', fontSize:'0.875rem' }}>
-                      {t === 'upload' ? '📁 Upload Photo' : '🔗 Paste URL'}
-                    </button>
-                  ))}
+                {/* Tab switcher */}
+                <div style={{ display:'flex', background:'rgba(0,0,0,0.4)', borderRadius:'0.875rem', padding:'0.3rem', marginBottom:'1.5rem' }}>
+                  <button onClick={() => setUploadTab('device')} style={{ flex:1, padding:'0.625rem', borderRadius:'0.625rem', border:'none', background: uploadTab==='device' ? '#CC0000':'transparent', color:'white', fontWeight: uploadTab==='device' ? 700:400, cursor:'pointer', fontSize:'0.875rem', transition:'all 0.15s' }}>
+                    📱 Upload from Device
+                  </button>
+                  <button onClick={() => setUploadTab('url')} style={{ flex:1, padding:'0.625rem', borderRadius:'0.625rem', border:'none', background: uploadTab==='url' ? '#CC0000':'transparent', color:'white', fontWeight: uploadTab==='url' ? 700:400, cursor:'pointer', fontSize:'0.875rem', transition:'all 0.15s' }}>
+                    🔗 Paste Photo URL
+                  </button>
                 </div>
 
-                {upload.tab === 'upload' ? (
+                {uploadTab === 'device' ? (
                   <div>
-                    {/* Drop zone */}
-                    <div onClick={() => fileRef.current?.click()} style={{ border:'2px dashed rgba(204,0,0,0.4)', borderRadius:'1rem', padding:'2.5rem 2rem', textAlign:'center', cursor:'pointer', background:'rgba(204,0,0,0.03)', marginBottom:'1rem', transition:'all 0.15s' }}
-                      onMouseEnter={e => (e.currentTarget.style.background='rgba(204,0,0,0.07)')}
-                      onMouseLeave={e => (e.currentTarget.style.background='rgba(204,0,0,0.03)')}>
-                      <p style={{ fontSize:'3rem', marginBottom:'0.75rem' }}>📷</p>
-                      <p style={{ fontWeight:700, marginBottom:'0.25rem' }}>Click to choose a photo</p>
-                      <p style={{ fontSize:'0.8rem', color:'rgba(255,255,255,0.35)' }}>JPG, PNG, WEBP — up to 10MB</p>
-                      <div style={{ marginTop:'1rem', background:'#CC0000', color:'white', padding:'0.625rem 1.5rem', borderRadius:'0.5rem', display:'inline-block', fontWeight:600, fontSize:'0.875rem' }}>
+                    <div onClick={() => fileRef.current?.click()} style={{ border:'3px dashed rgba(204,0,0,0.5)', borderRadius:'1rem', padding:'3rem 2rem', textAlign:'center', cursor:'pointer', background:'rgba(204,0,0,0.04)', marginBottom:'1rem', transition:'all 0.15s' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='rgba(204,0,0,0.1)'; (e.currentTarget as HTMLElement).style.borderColor='rgba(204,0,0,0.8)' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='rgba(204,0,0,0.04)'; (e.currentTarget as HTMLElement).style.borderColor='rgba(204,0,0,0.5)' }}>
+                      <p style={{ fontSize:'4rem', marginBottom:'0.75rem' }}>📷</p>
+                      <p style={{ fontWeight:700, fontSize:'1.1rem', marginBottom:'0.5rem' }}>Click here to choose a photo</p>
+                      <p style={{ fontSize:'0.8rem', color:'rgba(255,255,255,0.4)', marginBottom:'1.25rem' }}>JPG, PNG, WEBP, HEIC — up to 15MB</p>
+                      <div style={{ background:'linear-gradient(135deg, #CC0000, #AA0000)', color:'white', padding:'0.75rem 2rem', borderRadius:'0.75rem', display:'inline-block', fontWeight:700, boxShadow:'0 4px 16px rgba(204,0,0,0.4)' }}>
                         Browse Files
                       </div>
                     </div>
-                    <input ref={fileRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handleFileUpload} />
-                    <p style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.25)', textAlign:'center' }}>
-                      Photos are stored securely and displayed on your garage profile
-                    </p>
+                    <input ref={fileRef} type="file" accept="image/*,image/heic" style={{ display:'none' }} onChange={handleFile} />
+                    <p style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.25)', textAlign:'center' }}>Your photo is stored securely in your RevConnect-1 garage</p>
                   </div>
                 ) : (
                   <div>
-                    <label style={lbl}>Photo URL — paste a link from Instagram, Google Images, or any car site</label>
-                    <input
-                      value={upload.urlInput}
-                      onChange={e => setUpload(u => ({ ...u, urlInput: e.target.value }))}
-                      placeholder="https://example.com/my-car-photo.jpg"
-                      style={{ ...inp, marginBottom:'1rem' }}
-                    />
-                    <p style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.25)', marginBottom:'1.25rem' }}>
-                      Works with any direct image URL from the web
-                    </p>
-                    <button onClick={handleUrlSave} disabled={!upload.urlInput.trim()} style={{ width:'100%', background: upload.urlInput.trim() ? 'linear-gradient(135deg, #CC0000, #AA0000)' : '#333', color:'white', border:'none', padding:'0.875rem', borderRadius:'0.875rem', fontWeight:700, cursor: upload.urlInput.trim() ? 'pointer':'default', boxShadow: upload.urlInput.trim() ? '0 4px 16px rgba(204,0,0,0.35)':'none' }}>
+                    <label style={lbl}>Paste a photo URL from any website, Google Images, Instagram, or car sites</label>
+                    <input value={urlInput} onChange={e => setUrlInput(e.target.value)} placeholder="https://example.com/my-car.jpg" style={{ ...inp, marginBottom:'0.75rem' }} />
+                    <p style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.25)', marginBottom:'1.25rem' }}>Works with direct image links from any car forum, Instagram, Google, or personal site</p>
+                    <button onClick={handleUrl} disabled={!urlInput.trim()} style={{ width:'100%', background: urlInput.trim() ? 'linear-gradient(135deg, #CC0000, #AA0000)':'rgba(255,255,255,0.1)', color:'white', border:'none', padding:'0.875rem', borderRadius:'0.875rem', fontWeight:700, cursor: urlInput.trim() ? 'pointer':'default', fontSize:'1rem', boxShadow: urlInput.trim() ? '0 4px 16px rgba(204,0,0,0.4)':'none' }}>
                       Save Photo
                     </button>
                   </div>
                 )}
 
-                {upload.error && (
-                  <div style={{ marginTop:'1rem', background:'rgba(204,0,0,0.08)', border:'1px solid rgba(204,0,0,0.2)', borderRadius:'0.5rem', padding:'0.75rem', fontSize:'0.8rem', color:'#FF6666' }}>
-                    ⚠️ {upload.error}
+                {uploadError && (
+                  <div style={{ marginTop:'1rem', background:'rgba(204,0,0,0.1)', border:'1px solid rgba(204,0,0,0.25)', borderRadius:'0.625rem', padding:'0.75rem', fontSize:'0.8rem', color:'#FF6666' }}>
+                    ⚠️ {uploadError}
                   </div>
                 )}
               </>
@@ -200,14 +169,13 @@ export default function GaragePage() {
       <div style={{ background:'linear-gradient(135deg, #1B2A3E, #0D1E30)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'1rem', padding:'2rem', marginBottom:'2rem', position:'relative', overflow:'hidden' }}>
         <div style={{ position:'absolute', top:0, left:0, right:0, height:'3px', background:'linear-gradient(90deg, #CC0000, #FFD700, #1539CC)' }} />
         <div style={{ display:'flex', alignItems:'flex-end', gap:'1.5rem', flexWrap:'wrap' }}>
-          <div style={{ width:'80px', height:'80px', background:'rgba(204,0,0,0.12)', border:'2px solid rgba(204,0,0,0.25)', borderRadius:'1rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2.5rem', flexShrink:0 }}>🚗</div>
+          <div style={{ width:'80px', height:'80px', background:'rgba(204,0,0,0.12)', border:'2px solid rgba(204,0,0,0.3)', borderRadius:'1rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2.5rem', flexShrink:0 }}>🚗</div>
           <div style={{ flex:1 }}>
             <h1 style={{ fontSize:'1.5rem', fontWeight:800 }}>{profile?.display_name ?? profile?.username ?? user?.email?.split('@')[0] ?? 'My Garage'}</h1>
             <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.875rem' }}>@{profile?.username ?? '—'} · <span style={{ color:'#FFD700', textTransform:'capitalize' }}>{profile?.membership_tier ?? 'Cruiser'}</span></p>
             <div style={{ display:'flex', gap:'1.5rem', marginTop:'0.75rem' }}>
               <span style={{ fontSize:'0.875rem' }}><strong>{vehicles.length}</strong> <span style={{ color:'rgba(255,255,255,0.4)' }}>Vehicles</span></span>
               <span style={{ fontSize:'0.875rem' }}><strong style={{ color:'#FFD700' }}>{profile?.rev_points ?? 0}</strong> <span style={{ color:'rgba(255,255,255,0.4)' }}>Rev Points</span></span>
-              <span style={{ fontSize:'0.875rem' }}><strong>${vehicles.reduce((a,v) => a + (v.total_build_cost ?? 0), 0).toLocaleString()}</strong> <span style={{ color:'rgba(255,255,255,0.4)' }}>Total Build</span></span>
             </div>
           </div>
           {user && (
@@ -218,21 +186,21 @@ export default function GaragePage() {
         </div>
       </div>
 
-      {/* Add vehicle form */}
+      {/* Add form */}
       {showAdd && (
         <div style={{ background:'#243547', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'1rem', padding:'1.5rem', marginBottom:'2rem' }}>
-          <h2 style={{ fontSize:'1.125rem', fontWeight:700, marginBottom:'1.25rem' }}>Add a Vehicle</h2>
+          <h2 style={{ fontWeight:700, marginBottom:'1.25rem' }}>Add a Vehicle</h2>
           <form onSubmit={addVehicle}>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(160px, 1fr))', gap:'1rem', marginBottom:'1rem' }}>
               {[['year','Year *','2023',true],['make','Make *','Toyota',true],['model','Model *','Supra',true],['trim','Trim','GR Premium',false],['nickname','Nickname','The Beast',false],['mileage','Mileage','12500',false]].map(([k,l,p,req]) => (
                 <div key={k as string}>
                   <label style={lbl}>{l as string}</label>
-                  <input value={(form as any)[k as string]} onChange={e => setForm(v => ({ ...v, [k as string]: e.target.value }))} required={req as boolean} placeholder={p as string} style={inp} />
+                  <input value={(form as any)[k as string]} onChange={e => setForm(v => ({...v,[k as string]:e.target.value}))} required={req as boolean} placeholder={p as string} style={inp} />
                 </div>
               ))}
             </div>
             <div style={{ display:'flex', gap:'0.75rem' }}>
-              <button type="submit" disabled={saving} style={{ background:'linear-gradient(135deg, #CC0000, #AA0000)', color:'white', border:'none', padding:'0.75rem 1.5rem', borderRadius:'0.75rem', fontWeight:700, cursor:'pointer' }}>{saving ? 'Saving…' : 'Save Vehicle'}</button>
+              <button type="submit" disabled={saving} style={{ background:'linear-gradient(135deg, #CC0000, #AA0000)', color:'white', border:'none', padding:'0.75rem 1.5rem', borderRadius:'0.75rem', fontWeight:700, cursor:'pointer' }}>{saving ? 'Saving…':'Save Vehicle'}</button>
               <button type="button" onClick={() => setShowAdd(false)} style={{ background:'transparent', color:'rgba(255,255,255,0.4)', border:'1px solid rgba(255,255,255,0.1)', padding:'0.75rem 1.5rem', borderRadius:'0.75rem', cursor:'pointer' }}>Cancel</button>
             </div>
           </form>
@@ -241,10 +209,10 @@ export default function GaragePage() {
 
       {/* Not logged in */}
       {!user && (
-        <div style={{ textAlign:'center', padding:'4rem 2rem', background:'#243547', border:'1px dashed rgba(255,255,255,0.1)', borderRadius:'1rem', marginBottom:'2rem' }}>
+        <div style={{ textAlign:'center', padding:'4rem 2rem', background:'#243547', border:'1px dashed rgba(255,255,255,0.1)', borderRadius:'1rem' }}>
           <p style={{ fontSize:'3rem', marginBottom:'1rem' }}>🚗</p>
-          <h2 style={{ fontSize:'1.25rem', fontWeight:700, marginBottom:'0.5rem' }}>Your Digital Garage Awaits</h2>
-          <p style={{ color:'rgba(255,255,255,0.4)', marginBottom:'1.5rem' }}>Sign in to catalog your vehicles, upload photos, and track your builds.</p>
+          <h2 style={{ fontWeight:700, marginBottom:'0.5rem' }}>Sign in to access your garage</h2>
+          <p style={{ color:'rgba(255,255,255,0.4)', marginBottom:'1.5rem' }}>Upload photos, track mods, and document your builds.</p>
           <div style={{ display:'flex', gap:'1rem', justifyContent:'center' }}>
             <Link href="/register" style={{ background:'linear-gradient(135deg, #CC0000, #AA0000)', color:'white', padding:'0.75rem 1.5rem', borderRadius:'0.75rem', fontWeight:700 }}>Join Free</Link>
             <Link href="/login" style={{ background:'rgba(255,255,255,0.06)', color:'white', border:'1px solid rgba(255,255,255,0.1)', padding:'0.75rem 1.5rem', borderRadius:'0.75rem' }}>Sign In</Link>
@@ -254,60 +222,63 @@ export default function GaragePage() {
 
       {/* Empty state */}
       {user && !loading && vehicles.length === 0 && (
-        <div style={{ textAlign:'center', padding:'4rem 2rem', background:'#243547', border:'1px dashed rgba(255,255,255,0.1)', borderRadius:'1rem' }}>
-          <p style={{ fontSize:'3rem', marginBottom:'1rem' }}>🏎️</p>
-          <h2 style={{ fontSize:'1.25rem', fontWeight:700, marginBottom:'0.5rem' }}>No vehicles yet</h2>
-          <p style={{ color:'rgba(255,255,255,0.4)', marginBottom:'1.5rem' }}>Add your first vehicle to start your digital garage.</p>
-          <button onClick={() => setShowAdd(true)} style={{ background:'linear-gradient(135deg, #CC0000, #AA0000)', color:'white', border:'none', padding:'0.75rem 1.5rem', borderRadius:'0.75rem', fontWeight:700, cursor:'pointer' }}>Add Your First Vehicle</button>
+        <div style={{ textAlign:'center', padding:'4rem 2rem', background:'#243547', border:'1px dashed rgba(255,255,255,0.15)', borderRadius:'1rem' }}>
+          <p style={{ fontSize:'3.5rem', marginBottom:'1rem' }}>🏎️</p>
+          <h2 style={{ fontWeight:700, marginBottom:'0.5rem' }}>No vehicles yet</h2>
+          <p style={{ color:'rgba(255,255,255,0.4)', marginBottom:'2rem' }}>Add your first vehicle, then you can upload photos of it.</p>
+          <button onClick={() => setShowAdd(true)} style={{ background:'linear-gradient(135deg, #CC0000, #AA0000)', color:'white', border:'none', padding:'0.875rem 2rem', borderRadius:'0.875rem', fontWeight:700, cursor:'pointer', boxShadow:'0 4px 16px rgba(204,0,0,0.35)', fontSize:'1rem' }}>
+            + Add Your First Vehicle
+          </button>
         </div>
       )}
 
       {/* Vehicle grid */}
       {vehicles.length > 0 && (
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:'1.25rem' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))', gap:'1.5rem' }}>
           {vehicles.map(v => (
             <div key={v.id} style={{ background:'#243547', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'1rem', overflow:'hidden' }}>
-              {/* Photo area */}
-              <div style={{ height:'180px', background:'linear-gradient(135deg, rgba(204,0,0,0.1), #1B2A3E)', display:'flex', alignItems:'center', justifyContent:'center', position:'relative', overflow:'hidden' }}>
+
+              {/* Photo area with VERY prominent upload button */}
+              <div style={{ height:'200px', background:'linear-gradient(135deg, rgba(204,0,0,0.08), #1B2A3E)', position:'relative', overflow:'hidden' }}>
                 {v.hero_image_url ? (
-                  <img src={v.hero_image_url} alt={v.nickname ?? ''} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                  <>
+                    <img src={v.hero_image_url} alt={v.nickname ?? ''} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                    {/* Change photo button — always visible */}
+                    <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0)', display:'flex', alignItems:'center', justifyContent:'center', opacity:0, transition:'all 0.2s' }}
+                      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background='rgba(0,0,0,0.5)'; el.style.opacity='1' }}
+                      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background='rgba(0,0,0,0)'; el.style.opacity='0' }}>
+                      <button onClick={() => openUpload(v.id)} style={{ background:'linear-gradient(135deg, #CC0000, #AA0000)', color:'white', border:'none', padding:'0.75rem 1.5rem', borderRadius:'0.875rem', fontWeight:700, cursor:'pointer', fontSize:'0.95rem', boxShadow:'0 4px 16px rgba(204,0,0,0.5)' }}>
+                        📸 Change Photo
+                      </button>
+                    </div>
+                    <button onClick={() => removePhoto(v.id)} style={{ position:'absolute', top:'0.625rem', right:'0.625rem', background:'rgba(204,0,0,0.8)', border:'none', color:'white', width:'28px', height:'28px', borderRadius:'50%', cursor:'pointer', fontSize:'0.875rem', lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }} title="Remove photo">✕</button>
+                  </>
                 ) : (
-                  <div style={{ textAlign:'center' }}>
-                    <p style={{ fontSize:'3.5rem', marginBottom:'0.25rem' }}>🚗</p>
-                    <p style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.25)' }}>No photo yet</p>
+                  /* No photo — giant upload CTA */
+                  <div style={{ width:'100%', height:'100%', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'0.75rem' }}>
+                    <p style={{ fontSize:'2.5rem' }}>📷</p>
+                    <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'0.875rem' }}>No photo yet</p>
+                    <button onClick={() => openUpload(v.id)} style={{ background:'linear-gradient(135deg, #CC0000, #AA0000)', color:'white', border:'none', padding:'0.625rem 1.5rem', borderRadius:'0.75rem', fontWeight:700, cursor:'pointer', fontSize:'0.875rem', boxShadow:'0 4px 16px rgba(204,0,0,0.4)', display:'flex', alignItems:'center', gap:'0.5rem' }}>
+                      📸 Upload Photo
+                    </button>
                   </div>
                 )}
-
-                {/* Upload overlay button */}
-                <div style={{ position:'absolute', bottom:'0.625rem', right:'0.625rem', display:'flex', gap:'0.375rem' }}>
-                  <button onClick={() => openUpload(v.id)} style={{ background:'rgba(13,30,48,0.88)', border:'1px solid rgba(255,255,255,0.15)', color:'white', padding:'0.375rem 0.75rem', borderRadius:'0.5rem', fontSize:'0.75rem', fontWeight:600, cursor:'pointer', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', gap:'0.375rem' }}>
-                    📸 {v.hero_image_url ? 'Change Photo' : 'Add Photo'}
-                  </button>
-                  {v.hero_image_url && (
-                    <button onClick={() => removePhoto(v.id)} style={{ background:'rgba(204,0,0,0.7)', border:'1px solid rgba(204,0,0,0.4)', color:'white', padding:'0.375rem 0.5rem', borderRadius:'0.5rem', fontSize:'0.75rem', cursor:'pointer', backdropFilter:'blur(4px)' }} title="Remove photo">
-                      ✕
-                    </button>
-                  )}
-                </div>
               </div>
 
               {/* Info */}
-              <div style={{ padding:'1rem' }}>
-                <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:'0.5rem' }}>
+              <div style={{ padding:'1.25rem' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'0.75rem' }}>
                   <div>
-                    <h3 style={{ fontWeight:700, fontSize:'1rem' }}>{v.nickname ?? `${v.year} ${v.make} ${v.model}`}</h3>
-                    {v.nickname && <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.8rem' }}>{v.year} {v.make} {v.model} {v.trim}</p>}
+                    <h3 style={{ fontWeight:800, fontSize:'1.05rem' }}>{v.nickname ?? `${v.year} ${v.make} ${v.model}`}</h3>
+                    {v.nickname && <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.8rem' }}>{v.year} {v.make} {v.model}</p>}
                   </div>
-                  <span style={{ fontSize:'0.7rem', padding:'0.2rem 0.5rem', borderRadius:'9999px', background:`${STATUS_COLORS[v.status] ?? '#888'}18`, color: STATUS_COLORS[v.status] ?? '#888', border:`1px solid ${STATUS_COLORS[v.status] ?? '#888'}30` }}>
-                    {v.status.replace('_',' ')}
-                  </span>
                 </div>
-                {v.mileage && <p style={{ fontSize:'0.8rem', color:'rgba(255,255,255,0.4)', marginBottom:'0.375rem' }}>📍 {v.mileage.toLocaleString()} mi</p>}
-                {v.total_build_cost > 0 && <p style={{ fontSize:'0.8rem', color:'#FFD700' }}>💰 ${v.total_build_cost.toLocaleString()} build</p>}
-                <div style={{ display:'flex', gap:'0.5rem', marginTop:'0.875rem' }}>
-                  <Link href={`/garage/${v.id}`} style={{ flex:1, textAlign:'center', background:'rgba(204,0,0,0.08)', border:'1px solid rgba(204,0,0,0.2)', color:'#CC0000', padding:'0.5rem', borderRadius:'0.5rem', fontSize:'0.8rem', fontWeight:600 }}>View Build</Link>
-                  <button onClick={() => openUpload(v.id)} style={{ flex:1, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', color:'rgba(255,255,255,0.6)', padding:'0.5rem', borderRadius:'0.5rem', fontSize:'0.8rem', cursor:'pointer' }}>📸 Photos</button>
-                </div>
+                {v.mileage && <p style={{ fontSize:'0.8rem', color:'rgba(255,255,255,0.4)', marginBottom:'0.5rem' }}>📍 {v.mileage.toLocaleString()} mi</p>}
+
+                {/* Upload button — always visible at bottom of card */}
+                <button onClick={() => openUpload(v.id)} style={{ width:'100%', background: v.hero_image_url ? 'rgba(255,255,255,0.04)':'rgba(204,0,0,0.1)', border:`1px solid ${v.hero_image_url ? 'rgba(255,255,255,0.1)':'rgba(204,0,0,0.3)'}`, color: v.hero_image_url ? 'rgba(255,255,255,0.6)':'#CC0000', padding:'0.625rem', borderRadius:'0.75rem', fontWeight:700, cursor:'pointer', fontSize:'0.875rem', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', marginTop:'0.75rem' }}>
+                  📸 {v.hero_image_url ? 'Change Car Photo' : 'Upload Car Photo'}
+                </button>
               </div>
             </div>
           ))}
