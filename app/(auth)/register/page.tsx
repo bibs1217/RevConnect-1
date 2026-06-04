@@ -22,25 +22,13 @@ export default function RegisterPage() {
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
-      options: {
-        data: { username: form.username },
-        emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : 'https://rev-connect-1.vercel.app/auth/callback'
-      }
+      options: { data: { username: form.username } }
     })
 
-    if (signUpError) {
-      if (signUpError.message.includes('Invalid') || signUpError.message.includes('path')) {
-        setError('Registration failed: Please contact support or try a different email address.')
-      } else {
-        setError(signUpError.message)
-      }
-      setLoading(false); return
-    }
-    // If email confirmation is required, show message
+    if (signUpError) { setError(signUpError.message); setLoading(false); return }
     if (data.user && !data.session) {
       setLoading(false)
-      setError('')
-      alert('Account created! Please check your email and click the confirmation link to sign in.')
+      setError('✅ Account created! Check your email and click the confirmation link to sign in.')
       return
     }
 
