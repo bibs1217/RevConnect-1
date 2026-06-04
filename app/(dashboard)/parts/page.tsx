@@ -66,7 +66,7 @@ export default function PartsPage() {
     <div style={{ maxWidth:'1200px', margin:'0 auto' }}>
       <div style={{ marginBottom:'1.5rem' }}>
         <h1 style={{ fontSize:'1.75rem', fontWeight:800 }}>🔩 Parts Search</h1>
-        <p style={{ color:'rgba(255,255,255,0.35)', marginTop:'0.25rem' }}>Search across eBay Motors + direct links to 13 major retailers</p>
+        <p style={{ color:'rgba(255,255,255,0.35)', marginTop:'0.25rem' }}>Search across eBay Motors + direct links to 14 major retailers</p>
       </div>
 
       {/* Vehicle */}

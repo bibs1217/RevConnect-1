@@ -143,6 +143,24 @@ export default function StorePage() {
     return total + (p?.price ?? 0) * qty
   }, 0)
 
+  async function handleCheckout() {
+    if (cartCount === 0) return
+    const items = Object.entries(cart).map(([id, qty]) => {
+      const p = PRODUCTS.find(p => p.id === id)
+      return p ? { name: p.name, price: p.price, quantity: qty, images: [p.img] } : null
+    }).filter(Boolean)
+    try {
+      const res = await fetch('/api/store/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items })
+      })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+      else alert(data.error ?? 'Checkout failed')
+    } catch { alert('Checkout failed. Please try again.') }
+  }
+
   function addToCart(id: string) {
     setCart(c => ({ ...c, [id]:(c[id]??0)+1 }))
     setAddedIds(prev => {
@@ -233,8 +251,9 @@ export default function StorePage() {
             <p style={{ fontWeight:700, color:tierData.color, textTransform:'capitalize' }}>{tier} ({tierData.mult}× points)</p>
           </div>
           {cartCount > 0 && (
-            <div style={{ background:'linear-gradient(135deg, #CC0000, #AA0000)', color:'white', padding:'0.625rem 1.25rem', borderRadius:'0.875rem', fontWeight:700, cursor:'pointer', boxShadow:'0 4px 16px rgba(204,0,0,0.35)', display:'flex', gap:'0.5rem', alignItems:'center' }}>
-              🛒 {cartCount} · ${cartTotal.toFixed(2)}
+            <div onClick={handleCheckout} style={{ background:'linear-gradient(135deg, #CC0000, #AA0000)', color:'white', padding:'0.625rem 1.25rem', borderRadius:'0.875rem', fontWeight:700, cursor:'pointer', boxShadow:'0 4px 16px rgba(204,0,0,0.35)', display:'flex', gap:'0.5rem', alignItems:'center' }}>
+              <span>🛒 {cartCount} · ${cartTotal.toFixed(2)}</span>
+              <span style={{ fontSize:'0.75rem', opacity:0.8 }}>Checkout →</span>
             </div>
           )}
         </div>

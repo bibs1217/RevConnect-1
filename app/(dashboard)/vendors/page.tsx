@@ -3,14 +3,14 @@
 import { useState } from 'react'
 
 const VENDORS = [
-  { id:'1', name:'Mishimoto', category:'Performance Parts', sub:'Cooling & Intakes', description:'Premium cooling, intake, and drivetrain components. OEM-quality aftermarket parts with lifetime warranty.', website:'mishimoto.com', featured:true, verified:true, discount:'10% off with code REVCONNECT', logo:'🔧' },
-  { id:'2', name:'Enkei Wheels', category:'Wheels & Tires', sub:'Wheel Manufacturer', description:'World-renowned lightweight forged and cast wheels for performance and show applications.', website:'enkei.com', featured:true, verified:true, discount:null, logo:'⭕' },
-  { id:'3', name:'Chemical Guys', category:'Car Care', sub:'Detailing Products', description:'Professional-grade car care products. Washes, waxes, coatings, and interior cleaners trusted by detailers worldwide.', website:'chemicalguys.com', featured:true, verified:true, discount:'15% off with code RC15', logo:'🧴' },
-  { id:'4', name:'KW Suspensions', category:'Performance Parts', sub:'Suspension & Coilovers', description:'German-engineered suspension systems. From street to race, KW covers every application.', website:'kwsuspensions.net', featured:false, verified:true, discount:null, logo:'⚙️' },
-  { id:'5', name:'Hagerty Insurance', category:'Insurance & Finance', sub:'Enthusiast Insurance', description:'Agreed-value insurance for collector cars, modified vehicles, and daily drivers with agreed-value options.', website:'hagerty.com', featured:true, verified:true, discount:'Free quote for RevConnect members', logo:'🛡️' },
-  { id:'6', name:'Titan Motorsports', category:'Automotive Services', sub:'Performance Shop', description:'Full-service performance shop. Engine builds, turbo kits, suspension, dyno tuning, and fabrication.', website:'titanmotorsports.com', featured:false, verified:true, discount:null, logo:'🏁', local:true, city:'Orlando, FL' },
-  { id:'7', name:'Yokohama Tires', category:'Wheels & Tires', sub:'Tire Manufacturer', description:'High-performance tires from ADVAN to Avid. Track-proven compound technology for street and race.', website:'yokohamatire.com', featured:false, verified:true, discount:null, logo:'🔘' },
-  { id:'8', name:'Alpine Electronics', category:'Audio & Electronics', sub:'Car Audio', description:'Premium car audio equipment. Head units, amplifiers, speakers, and DSP for the ultimate audio build.', website:'alpine-usa.com', featured:false, verified:true, discount:'Free installation guide with any purchase', logo:'🔊' },
+  { id:'1', name:'Mishimoto', category:'Performance Parts', sub:'Cooling & Intakes', description:'Premium cooling, intake, and drivetrain components. OEM-quality aftermarket parts with lifetime warranty.', website:'https://www.mishimoto.com', featured:true, verified:true, discount:'10% off with code REVCONNECT', logo:'🔧' },
+  { id:'2', name:'Enkei Wheels', category:'Wheels & Tires', sub:'Wheel Manufacturer', description:'World-renowned lightweight forged and cast wheels for performance and show applications.', website:'https://www.enkei.com', featured:true, verified:true, discount:null, logo:'⭕' },
+  { id:'3', name:'Chemical Guys', category:'Car Care', sub:'Detailing Products', description:'Professional-grade car care products. Washes, waxes, coatings, and interior cleaners trusted by detailers worldwide.', website:'https://www.chemicalguys.com', featured:true, verified:true, discount:'15% off with code RC15', logo:'🧴' },
+  { id:'4', name:'KW Suspensions', category:'Performance Parts', sub:'Suspension & Coilovers', description:'German-engineered suspension systems. From street to race, KW covers every application.', website:'https://www.kwsuspensions.net', featured:false, verified:true, discount:null, logo:'⚙️' },
+  { id:'5', name:'Hagerty Insurance', category:'Insurance & Finance', sub:'Enthusiast Insurance', description:'Agreed-value insurance for collector cars, modified vehicles, and daily drivers with agreed-value options.', website:'https://www.hagerty.com', featured:true, verified:true, discount:'Free quote for RevConnect members', logo:'🛡️' },
+  { id:'6', name:'Titan Motorsports', category:'Automotive Services', sub:'Performance Shop', description:'Full-service performance shop. Engine builds, turbo kits, suspension, dyno tuning, and fabrication.', website:'https://www.titanmotorsports.com', featured:false, verified:true, discount:null, logo:'🏁', local:true, city:'Orlando, FL' },
+  { id:'7', name:'Yokohama Tires', category:'Wheels & Tires', sub:'Tire Manufacturer', description:'High-performance tires from ADVAN to Avid. Track-proven compound technology for street and race.', website:'https://www.yokohamatire.com', featured:false, verified:true, discount:null, logo:'🔘' },
+  { id:'8', name:'Alpine Electronics', category:'Audio & Electronics', sub:'Car Audio', description:'Premium car audio equipment. Head units, amplifiers, speakers, and DSP for the ultimate audio build.', website:'https://www.alpine-usa.com', featured:false, verified:true, discount:'Free installation guide with any purchase', logo:'🔊' },
 ]
 
 const CATS = ['All','Performance Parts','Wheels & Tires','Car Care','Insurance & Finance','Automotive Services','Audio & Electronics','Clothing','Fuel & Lubricants']
@@ -30,7 +30,7 @@ export default function VendorsPage() {
     <div style={{ maxWidth:'1200px', margin:'0 auto' }}>
       <div style={{ marginBottom:'1.5rem' }}>
         <h1 style={{ fontSize:'1.75rem', fontWeight:800 }}>🏪 Vendor Marketplace</h1>
-        <p style={{ color:'#666', marginTop:'0.25rem' }}>Trusted brands and local shops — targeted to your build and location</p>
+        <p style={{ color:'rgba(255,255,255,0.35)', marginTop:'0.25rem' }}>Trusted brands and local shops — targeted to your build and location</p>
       </div>
 
       <div style={{ display:'flex', gap:'0.75rem', marginBottom:'1.25rem' }}>

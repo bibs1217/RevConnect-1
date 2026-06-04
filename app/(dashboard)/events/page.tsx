@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/app/providers/auth-provider'
 
 // Events with real coordinates
@@ -84,8 +85,15 @@ export default function EventsPage() {
     })
   }, [eventsWithDistance, filter, search, location, radius])
 
-  function toggleRsvp(id: string) {
+  async function toggleRsvp(id: string, e?: React.MouseEvent) {
+    e?.stopPropagation()
     setRsvpd(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+    if (user) {
+      const supabase = createClient()
+      if (!rsvpd.has(id)) {
+        await supabase.from('notifications').insert({ user_id: user.id, type:'event_rsvp', title:`You're going!`, body:`RSVP confirmed for event ${id}` })
+      }
+    }
   }
 
   const inp: React.CSSProperties = { background:'#0D1E30', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'0.625rem', padding:'0.5rem 0.75rem', color:'white', fontSize:'0.8rem', outline:'none' }
@@ -193,7 +201,7 @@ export default function EventsPage() {
                     <span style={{ fontWeight:700, color: ev.entry_fee ? '#FFD700':'#22c55e', fontSize:'0.875rem' }}>{ev.entry_fee ? `$${ev.entry_fee}` : 'Free'}</span>
                   </div>
                   <div style={{ display:'flex', gap:'0.5rem' }}>
-                    <button onClick={() => toggleRsvp(ev.id)} style={{ flex:1, background: isRsvpd ? `${typeColor}18`:'transparent', border:`1px solid ${typeColor}${isRsvpd ? '50':'30'}`, color: isRsvpd ? typeColor:'rgba(255,255,255,0.5)', padding:'0.5rem', borderRadius:'0.5rem', fontSize:'0.8rem', fontWeight: isRsvpd ? 700:400, cursor:'pointer' }}>
+                    <button onClick={e => toggleRsvp(ev.id, e)} style={{ flex:1, background: isRsvpd ? `${typeColor}18`:'transparent', border:`1px solid ${typeColor}${isRsvpd ? '50':'30'}`, color: isRsvpd ? typeColor:'rgba(255,255,255,0.5)', padding:'0.5rem', borderRadius:'0.5rem', fontSize:'0.8rem', fontWeight: isRsvpd ? 700:400, cursor:'pointer' }}>
                       {isRsvpd ? '✓ Going' : 'RSVP'}
                     </button>
                     <button style={{ flex:1, background:'transparent', border:'1px solid rgba(255,255,255,0.1)', color:'rgba(255,255,255,0.4)', padding:'0.5rem', borderRadius:'0.5rem', fontSize:'0.8rem', cursor:'pointer' }}>Details</button>
