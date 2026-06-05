@@ -75,6 +75,7 @@ export default function CarSearchPage() {
     try {
       const res = await fetch(`/api/car-search?${params}`)
       const data = await res.json()
+      console.log('[car-search] raw response:', { total: data.total, listings_length: data.listings?.length, error: data.error, sources: data.sources })
       if (data.error) { setError(data.error); setListings([]); setTotal(0) }
       else { setListings(data.listings ?? []); setTotal(data.total ?? 0); setSources(data.sources ?? null) }
       setSearched(true)

@@ -41,8 +41,10 @@ export async function GET(req: NextRequest) {
   if (priceMin)     params.set('price_min', priceMin)
   if (priceMax)     params.set('price_max', priceMax)
   if (milesMax)     params.set('miles_max', milesMax)
-  if (zip)          params.set('zip', zip)
-  if (radius)       params.set('radius', radius)
+  if (zip) {
+    params.set('zip', zip)
+    if (radius) params.set('radius', radius)
+  }
   if (transmission) params.set('transmission', transmission)
   if (drivetrain)   params.set('drivetrain', drivetrain)
 
