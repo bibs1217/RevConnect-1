@@ -214,13 +214,18 @@ export default function CarSearchPage() {
             )}
           </div>
 
+          <p style={{ fontSize:'0.7rem', color:'#3A5A80', marginBottom:'0.5rem' }}>
+            debug: {listings.length} listings in state
+          </p>
+
           {listings.length === 0 ? (
             <div style={{ textAlign:'center', padding:'3rem', background:'#152234', border:'1px solid #1E3A6E', borderRadius:'1rem' }}>
               <p style={{ color:'#7090B0' }}>No vehicles found. Try broadening your search — different make, higher price, wider radius.</p>
             </div>
           ) : (
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:'1.25rem' }}>
-              {listings.map(l => {
+              {listings.map((l, idx) => {
+                if (idx === 0) console.log('[car-search] first listing shape:', JSON.stringify(l))
                 const badge = getDealBadge(l)
                 const isSaved = saved.has(l.id)
                 return (

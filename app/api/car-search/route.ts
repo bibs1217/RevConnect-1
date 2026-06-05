@@ -52,9 +52,9 @@ export async function GET(req: NextRequest) {
   else if (condition === 'cpo')  params.set('car_type', 'certified')
   else if (condition === 'used') params.set('car_type', 'used')
 
-  if (sortBy === 'price-asc')     { params.set('sort_by', 'price'); params.set('sort_order', 'asc') }
-  else if (sortBy === 'price-desc') { params.set('sort_by', 'price'); params.set('sort_order', 'desc') }
-  else if (sortBy === 'mileage-asc') { params.set('sort_by', 'miles'); params.set('sort_order', 'asc') }
+  // NOTE: sort_by/sort_order are intentionally NOT sent to Marketcheck.
+  // Sending sort_by without a make/zip filter causes MC to return num_found
+  // but suppress the listings array. We sort the returned results locally below.
 
   const mcUrl = `https://mc-api.marketcheck.com/v2/search/car/active?${params.toString()}`
   console.log('[MC] URL:', mcUrl.replace(mcKey, 'KEY_HIDDEN'))
@@ -70,15 +70,16 @@ export async function GET(req: NextRequest) {
     })
 
     const text = await res.text()
-    console.log(`[MC] status=${res.status} body_preview=${text.slice(0, 200)}`)
+    console.log(`[MC] status=${res.status} body_preview=${text.slice(0, 500)}`)
 
     if (!res.ok) {
-      console.error(`[MC] Error ${res.status}:`, text.slice(0, 400))
+      console.error(`[MC] Error ${res.status}:`, text.slice(0, 500))
     } else {
       const data = JSON.parse(text)
       mcTotal = data.num_found ?? 0
-      const raw: any[] = data.listings ?? []
-      console.log(`[MC] num_found=${mcTotal}, returned=${raw.length}`)
+      // Marketcheck may use 'listings', 'listing', 'response', or 'results' as the array key
+      const raw: any[] = data.listings ?? data.listing ?? data.response ?? data.results ?? []
+      console.log(`[MC] num_found=${mcTotal}, returned=${raw.length}, top_keys=${Object.keys(data).join(',')}`)
 
       mcListings = raw.map((l: any) => ({
         id:             `mc_${l.id}`,
