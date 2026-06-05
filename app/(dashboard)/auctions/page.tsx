@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 
 // ─── IN-PERSON AUCTION EVENTS (real upcoming events with dates/locations) ───
 const IN_PERSON_EVENTS = [
@@ -37,7 +37,7 @@ const ALL_MOCK = [
   { id:'6', title:'2022 Subaru WRX Stage 2 Built', source:'Bring a Trailer', year:2022, make:'Subaru', model:'WRX', mileage:22000, current_bid:38000, reserve_met:null, end_time:'2026-06-22T12:00:00', img:'https://images.unsplash.com/photo-1567808291548-fc3ee04dbcf0?w=500&q=80', buyer_premium:5, location:'Illinois', type:'online', condition:'Modified', bid_count:29 },
 ]
 
-const MAKES = ['All Makes','Toyota','Ford','BMW','Porsche','Subaru','Chevrolet','Dodge','Nissan','Honda','Lexus','Ferrari','Lamborghini','Corvette','Mustang']
+const MAKES = ['All Makes','Acura','Audi','BMW','Chevrolet','Dodge','Ford','Honda','Hyundai','Infiniti','Jeep','Kia','Lexus','Mazda','Mercedes-Benz','Nissan','Porsche','Subaru','Tesla','Toyota','Volkswagen']
 const SOURCE_COLORS: Record<string,string> = { 'Bring a Trailer':'#1539CC','Cars & Bids':'#FFD700','Copart':'#3399FF','eBay Motors':'#E43137','Mecum':'#22c55e','Barrett-Jackson':'#CC0000','IAAI':'#F4A261' }
 
 function timeLeft(d: string) {
@@ -55,12 +55,18 @@ export default function AuctionsPage() {
   const [search, setSearch] = useState('')
   const [liveQuery, setLiveQuery] = useState('')
   const [liveMake, setLiveMake] = useState('All Makes')
+  const [liveZip, setLiveZip] = useState('')
+  const [liveRadius, setLiveRadius] = useState('150')
   const [filters, setFilters] = useState({ type:'All', source:'All', make:'All Makes', priceMin:'', priceMax:'', yearMin:'', yearMax:'', reserveMet:'any', condition:'Any', sort:'ends-soon' })
   const [selected, setSelected] = useState<any>(null)
+  const [selectedPhoto, setSelectedPhoto] = useState(0)
   const [bidInput, setBidInput] = useState('')
   const [liveResults, setLiveResults] = useState<any[]>([])
   const [liveTotal, setLiveTotal] = useState(0)
+  const [liveSources, setLiveSources] = useState<{marketcheck:number,ebay:number}|null>(null)
+  const [liveSourceFilter, setLiveSourceFilter] = useState<'all'|'Copart'|'IAAI'|'eBay Motors'>('all')
   const [liveLoading, setLiveLoading] = useState(false)
+  const [liveSearched, setLiveSearched] = useState(false)
   const [liveError, setLiveError] = useState('')
   const [eventFilter, setEventFilter] = useState('All')
 
@@ -91,17 +97,46 @@ export default function AuctionsPage() {
 
   async function searchLive(e: React.FormEvent) {
     e.preventDefault()
-    if (!liveQuery.trim() && liveMake === 'All Makes') return
-    setLiveLoading(true); setLiveError('')
-    const p = new URLSearchParams({ query: liveQuery, make: liveMake === 'All Makes' ? '':liveMake, yearMin: filters.yearMin, yearMax: filters.yearMax, priceMax: filters.priceMax })
+    setLiveLoading(true); setLiveError(''); setLiveSourceFilter('all'); setSelectedPhoto(0)
+    const p = new URLSearchParams({
+      query:   liveQuery,
+      make:    liveMake === 'All Makes' ? '' : liveMake,
+      yearMin: filters.yearMin,
+      yearMax: filters.yearMax,
+      priceMax: filters.priceMax,
+      zip:     liveZip,
+      radius:  liveRadius,
+    })
     try {
       const res = await fetch(`/api/auction-search?${p}`)
       const data = await res.json()
       if (data.error) setLiveError(data.error)
       setLiveResults(data.listings ?? [])
       setLiveTotal(data.total ?? 0)
+      setLiveSources(data.sources ?? null)
+      setLiveSearched(true)
     } catch { setLiveError('Search failed. Please try again.') }
     finally { setLiveLoading(false) }
+  }
+
+  function conditionColor(grade: string | null): string {
+    if (!grade) return 'rgba(255,255,255,0.3)'
+    const n = parseFloat(grade)
+    if (n >= 4.0) return '#22c55e'
+    if (n >= 3.0) return '#FFD700'
+    if (n >= 2.0) return '#F4A261'
+    return '#E63946'
+  }
+
+  function auctionCountdown(dateStr: string | null): string {
+    if (!dateStr) return ''
+    const diff = new Date(dateStr).getTime() - Date.now()
+    if (diff < 0) return 'Ended'
+    const days = Math.floor(diff / 86400000)
+    const h = Math.floor((diff % 86400000) / 3600000)
+    if (days > 0) return `${days}d ${h}h`
+    const m = Math.floor((diff % 3600000) / 60000)
+    return h > 0 ? `${h}h ${m}m` : `${m}m`
   }
 
   const inp: React.CSSProperties = { background:'#0D1E30', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'0.625rem', padding:'0.5rem 0.75rem', color:'white', fontSize:'0.8rem', outline:'none' }
@@ -115,7 +150,7 @@ export default function AuctionsPage() {
 
       {/* Main tabs */}
       <div style={{ display:'flex', gap:'0.5rem', marginBottom:'1.5rem', borderBottom:'2px solid rgba(255,255,255,0.06)', paddingBottom:'0.5rem' }}>
-        {[['online','🌐 Online Auctions'],['inperson','📍 In-Person Events'],['search','🔍 Live Search']].map(([id,label]) => (
+        {[['online','🌐 Online Auctions'],['inperson','📍 In-Person Events'],['search','🔩 Copart / IAAI']].map(([id,label]) => (
           <button key={id} onClick={() => setTab(id as any)} style={{ padding:'0.625rem 1.25rem', borderRadius:'0.625rem 0.625rem 0 0', border:'none', background: tab===id ? '#CC0000':'transparent', color: tab===id ? 'white':'rgba(255,255,255,0.45)', fontWeight: tab===id ? 700:400, cursor:'pointer', fontSize:'0.9rem', transition:'all 0.15s' }}>
             {label}
           </button>
@@ -124,16 +159,117 @@ export default function AuctionsPage() {
 
       {/* Detail modal */}
       {selected && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.85)', zIndex:100, display:'flex', alignItems:'center', justifyContent:'center', padding:'2rem' }} onClick={() => setSelected(null)}>
-          <div style={{ background:'#243547', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'1.25rem', padding:'2rem', maxWidth:'680px', width:'100%', maxHeight:'90vh', overflowY:'auto' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'1rem' }}>
-              <h2 style={{ fontWeight:800, fontSize:'1.1rem' }}>{selected.title ?? selected.name}</h2>
-              <button onClick={() => setSelected(null)} style={{ background:'transparent', border:'none', color:'rgba(255,255,255,0.4)', fontSize:'1.5rem', cursor:'pointer' }}>×</button>
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.88)', zIndex:100, display:'flex', alignItems:'center', justifyContent:'center', padding:'1.5rem' }} onClick={() => setSelected(null)}>
+          <div style={{ background:'#1B2A3E', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'1.25rem', padding:'1.75rem', maxWidth:'720px', width:'100%', maxHeight:'92vh', overflowY:'auto' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'1rem' }}>
+              <div>
+                <h2 style={{ fontWeight:800, fontSize:'1.1rem', marginBottom:'0.25rem' }}>{selected.title ?? selected.name}</h2>
+                {selected.source && (
+                  <span style={{ fontSize:'0.75rem', background:`${selected.source_color ?? '#888'}18`, border:`1px solid ${selected.source_color ?? '#888'}35`, color: selected.source_color ?? 'rgba(255,255,255,0.5)', padding:'0.15rem 0.5rem', borderRadius:'9999px', fontWeight:600 }}>
+                    {selected.source_badge} {selected.source}
+                  </span>
+                )}
+              </div>
+              <button onClick={() => setSelected(null)} style={{ background:'transparent', border:'none', color:'rgba(255,255,255,0.4)', fontSize:'1.5rem', cursor:'pointer', flexShrink:0 }}>×</button>
             </div>
-            {selected.img && <img src={selected.img} alt="" style={{ width:'100%', borderRadius:'0.75rem', marginBottom:'1.25rem', maxHeight:'280px', objectFit:'cover' }} />}
 
-            {/* Auction listing */}
-            {selected.current_bid !== undefined && (
+            {/* Photo gallery for salvage/auction lots */}
+            {selected.images?.length > 0 ? (
+              <div style={{ marginBottom:'1.25rem' }}>
+                <div style={{ height:'260px', borderRadius:'0.875rem', overflow:'hidden', marginBottom:'0.5rem', background:'#0D1E30' }}>
+                  <img src={selected.images[selectedPhoto]} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e => { (e.target as HTMLImageElement).src = '' }} />
+                </div>
+                {selected.images.length > 1 && (
+                  <div style={{ display:'flex', gap:'0.375rem', overflowX:'auto', paddingBottom:'0.25rem' }}>
+                    {selected.images.map((img: string, i: number) => (
+                      <div key={i} onClick={() => setSelectedPhoto(i)} style={{ width:'60px', height:'45px', borderRadius:'0.375rem', overflow:'hidden', flexShrink:0, cursor:'pointer', border:`2px solid ${selectedPhoto===i ? '#CC0000':'transparent'}`, opacity: selectedPhoto===i ? 1 : 0.6 }}>
+                        <img src={img} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : selected.img ? (
+              <img src={selected.img} alt="" style={{ width:'100%', borderRadius:'0.875rem', marginBottom:'1.25rem', maxHeight:'260px', objectFit:'cover' }} />
+            ) : null}
+
+            {/* Salvage/Auction lot fields (Copart / IAAI / eBay) */}
+            {selected.lot_number !== undefined && (
+              <>
+                {/* Damage + condition */}
+                <div style={{ display:'flex', gap:'0.625rem', flexWrap:'wrap', marginBottom:'1rem' }}>
+                  {selected.condition_grade && (
+                    <div style={{ background:`${conditionColor(selected.condition_grade)}18`, border:`1px solid ${conditionColor(selected.condition_grade)}35`, borderRadius:'0.5rem', padding:'0.5rem 0.875rem', textAlign:'center' }}>
+                      <p style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.4)', textTransform:'uppercase' }}>Grade</p>
+                      <p style={{ fontWeight:900, fontSize:'1.25rem', color:conditionColor(selected.condition_grade) }}>{selected.condition_grade}</p>
+                    </div>
+                  )}
+                  {selected.primary_damage && (
+                    <div style={{ flex:1, background:'rgba(230,57,70,0.08)', border:'1px solid rgba(230,57,70,0.2)', borderRadius:'0.5rem', padding:'0.5rem 0.875rem' }}>
+                      <p style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.4)', textTransform:'uppercase', marginBottom:'0.125rem' }}>Primary Damage</p>
+                      <p style={{ fontWeight:700, color:'#E63946', fontSize:'0.9rem' }}>{selected.primary_damage}</p>
+                    </div>
+                  )}
+                  {selected.secondary_damage && (
+                    <div style={{ flex:1, background:'rgba(244,162,97,0.08)', border:'1px solid rgba(244,162,97,0.2)', borderRadius:'0.5rem', padding:'0.5rem 0.875rem' }}>
+                      <p style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.4)', textTransform:'uppercase', marginBottom:'0.125rem' }}>Secondary Damage</p>
+                      <p style={{ fontWeight:600, color:'#F4A261', fontSize:'0.875rem' }}>{selected.secondary_damage}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Price row */}
+                <div style={{ display:'flex', gap:'1rem', alignItems:'center', marginBottom:'1.25rem', flexWrap:'wrap' }}>
+                  <div>
+                    <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.35)' }}>CURRENT BID</p>
+                    <p style={{ fontWeight:900, fontSize:'2rem', color:'#CC0000', lineHeight:1 }}>{selected.price ? `$${selected.price.toLocaleString()}` : '—'}</p>
+                  </div>
+                  {selected.buy_now_price && (
+                    <div style={{ background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.25)', borderRadius:'0.625rem', padding:'0.625rem 1rem' }}>
+                      <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.35)' }}>BUY NOW</p>
+                      <p style={{ fontWeight:800, fontSize:'1.5rem', color:'#22c55e', lineHeight:1 }}>${selected.buy_now_price.toLocaleString()}</p>
+                    </div>
+                  )}
+                  {selected.auction_date && (
+                    <div style={{ background:'rgba(255,215,0,0.08)', border:'1px solid rgba(255,215,0,0.2)', borderRadius:'0.625rem', padding:'0.625rem 1rem' }}>
+                      <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.35)' }}>AUCTION DATE</p>
+                      <p style={{ fontWeight:700, fontSize:'0.9rem', color:'#FFD700' }}>{new Date(selected.auction_date).toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' })}</p>
+                      <p style={{ fontSize:'0.7rem', color:'#FFD700' }}>⏱ {auctionCountdown(selected.auction_date)}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Details grid */}
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:'0.5rem', marginBottom:'1.25rem' }}>
+                  {[
+                    ['🔑','Keys', selected.keys ?? '—'],
+                    ['📍','Location', selected.location || '—'],
+                    ['🔢','Lot #', selected.lot_number ?? '—'],
+                    ['🚘','Drivetrain', selected.drivetrain ?? '—'],
+                    ['⛽','Fuel', selected.fuel_type ?? '—'],
+                    ['🎨','Color', selected.color ?? '—'],
+                    ['🔢','Mileage', selected.mileage ? `${Number(selected.mileage).toLocaleString()} mi` : '—'],
+                    ['📋','Odometer', selected.odometer_status ?? '—'],
+                    ['🔑','VIN', selected.vin ?? '—'],
+                  ].map(([icon, label, val]) => (
+                    <div key={label as string} style={{ background:'#0D1E30', borderRadius:'0.5rem', padding:'0.5rem 0.625rem', border:'1px solid rgba(255,255,255,0.06)' }}>
+                      <p style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.3)' }}>{icon} {label as string}</p>
+                      <p style={{ fontWeight:600, fontSize:'0.775rem', marginTop:'0.1rem', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{val as string}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {selected.listing_url
+                  ? <a href={selected.listing_url} target="_blank" rel="noopener" style={{ display:'block', background:'linear-gradient(135deg, #CC0000, #AA0000)', color:'white', padding:'0.875rem', borderRadius:'0.875rem', fontWeight:700, textAlign:'center', textDecoration:'none', boxShadow:'0 4px 16px rgba(204,0,0,0.35)' }}>
+                      View on {selected.source} →
+                    </a>
+                  : null
+                }
+              </>
+            )}
+
+            {/* Classic auction listing (mock data) */}
+            {selected.current_bid !== undefined && selected.lot_number === undefined && (
               <>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem', marginBottom:'1.25rem' }}>
                   {[['📍','Location',selected.location],['⏱️','Time Left',timeLeft(selected.end_time)],['🏷️','Source',selected.source],['🏁','Reserve',selected.reserve_met===true?'✓ Met':selected.reserve_met===false?'Not Met':'Unknown'],['🔨','Bids',`${selected.bid_count} bids`],['📋','Condition',selected.condition]].map(([icon,label,val]) => (
@@ -357,65 +493,191 @@ export default function AuctionsPage() {
         </div>
       )}
 
-      {/* ── LIVE SEARCH TAB ── */}
+      {/* ── COPART / IAAI TAB ── */}
       {tab === 'search' && (
         <div>
+          {/* Search form */}
           <div style={{ background:'#243547', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'1rem', padding:'1.5rem', marginBottom:'1.25rem' }}>
-            <h2 style={{ fontWeight:700, marginBottom:'1rem', fontSize:'1rem' }}>🔍 Search Live eBay Motors Auctions</h2>
+            <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'1rem' }}>
+              <div style={{ display:'flex', gap:'0.375rem' }}>
+                {[{label:'🔩 Copart',c:'#3399FF'},{label:'⚡ IAAI',c:'#F4A261'},{label:'🏁 eBay',c:'#E43137'}].map(s => (
+                  <span key={s.label} style={{ fontSize:'0.7rem', background:`${s.c}12`, border:`1px solid ${s.c}30`, color:s.c, padding:'0.2rem 0.5rem', borderRadius:'9999px', fontWeight:600 }}>{s.label}</span>
+                ))}
+              </div>
+              <p style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.3)', marginLeft:'auto' }}>Powered by Marketcheck + eBay Motors</p>
+            </div>
             <form onSubmit={searchLive}>
-              <div style={{ display:'flex', gap:'0.75rem', marginBottom:'1rem' }}>
+              <div style={{ display:'flex', gap:'0.75rem', marginBottom:'0.875rem' }}>
                 <div style={{ flex:1, display:'flex', alignItems:'center', gap:'0.625rem', background:'#0D1E30', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'0.875rem', padding:'0.75rem 1rem' }}>
                   <span style={{ color:'rgba(255,255,255,0.3)' }}>🔍</span>
-                  <input value={liveQuery} onChange={e => setLiveQuery(e.target.value)} placeholder='e.g. "Mustang GT500", "Porsche 911", "Camaro Z28"' style={{ flex:1, background:'transparent', border:'none', color:'white', fontSize:'0.9rem', outline:'none' }} />
+                  <input value={liveQuery} onChange={e => setLiveQuery(e.target.value)} placeholder='e.g. "Mustang GT500", "BMW M3", "Camaro" — or leave blank for make/model search' style={{ flex:1, background:'transparent', border:'none', color:'white', fontSize:'0.9rem', outline:'none' }} />
                 </div>
                 <button type="submit" disabled={liveLoading} style={{ background: liveLoading?'#1E3A5F':'linear-gradient(135deg, #CC0000, #AA0000)', color:'white', border:'none', padding:'0.75rem 1.75rem', borderRadius:'0.875rem', fontWeight:700, cursor: liveLoading?'default':'pointer', whiteSpace:'nowrap', boxShadow: liveLoading?'none':'0 4px 16px rgba(204,0,0,0.4)' }}>
-                  {liveLoading ? 'Searching…':'Search Auctions'}
+                  {liveLoading ? 'Searching…' : 'Search Lots'}
                 </button>
               </div>
-              <div style={{ display:'flex', gap:'0.625rem', flexWrap:'wrap' }}>
-                <select value={liveMake} onChange={e => setLiveMake(e.target.value)} style={{ ...inp, cursor:'pointer' }}>{MAKES.map(m => <option key={m}>{m}</option>)}</select>
-                <input value={filters.yearMin} onChange={e => setF('yearMin',e.target.value)} placeholder="Year min" style={{ ...inp, width:'100px' }} />
-                <input value={filters.yearMax} onChange={e => setF('yearMax',e.target.value)} placeholder="Year max" style={{ ...inp, width:'100px' }} />
-                <input value={filters.priceMax} onChange={e => setF('priceMax',e.target.value)} placeholder="Max price" style={{ ...inp, width:'110px' }} />
+              <div style={{ display:'flex', gap:'0.625rem', flexWrap:'wrap', alignItems:'flex-end' }}>
+                <div>
+                  <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.3)', marginBottom:'0.25rem' }}>Make</p>
+                  <select value={liveMake} onChange={e => setLiveMake(e.target.value)} style={{ ...inp, cursor:'pointer' }}>{MAKES.map(m => <option key={m}>{m}</option>)}</select>
+                </div>
+                <div>
+                  <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.3)', marginBottom:'0.25rem' }}>Year Min</p>
+                  <input value={filters.yearMin} onChange={e => setF('yearMin',e.target.value)} placeholder="2015" style={{ ...inp, width:'85px' }} />
+                </div>
+                <div>
+                  <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.3)', marginBottom:'0.25rem' }}>Year Max</p>
+                  <input value={filters.yearMax} onChange={e => setF('yearMax',e.target.value)} placeholder="2024" style={{ ...inp, width:'85px' }} />
+                </div>
+                <div>
+                  <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.3)', marginBottom:'0.25rem' }}>Max Price</p>
+                  <input value={filters.priceMax} onChange={e => setF('priceMax',e.target.value)} placeholder="$25,000" style={{ ...inp, width:'105px' }} />
+                </div>
+                <div>
+                  <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.3)', marginBottom:'0.25rem' }}>ZIP Code</p>
+                  <input value={liveZip} onChange={e => setLiveZip(e.target.value)} placeholder="75201" style={{ ...inp, width:'95px' }} />
+                </div>
+                <div>
+                  <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.3)', marginBottom:'0.25rem' }}>Radius</p>
+                  <select value={liveRadius} onChange={e => setLiveRadius(e.target.value)} style={{ ...inp, width:'100px', cursor:'pointer' }}>
+                    {['50','100','150','250','500'].map(r => <option key={r} value={r}>{r} mi</option>)}
+                  </select>
+                </div>
               </div>
             </form>
           </div>
 
           {liveError && <div style={{ background:'rgba(244,162,97,0.08)', border:'1px solid rgba(244,162,97,0.2)', borderRadius:'0.75rem', padding:'1rem', marginBottom:'1rem', color:'#F4A261', fontSize:'0.875rem' }}>⚠️ {liveError}</div>}
 
-          {liveResults.length > 0 && (
-            <div>
-              <p style={{ fontSize:'0.8rem', color:'rgba(255,255,255,0.3)', marginBottom:'0.875rem' }}>{liveTotal.toLocaleString()} live eBay Motors auctions found</p>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:'1rem' }}>
-                {liveResults.map(item => (
-                  <div key={item.id} onClick={() => setSelected({ ...item, current_bid: item.price, buyer_premium:0, reserve_met:null, end_time: item.end_time, bid_count: item.bid_count, location: item.location, condition: item.condition, source:'eBay Motors', url: item.url })} style={{ background:'#243547', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'1rem', overflow:'hidden', cursor:'pointer' }}>
-                    <div style={{ height:'150px', background:'#0D1E30', overflow:'hidden' }}>
-                      {item.img ? <img src={item.img} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'3rem' }}>🏁</div>}
-                    </div>
-                    <div style={{ padding:'0.875rem' }}>
-                      <p style={{ fontWeight:600, fontSize:'0.875rem', marginBottom:'0.375rem', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{item.title}</p>
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end' }}>
-                        <div>
-                          <p style={{ fontWeight:900, color:'#CC0000', fontSize:'1.1rem' }}>${item.price ? item.price.toLocaleString():'Bid'}</p>
-                          <p style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.4)' }}>🔨 {item.bid_count} bids · {item.condition}</p>
-                        </div>
-                        <div style={{ textAlign:'right' }}>
-                          <p style={{ fontSize:'0.7rem', color: timeLeft(item.end_time).includes('h')&&!timeLeft(item.end_time).includes('d')?'#E63946':'#FFD700' }}>⏱ {timeLeft(item.end_time)}</p>
-                          <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.3)' }}>{item.location}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {/* Results header + source filter */}
+          {liveSearched && !liveLoading && (
+            <div style={{ display:'flex', alignItems:'center', gap:'0.625rem', marginBottom:'1rem', flexWrap:'wrap' }}>
+              <p style={{ fontSize:'0.8rem', color:'rgba(255,255,255,0.4)' }}>{liveTotal} lots found</p>
+              {liveSources && (
+                <div style={{ display:'flex', gap:'0.375rem', marginLeft:'0.5rem' }}>
+                  {([
+                    ['all', 'All', liveTotal, '#CC0000'],
+                    ['Copart', '🔩 Copart', liveSources.marketcheck, '#3399FF'],
+                    ['IAAI', '⚡ IAAI', 0, '#F4A261'],
+                    ['eBay Motors', '🏁 eBay', liveSources.ebay, '#E43137'],
+                  ] as const).map(([key, label, count]) => (
+                    (key === 'all' || count > 0) ? (
+                      <button key={key} onClick={() => setLiveSourceFilter(key as any)}
+                        style={{ background: liveSourceFilter===key ? 'rgba(204,0,0,0.15)':'rgba(255,255,255,0.04)', border:`1px solid ${liveSourceFilter===key ? 'rgba(204,0,0,0.35)':'rgba(255,255,255,0.1)'}`, color: liveSourceFilter===key ? '#FF4444':'rgba(255,255,255,0.5)', padding:'0.2rem 0.625rem', borderRadius:'9999px', fontSize:'0.75rem', fontWeight: liveSourceFilter===key ? 700:400, cursor:'pointer' }}>
+                        {label} ({count})
+                      </button>
+                    ) : null
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {!liveLoading && liveResults.length === 0 && (
+          {liveLoading && (
             <div style={{ textAlign:'center', padding:'3rem' }}>
-              <p style={{ fontSize:'3rem', marginBottom:'1rem' }}>🔍</p>
-              <p style={{ color:'rgba(255,255,255,0.4)', marginBottom:'0.5rem' }}>Search live eBay Motors auctions above</p>
-              <p style={{ fontSize:'0.8rem', color:'rgba(255,255,255,0.25)' }}>Requires EBAY_APP_ID in Vercel environment variables</p>
+              <p style={{ fontSize:'2.5rem', marginBottom:'0.75rem' }}>🔩</p>
+              <p style={{ color:'rgba(255,255,255,0.4)' }}>Searching Copart, IAAI, and eBay Motors simultaneously…</p>
+            </div>
+          )}
+
+          {/* Lot cards */}
+          {!liveLoading && liveResults.length > 0 && (() => {
+            const visible = liveSourceFilter === 'all' ? liveResults : liveResults.filter(r => r.source === liveSourceFilter)
+            return (
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(290px, 1fr))', gap:'1rem' }}>
+                {visible.map(item => {
+                  const countdown = auctionCountdown(item.auction_date)
+                  const urgent = countdown && !countdown.includes('d') && countdown !== 'Ended' && countdown !== ''
+                  return (
+                    <div key={item.id}
+                      onClick={() => { setSelected(item); setSelectedPhoto(0); setBidInput('') }}
+                      style={{ background:'#243547', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'1rem', overflow:'hidden', cursor:'pointer', transition:'transform 0.1s, border-color 0.15s' }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = item.source_color ?? '#CC0000'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.transform = 'translateY(0)' }}>
+
+                      {/* Photo */}
+                      <div style={{ height:'165px', background:'#0D1E30', position:'relative', overflow:'hidden' }}>
+                        {item.images?.[0]
+                          ? <img src={item.images[0]} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
+                          : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'3rem', color:'rgba(255,255,255,0.1)' }}>🔩</div>
+                        }
+                        {/* Source badge */}
+                        <span style={{ position:'absolute', top:'0.5rem', left:'0.5rem', background:'rgba(5,10,20,0.85)', border:`1px solid ${item.source_color}40`, color:item.source_color, padding:'0.15rem 0.5rem', borderRadius:'9999px', fontSize:'0.65rem', fontWeight:700 }}>
+                          {item.source_badge} {item.source}
+                        </span>
+                        {/* Condition grade */}
+                        {item.condition_grade && (
+                          <span style={{ position:'absolute', top:'0.5rem', right:'0.5rem', background:'rgba(5,10,20,0.9)', border:`1px solid ${conditionColor(item.condition_grade)}40`, color:conditionColor(item.condition_grade), padding:'0.15rem 0.5rem', borderRadius:'9999px', fontSize:'0.7rem', fontWeight:800 }}>
+                            ★ {item.condition_grade}
+                          </span>
+                        )}
+                        {/* Auction date countdown */}
+                        {countdown && countdown !== 'Ended' && (
+                          <span style={{ position:'absolute', bottom:'0.5rem', right:'0.5rem', background: urgent ? 'rgba(204,0,0,0.85)' : 'rgba(13,30,48,0.85)', color:'white', padding:'0.15rem 0.45rem', borderRadius:'9999px', fontSize:'0.65rem', fontWeight: urgent ? 700:400 }}>
+                            ⏱ {countdown}
+                          </span>
+                        )}
+                        {/* Photo count */}
+                        {item.images?.length > 1 && (
+                          <span style={{ position:'absolute', bottom:'0.5rem', left:'0.5rem', background:'rgba(0,0,0,0.6)', color:'rgba(255,255,255,0.7)', padding:'0.15rem 0.45rem', borderRadius:'9999px', fontSize:'0.65rem' }}>
+                            📷 {item.images.length}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Card body */}
+                      <div style={{ padding:'0.875rem' }}>
+                        <p style={{ fontWeight:700, fontSize:'0.875rem', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis', marginBottom:'0.25rem' }}>{item.title}</p>
+                        {/* Damage badge */}
+                        {item.primary_damage && (
+                          <p style={{ fontSize:'0.7rem', color:'#E63946', marginBottom:'0.375rem', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>
+                            ⚠️ {item.primary_damage}
+                          </p>
+                        )}
+                        <div style={{ display:'flex', gap:'0.375rem', flexWrap:'wrap', marginBottom:'0.625rem' }}>
+                          {item.mileage && <span style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.4)' }}>🔢 {Number(item.mileage).toLocaleString()} mi</span>}
+                          {item.color && <span style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.4)' }}>🎨 {item.color}</span>}
+                          {item.lot_number && <span style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.3)' }}>Lot #{item.lot_number}</span>}
+                        </div>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end' }}>
+                          <div>
+                            <p style={{ fontWeight:900, fontSize:'1.25rem', color:'#CC0000', lineHeight:1 }}>
+                              {item.price ? `$${item.price.toLocaleString()}` : '—'}
+                            </p>
+                            {item.buy_now_price && (
+                              <p style={{ fontSize:'0.75rem', color:'#22c55e', fontWeight:700 }}>Buy Now ${item.buy_now_price.toLocaleString()}</p>
+                            )}
+                          </div>
+                          <div style={{ textAlign:'right' }}>
+                            {item.auction_date && (
+                              <p style={{ fontSize:'0.7rem', color:'#FFD700' }}>
+                                📅 {new Date(item.auction_date).toLocaleDateString('en-US', { month:'short', day:'numeric' })}
+                              </p>
+                            )}
+                            {item.location && <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.3)' }}>{item.location}</p>}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })()}
+
+          {/* Empty state */}
+          {!liveLoading && liveSearched && liveResults.length === 0 && !liveError && (
+            <div style={{ textAlign:'center', padding:'3rem', background:'#243547', borderRadius:'1rem' }}>
+              <p style={{ color:'rgba(255,255,255,0.4)' }}>No lots found — try a broader search or remove filters.</p>
+            </div>
+          )}
+          {!liveSearched && !liveLoading && (
+            <div style={{ textAlign:'center', padding:'4rem 2rem' }}>
+              <p style={{ fontSize:'3.5rem', marginBottom:'1rem' }}>🔩</p>
+              <h2 style={{ fontSize:'1.1rem', fontWeight:700, marginBottom:'0.5rem' }}>Search Copart &amp; IAAI Lots</h2>
+              <p style={{ color:'rgba(255,255,255,0.35)', maxWidth:'420px', margin:'0 auto', fontSize:'0.875rem' }}>
+                Enter a make, model, or keyword above to pull live salvage and clean title lots with photos, condition grades, damage reports, and buy now prices.
+              </p>
             </div>
           )}
         </div>
