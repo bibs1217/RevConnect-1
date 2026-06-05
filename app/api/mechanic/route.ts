@@ -30,10 +30,10 @@ Format installation guides with: Difficulty rating, Tools needed, Safety notes, 
     method: 'POST',
     headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       messages: [{ role: 'system', content: systemPrompt }, ...messages],
       stream: true,
-      max_tokens: 1500,
+      max_tokens: 2048,
       temperature: 0.7,
     })
   })

@@ -2,8 +2,20 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useAuth } from '@/app/providers/auth-provider'
+import { createClient } from '@/lib/supabase/client'
 
 interface Message { role: 'user' | 'assistant'; content: string }
+
+interface Vehicle {
+  id: string
+  year: number
+  make: string
+  model: string
+  trim: string | null
+  nickname: string | null
+  mileage: number | null
+  status: string
+}
 
 const QUICK_PROMPTS = [
   'How do I replace brake pads on my car?',
@@ -16,17 +28,47 @@ const QUICK_PROMPTS = [
   'Walk me through big brake kit installation',
 ]
 
+function buildVehicleContext(v: Vehicle): string {
+  const parts = [`${v.year} ${v.make} ${v.model}`]
+  if (v.trim) parts.push(v.trim)
+  if (v.nickname) parts[0] = `${parts[0]} (aka "${v.nickname}")`
+  if (v.mileage) parts.push(`${v.mileage.toLocaleString()} miles`)
+  if (v.status) parts.push(`Status: ${v.status}`)
+  return parts.join(' — ')
+}
+
 export default function MechanicPage() {
-  const { profile } = useAuth()
+  const { user, profile } = useAuth()
+  const supabase = createClient()
+
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [hasKey, setHasKey] = useState(true)
   const [autoSpeak, setAutoSpeak] = useState(false)
   const [speaking, setSpeaking] = useState(false)
-  const [voicesReady, setVoicesReady] = useState(false)
+
+  const [vehicles, setVehicles] = useState<Vehicle[]>([])
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null)
+
   const bottomRef = useRef<HTMLDivElement>(null)
   const synthRef = useRef<SpeechSynthesis | null>(null)
+
+  // Fetch user's garage vehicles
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('vehicles')
+      .select('id, year, make, model, trim, nickname, mileage, status')
+      .eq('owner_id', user.id)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setVehicles(data as Vehicle[])
+          setSelectedVehicleId(data[0].id) // default to most recent
+        }
+      })
+  }, [user])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -36,8 +78,7 @@ export default function MechanicPage() {
   useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       synthRef.current = window.speechSynthesis
-      // Load voices
-      const loadVoices = () => { if (window.speechSynthesis.getVoices().length > 0) setVoicesReady(true) }
+      const loadVoices = () => { if (window.speechSynthesis.getVoices().length > 0) {} }
       loadVoices()
       window.speechSynthesis.onvoiceschanged = loadVoices
     }
@@ -46,15 +87,12 @@ export default function MechanicPage() {
   const speak = useCallback((text: string) => {
     if (!synthRef.current || !text.trim()) return
     synthRef.current.cancel()
-    // Clean text — remove markdown, emojis that TTS reads awkwardly
     const clean = text
       .replace(/\*\*(.*?)\*\*/g, '$1')
       .replace(/#{1,6}\s/g, '')
       .replace(/[🔧🚗🏎️🔩⚠️✓•→]/g, '')
-      .replace(/\d+\./g, (m) => m) // keep numbered steps
       .trim()
     const utterance = new SpeechSynthesisUtterance(clean)
-    // Pick a good voice — prefer a natural English voice
     const voices = synthRef.current.getVoices()
     const preferred = voices.find(v =>
       v.name.includes('Google US English') ||
@@ -77,6 +115,9 @@ export default function MechanicPage() {
     setSpeaking(false)
   }, [])
 
+  const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId) ?? null
+  const vehicleContext = selectedVehicle ? buildVehicleContext(selectedVehicle) : null
+
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return
     const userMsg: Message = { role: 'user', content: text }
@@ -89,7 +130,10 @@ export default function MechanicPage() {
       const res = await fetch('/api/mechanic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [...messages, userMsg], vehicleContext: null })
+        body: JSON.stringify({
+          messages: [...messages, userMsg],
+          vehicleContext,
+        })
       })
       if (!res.ok) {
         const err = await res.json()
@@ -114,7 +158,6 @@ export default function MechanicPage() {
           } catch {}
         }
       }
-      // Auto-speak the full response if enabled
       if (autoSpeak && full) speak(full)
     } catch {
       setMessages(prev => { const n=[...prev]; n[n.length-1]={ role:'assistant', content:'Connection error.' }; return n })
@@ -138,16 +181,14 @@ export default function MechanicPage() {
     <div style={{ maxWidth:'900px', margin:'0 auto', height:'calc(100vh - 8rem)', display:'flex', flexDirection:'column' }}>
 
       {/* Header */}
-      <div style={{ textAlign:'center', padding:'1rem 0 1.25rem' }}>
-        <div style={{ width:'64px', height:'64px', background:'rgba(204,0,0,0.12)', border:'2px solid rgba(204,0,0,0.25)', borderRadius:'1rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2rem', margin:'0 auto 0.75rem' }}>🔧</div>
+      <div style={{ textAlign:'center', padding:'1rem 0 1rem' }}>
+        <div style={{ width:'56px', height:'56px', background:'rgba(204,0,0,0.12)', border:'2px solid rgba(204,0,0,0.25)', borderRadius:'1rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.75rem', margin:'0 auto 0.625rem' }}>🔧</div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'1rem' }}>
           <h1 style={{ fontSize:'1.5rem', fontWeight:800 }}>AI Mechanic</h1>
-          {/* Audio toggle */}
           {hasSpeech && (
             <div style={{ display:'flex', gap:'0.5rem', alignItems:'center' }}>
               <button
                 onClick={() => { setAutoSpeak(!autoSpeak); if (autoSpeak) stopSpeaking() }}
-                title={autoSpeak ? 'Auto-speak ON — click to turn off' : 'Auto-speak OFF — click to enable'}
                 style={{ background: autoSpeak ? 'rgba(204,0,0,0.15)':'rgba(255,255,255,0.06)', border:`1px solid ${autoSpeak ? 'rgba(204,0,0,0.4)':'rgba(255,255,255,0.12)'}`, color: autoSpeak ? '#CC0000':'rgba(255,255,255,0.5)', padding:'0.375rem 0.75rem', borderRadius:'9999px', fontSize:'0.8rem', fontWeight: autoSpeak ? 700:400, cursor:'pointer', display:'flex', alignItems:'center', gap:'0.375rem' }}>
                 {autoSpeak ? '🔊 Speaking ON' : '🔇 Auto-Speak OFF'}
               </button>
@@ -159,13 +200,60 @@ export default function MechanicPage() {
             </div>
           )}
         </div>
-        <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.875rem', marginTop:'0.25rem' }}>
-          Your personal 30-year ASE master tech · 24/7 · {hasSpeech ? 'Hands-free audio available 🔊' : ''}
+        <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.8rem', marginTop:'0.2rem' }}>
+          GPT-4o · 30-year ASE master tech · 24/7{hasSpeech ? ' · 🔊 Hands-free audio' : ''}
         </p>
       </div>
 
+      {/* Vehicle selector */}
+      {vehicles.length > 0 && (
+        <div style={{ marginBottom:'0.75rem' }}>
+          <p style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.35)', marginBottom:'0.4rem' }}>Working on:</p>
+          <div style={{ display:'flex', gap:'0.5rem', overflowX:'auto', paddingBottom:'0.25rem' }}>
+            {vehicles.map(v => {
+              const active = v.id === selectedVehicleId
+              return (
+                <button
+                  key={v.id}
+                  onClick={() => setSelectedVehicleId(v.id)}
+                  style={{
+                    background: active ? 'rgba(204,0,0,0.15)' : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${active ? 'rgba(204,0,0,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                    color: active ? '#FF4444' : 'rgba(255,255,255,0.55)',
+                    padding:'0.375rem 0.875rem',
+                    borderRadius:'9999px',
+                    fontSize:'0.8rem',
+                    fontWeight: active ? 700 : 400,
+                    cursor:'pointer',
+                    whiteSpace:'nowrap',
+                    flexShrink:0,
+                    transition:'all 0.15s',
+                  }}>
+                  🚗 {v.nickname ?? `${v.year} ${v.make} ${v.model}`}
+                </button>
+              )
+            })}
+            <button
+              onClick={() => setSelectedVehicleId(null)}
+              style={{
+                background: selectedVehicleId === null ? 'rgba(21,57,204,0.15)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${selectedVehicleId === null ? 'rgba(21,57,204,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                color: selectedVehicleId === null ? '#2255EE' : 'rgba(255,255,255,0.4)',
+                padding:'0.375rem 0.875rem',
+                borderRadius:'9999px',
+                fontSize:'0.8rem',
+                cursor:'pointer',
+                whiteSpace:'nowrap',
+                flexShrink:0,
+              }}>
+              General Question
+            </button>
+          </div>
+        </div>
+      )}
+
       {!hasKey && (
-        <div style={{ background:'rgba(255,215,0,0.08)', border:'1px solid rgba(255,215,0,0.2)', borderRadius:'0.75rem', padding:'0.875rem 1rem', marginBottom:'1rem', fontSize:'0.875rem', color:'#FFD700' }}>
+        <div style={{ background:'rgba(255,215,0,0.08)', border:'1px solid rgba(255,215,0,0.2)', borderRadius:'0.75rem', padding:'0.875rem 1rem', marginBottom:'0.75rem', fontSize:'0.875rem', color:'#FFD700' }}>
           ⚠️ Add <code style={{ background:'rgba(0,0,0,0.3)', padding:'0.1rem 0.4rem', borderRadius:'0.25rem' }}>OPENAI_API_KEY</code> to Vercel environment variables to enable the AI Mechanic.
         </div>
       )}
@@ -178,7 +266,10 @@ export default function MechanicPage() {
               <div style={{ width:'36px', height:'36px', background:'rgba(204,0,0,0.15)', border:'1px solid rgba(204,0,0,0.2)', borderRadius:'0.75rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.25rem', flexShrink:0 }}>🔧</div>
               <div style={{ background:'#1B2A3E', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'0.75rem', borderTopLeftRadius:'0.25rem', padding:'1rem', maxWidth:'80%' }}>
                 <p style={{ fontWeight:600, marginBottom:'0.5rem', color:'#CC0000' }}>RevConnect-1 AI Mechanic</p>
-                <p style={{ color:'#ccc', lineHeight:1.6, marginBottom:'0.5rem' }}>Hey! I'm your personal master mechanic. Tell me what vehicle you're working on and what you need help with.</p>
+                {vehicleContext
+                  ? <p style={{ color:'#ccc', lineHeight:1.6, marginBottom:'0.5rem' }}>Hey! I see you're working on your <strong style={{ color:'white' }}>{vehicleContext.split(' — ')[0]}</strong>. What do you need help with?</p>
+                  : <p style={{ color:'#ccc', lineHeight:1.6, marginBottom:'0.5rem' }}>Hey! I'm your personal master mechanic. Tell me what vehicle you're working on and what you need help with.</p>
+                }
                 {hasSpeech && <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.8rem' }}>💡 Tip: Enable <strong>Auto-Speak</strong> above for hands-free audio while you work in the garage.</p>}
               </div>
             </div>
@@ -204,11 +295,9 @@ export default function MechanicPage() {
                     </span>
                   )}
                 </div>
-                {/* Speak button on assistant messages */}
                 {msg.role === 'assistant' && msg.content && hasSpeech && (
                   <button
                     onClick={() => speaking ? stopSpeaking() : speak(msg.content)}
-                    title={speaking ? 'Stop speaking' : 'Read aloud'}
                     style={{ position:'absolute', bottom:'-1.5rem', right:0, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', color:'rgba(255,255,255,0.4)', padding:'0.2rem 0.5rem', borderRadius:'9999px', fontSize:'0.7rem', cursor:'pointer', display:'flex', alignItems:'center', gap:'0.25rem', whiteSpace:'nowrap' }}>
                     {speaking ? '⏹ Stop' : '🔊 Listen'}
                   </button>
@@ -220,6 +309,16 @@ export default function MechanicPage() {
         <div ref={bottomRef} style={{ height:'2rem' }} />
       </div>
 
+      {/* Active vehicle context indicator */}
+      {vehicleContext && (
+        <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.5rem', fontSize:'0.75rem', color:'rgba(255,255,255,0.35)' }}>
+          <span style={{ background:'rgba(204,0,0,0.1)', border:'1px solid rgba(204,0,0,0.2)', color:'#FF4444', padding:'0.15rem 0.5rem', borderRadius:'9999px', fontSize:'0.7rem', fontWeight:600 }}>
+            🚗 {vehicleContext}
+          </span>
+          <span>injected into every message</span>
+        </div>
+      )}
+
       {/* Input */}
       <div style={{ display:'flex', gap:'0.75rem' }}>
         <div style={{ flex:1, display:'flex', alignItems:'center', gap:'0.75rem', background:'#1B2A3E', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'0.875rem', padding:'0.75rem 1rem' }}>
@@ -227,7 +326,7 @@ export default function MechanicPage() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage(input))}
-            placeholder="Ask about your vehicle… (e.g. 'My 2022 WRX needs new brake pads')"
+            placeholder={vehicleContext ? `Ask about your ${selectedVehicle?.make} ${selectedVehicle?.model}…` : 'Ask about your vehicle… (e.g. "My 2022 WRX needs new brake pads")'}
             style={{ flex:1, background:'transparent', border:'none', color:'white', fontSize:'0.9rem', outline:'none' }}
             disabled={loading}
           />
@@ -235,7 +334,7 @@ export default function MechanicPage() {
         <button
           onClick={() => sendMessage(input)}
           disabled={loading || !input.trim()}
-          style={{ background: loading || !input.trim() ? '#1E3A5F':'linear-gradient(135deg, #CC0000, #AA0000)', color:'white', border:'none', width:'48px', height:'48px', borderRadius:'0.875rem', fontSize:'1.25rem', cursor: loading || !input.trim() ? 'default':'pointer', boxShadow: loading || !input.trim() ? 'none':'0 4px 16px rgba(204,0,0,0.4)' }}>
+          style={{ background: loading || !input.trim() ? '#1E3A5F':'linear-gradient(135deg, #CC0000, #AA0000)', color:'white', border:'none', width:'48px', height:'48px', borderRadius:'0.875rem', fontSize:'1.25rem', cursor: loading || !input.trim() ? 'default':'pointer', boxShadow: loading || !input.trim() ? 'none':'0 4px 16px rgba(204,0,0,0.4)', flexShrink:0 }}>
           {loading ? '⏳' : '→'}
         </button>
       </div>
