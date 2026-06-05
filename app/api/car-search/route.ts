@@ -4,9 +4,9 @@ import { NextRequest, NextResponse } from 'next/server'
 async function fetchMarketcheck(params: Record<string, string>, apiKey: string) {
   const p = new URLSearchParams({
     api_key: apiKey,
-    rows: '50',
     start: '0',
     ...params,
+    rows: '50',   // always last — never overridden by caller params
   })
 
   const url = `https://mc-api.marketcheck.com/v2/search/car/active?${p}`
@@ -46,7 +46,7 @@ async function fetchMarketcheck(params: Record<string, string>, apiKey: string) 
       location: l.dealer?.city ? `${l.dealer.city}, ${l.dealer.state}` : '',
       distance: l.dist ? Math.round(l.dist) : null,
       images: l.media?.photo_links?.slice(0, 5) ?? [],
-      exterior_color: l.build?.ext_color,
+      exterior_color: l.exterior_color ?? l.build?.ext_color ?? null,
       transmission: l.build?.transmission,
       drivetrain: l.build?.drivetrain,
       engine: l.build?.engine,
@@ -198,16 +198,6 @@ export async function GET(req: NextRequest) {
 
   if (!mcKey && !ebayAppId) {
     return NextResponse.json({ error: 'No search API keys configured' }, { status: 400 })
-  }
-
-  // Diagnostic: bare MC call — make=Ford rows=50 only, no other filters.
-  // Logs num_found to confirm API key and plan limits. Remove after confirmed working.
-  if (mcKey) {
-    const testUrl = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${mcKey}&make=Ford&rows=50&start=0`
-    fetch(testUrl, { headers: { Accept: 'application/json' } })
-      .then(r => r.json())
-      .then(d => console.log(`[MC-test] make=Ford bare call → num_found=${d.num_found ?? '?'}, returned=${d.listings?.length ?? 0}`))
-      .catch(e => console.error('[MC-test] error:', e))
   }
 
   const p: Record<string, string> = {}
