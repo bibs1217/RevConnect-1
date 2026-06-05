@@ -73,9 +73,9 @@ export default function CarSearchPage() {
     const params = new URLSearchParams()
     Object.entries(filters).forEach(([k,v]) => { if (v) params.set(k, v) })
     try {
-      const res = await fetch(`/api/car-search?${params}`)
+      const res = await fetch(`/api/car-search?${params}`, { cache: 'no-store' })
       const data = await res.json()
-      console.log('[car-search] raw response:', { total: data.total, listings_length: data.listings?.length, error: data.error, sources: data.sources })
+      console.log('[car-search] response:', data)
       if (data.error) { setError(data.error); setListings([]); setTotal(0) }
       else { setListings(data.listings ?? []); setTotal(data.total ?? 0); setSources(data.sources ?? null) }
       setSearched(true)
@@ -215,7 +215,7 @@ export default function CarSearchPage() {
           </div>
 
           <p style={{ fontSize:'0.7rem', color:'#3A5A80', marginBottom:'0.5rem' }}>
-            debug: {listings.length} listings in state
+            debug: {listings.length} listings in state · total={total}
           </p>
 
           {listings.length === 0 ? (

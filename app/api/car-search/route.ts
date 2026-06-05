@@ -77,9 +77,18 @@ export async function GET(req: NextRequest) {
     } else {
       const data = JSON.parse(text)
       mcTotal = data.num_found ?? 0
-      // Marketcheck may use 'listings', 'listing', 'response', or 'results' as the array key
-      const raw: any[] = data.listings ?? data.listing ?? data.response ?? data.results ?? []
-      console.log(`[MC] num_found=${mcTotal}, returned=${raw.length}, top_keys=${Object.keys(data).join(',')}`)
+      const topKeys = Object.keys(data).join(',')
+      console.log(`[MC] num_found=${mcTotal}, top_keys=${topKeys}`)
+
+      // Try every key Marketcheck has ever used for the listings array
+      const rawCandidate =
+        data.listings ?? data.listing ?? data.response ??
+        data.results  ?? data.vehicles ?? data.data     ?? []
+      // Guard: MC sometimes returns an object with numeric keys instead of a true array
+      const raw: any[] = Array.isArray(rawCandidate)
+        ? rawCandidate
+        : Object.values(rawCandidate as Record<string, any>)
+      console.log(`[MC] raw type=${Array.isArray(rawCandidate) ? 'array' : typeof rawCandidate}, length=${raw.length}`)
 
       mcListings = raw.map((l: any) => ({
         id:             `mc_${l.id}`,
@@ -211,5 +220,6 @@ export async function GET(req: NextRequest) {
     listings: all,
     total:    mcTotal || all.length,
     sources:  { marketcheck: mcListings.length, ebay: ebayListings.length },
+    _debug:   { mc_listings_returned: mcListings.length, mc_total: mcTotal },
   })
 }
