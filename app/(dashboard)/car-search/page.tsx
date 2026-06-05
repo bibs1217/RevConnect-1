@@ -49,7 +49,7 @@ function getDealBadge(l: Listing): { label: string; bg: string; color: string; b
 export default function CarSearchPage() {
   const [filters, setFilters] = useState({
     make:'', model:'', yearMin:'', yearMax:'', priceMin:'', priceMax:'',
-    mileageMax:'', zip:'75201', radius:'100', condition:'used',
+    mileageMax:'', zip:'', radius:'250', condition:'',
     transmission:'', drivetrain:'', sortBy:'price-asc'
   })
   const [listings, setListings] = useState<Listing[]>([])
@@ -131,7 +131,7 @@ export default function CarSearchPage() {
             </div>
             <div>
               <label style={lbl}>ZIP Code</label>
-              <input value={filters.zip} onChange={e => set('zip', e.target.value)} placeholder="75201" style={inp} />
+              <input value={filters.zip} onChange={e => set('zip', e.target.value)} placeholder="Leave blank for nationwide" style={inp} />
             </div>
             <div>
               <label style={lbl}>Radius</label>
@@ -159,10 +159,10 @@ export default function CarSearchPage() {
             </div>
           </div>
           <div style={{ display:'flex', gap:'0.75rem', alignItems:'center', flexWrap:'wrap' }}>
-            {['new','used','cpo'].map(c => (
-              <label key={c} style={{ display:'flex', alignItems:'center', gap:'0.375rem', cursor:'pointer', fontSize:'0.875rem', color: filters.condition===c ? '#CC0000' : '#A0B4CC' }}>
-                <input type="radio" name="cond" value={c} checked={filters.condition===c} onChange={e => set('condition', e.target.value)} style={{ accentColor:'#CC0000' }} />
-                {c === 'cpo' ? 'CPO' : c.charAt(0).toUpperCase()+c.slice(1)}
+            {([['', 'All'], ['new', 'New'], ['used', 'Used'], ['cpo', 'CPO']] as [string,string][]).map(([val, label]) => (
+              <label key={val} style={{ display:'flex', alignItems:'center', gap:'0.375rem', cursor:'pointer', fontSize:'0.875rem', color: filters.condition===val ? '#CC0000' : '#A0B4CC' }}>
+                <input type="radio" name="cond" value={val} checked={filters.condition===val} onChange={e => set('condition', e.target.value)} style={{ accentColor:'#CC0000' }} />
+                {label}
               </label>
             ))}
             <div style={{ marginLeft:'auto', display:'flex', gap:'0.625rem', alignItems:'center' }}>
