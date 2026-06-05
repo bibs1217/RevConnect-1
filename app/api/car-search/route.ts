@@ -2,12 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 
 // ─── Marketcheck ───────────────────────────────────────────
 async function fetchMarketcheck(params: Record<string, string>, apiKey: string) {
-  // rows raised from 18 → 50 to return enough results per search
   const p = new URLSearchParams({
     api_key: apiKey,
     rows: '50',
     start: '0',
-    seller_type: 'dealer',
     ...params,
   })
 
@@ -17,7 +15,7 @@ async function fetchMarketcheck(params: Record<string, string>, apiKey: string) 
   try {
     const res = await fetch(url, {
       headers: { Accept: 'application/json' },
-      next: { revalidate: 300 },
+      next: { revalidate: 60 },
     })
 
     if (!res.ok) {
@@ -121,7 +119,7 @@ async function fetchEbay(params: Record<string, string>, appId: string) {
   try {
     const res = await fetch(
       `https://svcs.ebay.com/services/search/FindingService/v1?${p}`,
-      { headers: { Accept: 'application/json' }, next: { revalidate: 300 } }
+      { headers: { Accept: 'application/json' }, next: { revalidate: 60 } }
     )
 
     if (!res.ok) {
@@ -200,6 +198,16 @@ export async function GET(req: NextRequest) {
 
   if (!mcKey && !ebayAppId) {
     return NextResponse.json({ error: 'No search API keys configured' }, { status: 400 })
+  }
+
+  // Diagnostic: bare MC call — make=Ford rows=50 only, no other filters.
+  // Logs num_found to confirm API key and plan limits. Remove after confirmed working.
+  if (mcKey) {
+    const testUrl = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${mcKey}&make=Ford&rows=50&start=0`
+    fetch(testUrl, { headers: { Accept: 'application/json' } })
+      .then(r => r.json())
+      .then(d => console.log(`[MC-test] make=Ford bare call → num_found=${d.num_found ?? '?'}, returned=${d.listings?.length ?? 0}`))
+      .catch(e => console.error('[MC-test] error:', e))
   }
 
   const p: Record<string, string> = {}
