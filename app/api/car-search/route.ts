@@ -76,6 +76,7 @@ export async function GET(req: NextRequest) {
       console.error(`[MC] Error ${res.status}:`, text.slice(0, 500))
     } else {
       const data = JSON.parse(text)
+      console.log('[MC-RAW]', JSON.stringify(data).slice(0, 500))
       mcTotal = data.num_found ?? 0
       const topKeys = Object.keys(data).join(',')
       console.log(`[MC] num_found=${mcTotal}, top_keys=${topKeys}`)
