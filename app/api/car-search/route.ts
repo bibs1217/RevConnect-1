@@ -36,6 +36,7 @@ async function fetchMarketcheck(params: Record<string, string>, apiKey: string) 
       listing_url: l.vdp_url,
       days_on_market: l.dom,
       price_drop: l.price_change < 0,
+      deal_rating: l.price_rating ?? null,
       listing_type: 'buy_now',
     }))
   } catch { return [] }
@@ -157,6 +158,9 @@ export async function GET(req: NextRequest) {
   if (p.yearMax) mcParams.year_max = p.yearMax
   if (p.priceMax) mcParams.price_max = p.priceMax
   if (p.mileageMax) mcParams.miles_max = p.mileageMax
+  if (p.priceMin) mcParams.price_min = p.priceMin
+  if (p.transmission) mcParams.transmission = p.transmission.toLowerCase()
+  if (p.drivetrain) mcParams.drivetrain = p.drivetrain.toLowerCase()
   if (p.condition === 'new') mcParams.car_type = 'new'
   else if (p.condition === 'cpo') mcParams.car_type = 'certified'
   else mcParams.car_type = 'used'
