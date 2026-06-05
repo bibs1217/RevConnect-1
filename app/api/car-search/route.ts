@@ -1,253 +1,212 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// ─── Marketcheck ───────────────────────────────────────────
-async function fetchMarketcheck(params: Record<string, string>, apiKey: string) {
-  const p = new URLSearchParams({
-    api_key: apiKey,
-    start: '0',
-    ...params,
-    rows: '50',   // always last — never overridden by caller params
-  })
+export const dynamic = 'force-dynamic'
 
-  const url = `https://mc-api.marketcheck.com/v2/search/car/active?${p}`
-  console.log('[MC] GET', url.replace(apiKey, 'MC_KEY_HIDDEN'))
-
-  try {
-    const res = await fetch(url, {
-      headers: { Accept: 'application/json' },
-      next: { revalidate: 60 },
-    })
-
-    if (!res.ok) {
-      const body = await res.text()
-      console.error(`[MC] Error ${res.status} ${res.statusText}:`, body.slice(0, 400))
-      return []
-    }
-
-    const data = await res.json()
-    const count = data.listings?.length ?? 0
-    console.log(`[MC] num_found=${data.num_found ?? 'n/a'}, listings_in_page=${count}`)
-
-    if (count === 0) {
-      console.warn('[MC] Zero listings returned — check make/model casing, zip, radius, or plan limits')
-    }
-
-    return (data.listings ?? []).map((l: any) => ({
-      id: `mc_${l.id}`,
-      source_name: 'Dealer Inventory',
-      source_badge: '🏪',
-      year: l.build?.year,
-      make: l.build?.make,
-      model: l.build?.model,
-      trim: l.build?.trim,
-      price: l.price,
-      mileage: l.miles,
-      vin: l.vin,
-      location: l.dealer?.city ? `${l.dealer.city}, ${l.dealer.state}` : '',
-      distance: l.dist ? Math.round(l.dist) : null,
-      images: l.media?.photo_links?.slice(0, 5) ?? [],
-      exterior_color: l.exterior_color ?? l.build?.ext_color ?? null,
-      transmission: l.build?.transmission,
-      drivetrain: l.build?.drivetrain,
-      engine: l.build?.engine,
-      mpg_city: l.build?.city_mpg,
-      mpg_hwy: l.build?.highway_mpg,
-      is_certified: l.car_type === 'certified',
-      dealer_name: l.dealer?.name,
-      dealer_phone: l.dealer?.phone,
-      listing_url: l.vdp_url,
-      days_on_market: l.dom,
-      price_drop: l.price_change != null ? l.price_change < 0 : false,
-      deal_rating: l.price_rating ?? null,
-      listing_type: 'buy_now',
-      time_left: null,
-      bid_count: null,
-    }))
-  } catch (err) {
-    console.error('[MC] Fetch exception:', err)
-    return []
-  }
-}
-
-// ─── eBay Motors ───────────────────────────────────────────
-async function fetchEbay(params: Record<string, string>, appId: string) {
-  const parts = [
-    params.yearMin && params.yearMax && params.yearMin === params.yearMax ? params.yearMin : '',
-    params.make ?? '',
-    params.model ?? '',
-  ].filter(Boolean)
-  const keywords = parts.length ? parts.join(' ') : 'car'
-
-  const p = new URLSearchParams({
-    'OPERATION-NAME': 'findItemsAdvanced',
-    'SERVICE-VERSION': '1.13.0',
-    'SECURITY-APPNAME': appId,
-    'RESPONSE-DATA-FORMAT': 'JSON',
-    'categoryId': '6001',
-    'keywords': keywords,
-    // raised from 12 → 25 to return more results per search
-    'paginationInput.entriesPerPage': '25',
-    'sortOrder': params.sortBy === 'price-desc' ? 'PricePlusShippingHighest' : 'PricePlusShippingLowest',
-    'outputSelector(0)': 'PictureURLSuperSize',
-    'outputSelector(1)': 'SellerInfo',
-  })
-
-  // FIX: use a sequential index counter so eBay filters are never skipped.
-  // Previously itemFilter(1) was used without itemFilter(0) when priceMax was
-  // empty — eBay silently drops non-sequential filters, causing 0 condition
-  // matches to be returned.
-  let filterIdx = 0
-
-  if (params.priceMax) {
-    p.set(`itemFilter(${filterIdx}).name`, 'MaxPrice')
-    p.set(`itemFilter(${filterIdx}).value`, params.priceMax)
-    filterIdx++
-  }
-
-  if (params.condition === 'used') {
-    p.set(`itemFilter(${filterIdx}).name`, 'Condition')
-    p.set(`itemFilter(${filterIdx}).value`, '3000')
-    filterIdx++
-  } else if (params.condition === 'new') {
-    p.set(`itemFilter(${filterIdx}).name`, 'Condition')
-    p.set(`itemFilter(${filterIdx}).value`, '1000')
-    filterIdx++
-  }
-
-  console.log(`[eBay] keywords="${keywords}", filters=${filterIdx}, entriesPerPage=25`)
-
-  try {
-    const res = await fetch(
-      `https://svcs.ebay.com/services/search/FindingService/v1?${p}`,
-      { headers: { Accept: 'application/json' }, next: { revalidate: 60 } }
-    )
-
-    if (!res.ok) {
-      const body = await res.text()
-      console.error(`[eBay] Error ${res.status} ${res.statusText}:`, body.slice(0, 400))
-      return []
-    }
-
-    const data = await res.json()
-    const ack = data.findItemsAdvancedResponse?.[0]?.ack?.[0]
-    const items: any[] = data.findItemsAdvancedResponse?.[0]?.searchResult?.[0]?.item ?? []
-    const totalFound = data.findItemsAdvancedResponse?.[0]?.paginationOutput?.[0]?.totalEntries?.[0] ?? '0'
-
-    console.log(`[eBay] ack=${ack}, totalFound=${totalFound}, returned=${items.length}`)
-
-    if (ack === 'Failure') {
-      const errMsg = data.findItemsAdvancedResponse?.[0]?.errorMessage?.[0]?.error?.[0]?.message?.[0]
-      console.error('[eBay] API Failure:', errMsg)
-    }
-
-    return items.map((item: any) => {
-      const title: string = item.title?.[0] ?? ''
-      const price = parseFloat(item.sellingStatus?.[0]?.currentPrice?.[0]?.['__value__'] ?? '0')
-      const listingType: string = item.listingInfo?.[0]?.listingType?.[0] ?? 'FixedPrice'
-      const timeLeft: string = item.listingInfo?.[0]?.timeLeft?.[0] ?? ''
-      const img: string = item.pictureURLSuperSize?.[0] ?? item.galleryURL?.[0] ?? ''
-      const viewUrl: string = item.viewItemURL?.[0] ?? ''
-      const itemId: string = item.itemId?.[0] ?? ''
-      const yearMatch = title.match(/\b(19|20)\d{2}\b/)
-
-      return {
-        id: `ebay_${itemId}`,
-        source_name: 'eBay Motors',
-        source_badge: '🏁',
-        year: yearMatch ? parseInt(yearMatch[0]) : null,
-        make: params.make || null,
-        model: params.model || null,
-        trim: title,
-        price: price || null,
-        mileage: null,
-        vin: null,
-        location: item.location?.[0] ?? '',
-        distance: null,
-        images: img ? [img] : [],
-        exterior_color: null,
-        transmission: null,
-        drivetrain: null,
-        engine: null,
-        mpg_city: null,
-        mpg_hwy: null,
-        is_certified: false,
-        dealer_name: item.sellerInfo?.[0]?.sellerUserName?.[0] ?? 'eBay Seller',
-        dealer_phone: null,
-        listing_url: viewUrl,
-        days_on_market: null,
-        price_drop: false,
-        deal_rating: null,
-        listing_type: listingType === 'Auction' ? 'auction' : 'buy_now',
-        time_left: timeLeft,
-        bid_count: item.sellingStatus?.[0]?.bidCount?.[0] ?? '0',
-      }
-    })
-  } catch (err) {
-    console.error('[eBay] Fetch exception:', err)
-    return []
-  }
-}
-
-// ─── Main handler ──────────────────────────────────────────
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const mcKey = process.env.MARKETCHECK_API_KEY
-  const ebayAppId = process.env.EBAY_APP_ID
+  const s = new URL(req.url).searchParams
 
-  console.log(`[car-search] mcKey=${mcKey ? 'SET' : 'MISSING'}, ebayAppId=${ebayAppId ? 'SET' : 'MISSING'}`)
+  const make        = s.get('make')        ?? ''
+  const model       = s.get('model')       ?? ''
+  const yearMin     = s.get('yearMin')     ?? ''
+  const yearMax     = s.get('yearMax')     ?? ''
+  const priceMin    = s.get('priceMin')    ?? ''
+  const priceMax    = s.get('priceMax')    ?? ''
+  const milesMax    = s.get('mileageMax')  ?? ''
+  const zip         = s.get('zip')         ?? ''
+  const radius      = s.get('radius')      ?? ''
+  const condition   = s.get('condition')   ?? ''
+  const transmission = s.get('transmission') ?? ''
+  const drivetrain  = s.get('drivetrain')  ?? ''
+  const sortBy      = s.get('sortBy')      ?? ''
 
-  if (!mcKey && !ebayAppId) {
-    return NextResponse.json({ error: 'No search API keys configured' }, { status: 400 })
+  const mcKey    = process.env.MARKETCHECK_API_KEY
+  const ebayId   = process.env.EBAY_APP_ID
+
+  console.log(`[car-search] mcKey=${mcKey ? `SET(${mcKey.slice(0,8)}…)` : 'MISSING'} ebay=${ebayId ? 'SET' : 'MISSING'}`)
+
+  if (!mcKey) {
+    return NextResponse.json({ error: 'MARKETCHECK_API_KEY not configured', listings: [], total: 0 }, { status: 500 })
   }
 
-  const p: Record<string, string> = {}
-  for (const [k, v] of searchParams.entries()) p[k] = v
+  // ── Build Marketcheck query ──────────────────────────────────
+  const params = new URLSearchParams()
+  params.set('api_key', mcKey)
+  params.set('rows', '50')
+  params.set('start', '0')
 
-  console.log('[car-search] Incoming params:', JSON.stringify(p))
+  if (make)         params.set('make', make)
+  if (model)        params.set('model', model)
+  if (yearMin)      params.set('year_min', yearMin)
+  if (yearMax)      params.set('year_max', yearMax)
+  if (priceMin)     params.set('price_min', priceMin)
+  if (priceMax)     params.set('price_max', priceMax)
+  if (milesMax)     params.set('miles_max', milesMax)
+  if (zip)          params.set('zip', zip)
+  if (radius)       params.set('radius', radius)
+  if (transmission) params.set('transmission', transmission)
+  if (drivetrain)   params.set('drivetrain', drivetrain)
 
-  const mcParams: Record<string, string> = {}
-  if (p.zip)          { mcParams.zip = p.zip; mcParams.radius = p.radius || '100' }
-  if (p.make)         mcParams.make = p.make          // pass as-is; MC API is case-insensitive
-  if (p.model)        mcParams.model = p.model        // pass as-is
-  if (p.yearMin)      mcParams.year_min = p.yearMin
-  if (p.yearMax)      mcParams.year_max = p.yearMax
-  if (p.priceMin)     mcParams.price_min = p.priceMin
-  if (p.priceMax)     mcParams.price_max = p.priceMax
-  if (p.mileageMax)   mcParams.miles_max = p.mileageMax
-  if (p.transmission) mcParams.transmission = p.transmission.toLowerCase()
-  if (p.drivetrain)   mcParams.drivetrain = p.drivetrain.toLowerCase()
+  if (condition === 'new')       params.set('car_type', 'new')
+  else if (condition === 'cpo')  params.set('car_type', 'certified')
+  else if (condition === 'used') params.set('car_type', 'used')
 
-  // Only set car_type if condition is explicitly specified — not defaulting to
-  // 'used' here because that was artificially restricting results
-  if (p.condition === 'new')        mcParams.car_type = 'new'
-  else if (p.condition === 'cpo')   mcParams.car_type = 'certified'
-  else if (p.condition === 'used')  mcParams.car_type = 'used'
-  // if condition is empty/unset, omit car_type so MC returns all types
+  if (sortBy === 'price-asc')     { params.set('sort_by', 'price'); params.set('sort_order', 'asc') }
+  else if (sortBy === 'price-desc') { params.set('sort_by', 'price'); params.set('sort_order', 'desc') }
+  else if (sortBy === 'mileage-asc') { params.set('sort_by', 'miles'); params.set('sort_order', 'asc') }
 
-  if (p.sortBy === 'price-asc')    { mcParams.sort_by = 'price'; mcParams.sort_order = 'asc' }
-  else if (p.sortBy === 'price-desc') { mcParams.sort_by = 'price'; mcParams.sort_order = 'desc' }
-  else if (p.sortBy === 'mileage-asc') { mcParams.sort_by = 'miles'; mcParams.sort_order = 'asc' }
+  const mcUrl = `https://mc-api.marketcheck.com/v2/search/car/active?${params.toString()}`
+  console.log('[MC] URL:', mcUrl.replace(mcKey, 'KEY_HIDDEN'))
 
-  const [mcListings, ebayListings] = await Promise.all([
-    mcKey     ? fetchMarketcheck(mcParams, mcKey) : Promise.resolve([]),
-    ebayAppId ? fetchEbay(p, ebayAppId)           : Promise.resolve([]),
-  ])
+  // ── Fetch from Marketcheck ───────────────────────────────────
+  let mcListings: any[] = []
+  let mcTotal = 0
 
-  // Merge and apply year filter post-hoc (for eBay which can't filter server-side by year range)
-  const all = [...mcListings, ...ebayListings].filter((l: any) => {
-    if (p.yearMin && l.year && l.year < parseInt(p.yearMin)) return false
-    if (p.yearMax && l.year && l.year > parseInt(p.yearMax)) return false
-    return true
-  })
+  try {
+    const res = await fetch(mcUrl, {
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    })
 
-  if (p.sortBy === 'price-asc')  all.sort((a: any, b: any) => (a.price ?? 999999) - (b.price ?? 999999))
-  else if (p.sortBy === 'price-desc') all.sort((a: any, b: any) => (b.price ?? 0) - (a.price ?? 0))
+    const text = await res.text()
+    console.log(`[MC] status=${res.status} body_preview=${text.slice(0, 200)}`)
 
-  console.log(`[car-search] RESULT: MC=${mcListings.length}, eBay=${ebayListings.length}, merged_total=${all.length}`)
+    if (!res.ok) {
+      console.error(`[MC] Error ${res.status}:`, text.slice(0, 400))
+    } else {
+      const data = JSON.parse(text)
+      mcTotal = data.num_found ?? 0
+      const raw: any[] = data.listings ?? []
+      console.log(`[MC] num_found=${mcTotal}, returned=${raw.length}`)
+
+      mcListings = raw.map((l: any) => ({
+        id:             `mc_${l.id}`,
+        source_name:    'Dealer Inventory',
+        source_badge:   '🏪',
+        listing_type:   'buy_now',
+        year:           l.build?.year           ?? null,
+        make:           l.build?.make           ?? null,
+        model:          l.build?.model          ?? null,
+        trim:           l.build?.trim           ?? null,
+        price:          l.price                 ?? null,
+        mileage:        l.miles                 ?? null,
+        exterior_color: l.exterior_color        ?? l.build?.ext_color ?? null,
+        transmission:   l.build?.transmission   ?? null,
+        drivetrain:     l.build?.drivetrain     ?? null,
+        engine:         l.build?.engine         ?? null,
+        mpg_city:       l.build?.city_mpg       ?? null,
+        mpg_hwy:        l.build?.highway_mpg    ?? null,
+        images:         Array.isArray(l.media?.photo_links) ? l.media.photo_links.slice(0, 8) : [],
+        dealer_name:    l.dealer?.name          ?? null,
+        dealer_phone:   l.dealer?.phone         ?? null,
+        location:       l.dealer?.city ? `${l.dealer.city}, ${l.dealer.state}` : '',
+        distance:       l.dist != null ? Math.round(l.dist) : null,
+        vin:            l.vin                   ?? null,
+        listing_url:    l.vdp_url               ?? null,
+        days_on_market: l.dom                   ?? null,
+        price_drop:     l.price_change != null ? l.price_change < 0 : false,
+        deal_rating:    l.price_rating          ?? null,
+        is_certified:   l.car_type === 'certified',
+        time_left:      null,
+        bid_count:      null,
+      }))
+    }
+  } catch (err) {
+    console.error('[MC] exception:', err)
+  }
+
+  // ── Optional eBay Motors ─────────────────────────────────────
+  let ebayListings: any[] = []
+
+  if (ebayId) {
+    try {
+      const keywords = [make, model].filter(Boolean).join(' ') || 'car'
+      const ep = new URLSearchParams({
+        'OPERATION-NAME':              'findItemsAdvanced',
+        'SERVICE-VERSION':             '1.13.0',
+        'SECURITY-APPNAME':            ebayId,
+        'RESPONSE-DATA-FORMAT':        'JSON',
+        'categoryId':                  '6001',
+        'keywords':                    keywords,
+        'paginationInput.entriesPerPage': '25',
+        'sortOrder':                   sortBy === 'price-desc' ? 'PricePlusShippingHighest' : 'PricePlusShippingLowest',
+        'outputSelector(0)':           'PictureURLSuperSize',
+        'outputSelector(1)':           'SellerInfo',
+      })
+
+      let fi = 0
+      if (priceMax)               { ep.set(`itemFilter(${fi}).name`, 'MaxPrice');    ep.set(`itemFilter(${fi}).value`, priceMax);  fi++ }
+      if (condition === 'used')   { ep.set(`itemFilter(${fi}).name`, 'Condition');   ep.set(`itemFilter(${fi}).value`, '3000');    fi++ }
+      else if (condition === 'new') { ep.set(`itemFilter(${fi}).name`, 'Condition'); ep.set(`itemFilter(${fi}).value`, '1000');    fi++ }
+
+      const ebayRes = await fetch(`https://svcs.ebay.com/services/search/FindingService/v1?${ep}`, {
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+      })
+
+      if (ebayRes.ok) {
+        const ed = await ebayRes.json()
+        const ack = ed.findItemsAdvancedResponse?.[0]?.ack?.[0]
+        const items: any[] = ed.findItemsAdvancedResponse?.[0]?.searchResult?.[0]?.item ?? []
+        console.log(`[eBay] ack=${ack}, returned=${items.length}`)
+
+        ebayListings = items.map((item: any) => {
+          const title = item.title?.[0] ?? ''
+          const price = parseFloat(item.sellingStatus?.[0]?.currentPrice?.[0]?.['__value__'] ?? '0')
+          const listingType = item.listingInfo?.[0]?.listingType?.[0] ?? 'FixedPrice'
+          const yearMatch = title.match(/\b(19|20)\d{2}\b/)
+          return {
+            id:             `ebay_${item.itemId?.[0] ?? ''}`,
+            source_name:    'eBay Motors',
+            source_badge:   '🏁',
+            listing_type:   listingType === 'Auction' ? 'auction' : 'buy_now',
+            year:           yearMatch ? parseInt(yearMatch[0]) : null,
+            make:           make || null,
+            model:          model || null,
+            trim:           title,
+            price:          price || null,
+            mileage:        null,
+            exterior_color: null,
+            transmission:   null,
+            drivetrain:     null,
+            engine:         null,
+            mpg_city:       null,
+            mpg_hwy:        null,
+            images:         [item.pictureURLSuperSize?.[0] ?? item.galleryURL?.[0] ?? ''].filter(Boolean),
+            dealer_name:    item.sellerInfo?.[0]?.sellerUserName?.[0] ?? 'eBay Seller',
+            dealer_phone:   null,
+            location:       item.location?.[0] ?? '',
+            distance:       null,
+            vin:            null,
+            listing_url:    item.viewItemURL?.[0] ?? null,
+            days_on_market: null,
+            price_drop:     false,
+            deal_rating:    null,
+            is_certified:   false,
+            time_left:      item.listingInfo?.[0]?.timeLeft?.[0] ?? null,
+            bid_count:      item.sellingStatus?.[0]?.bidCount?.[0] ?? '0',
+          }
+        })
+      }
+    } catch (err) {
+      console.error('[eBay] exception:', err)
+    }
+  }
+
+  // ── Merge, sort, return ──────────────────────────────────────
+  let all = [...mcListings, ...ebayListings]
+
+  // Post-filter by year range (eBay can't do this server-side)
+  if (yearMin) all = all.filter(l => !l.year || l.year >= parseInt(yearMin))
+  if (yearMax) all = all.filter(l => !l.year || l.year <= parseInt(yearMax))
+
+  if (sortBy === 'price-asc')  all.sort((a, b) => (a.price ?? 999999) - (b.price ?? 999999))
+  if (sortBy === 'price-desc') all.sort((a, b) => (b.price ?? 0) - (a.price ?? 0))
+
+  console.log(`[car-search] FINAL: mc=${mcListings.length} ebay=${ebayListings.length} total=${all.length} num_found=${mcTotal}`)
 
   return NextResponse.json({
     listings: all,
-    total: all.length,
-    sources: { marketcheck: mcListings.length, ebay: ebayListings.length },
+    total:    mcTotal || all.length,
+    sources:  { marketcheck: mcListings.length, ebay: ebayListings.length },
   })
 }
