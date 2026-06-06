@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   const mileageMax = searchParams.get('mileageMax') || ''
   const page = parseInt(searchParams.get('page') || '1')
 
-  let mcUrl = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${key}&rows=50&start=0`
+  let mcUrl = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${key}&rows=50&start=${(page - 1) * 50}`
   if (make) mcUrl += `&make=${encodeURIComponent(make)}`
   if (model) mcUrl += `&model=${encodeURIComponent(model)}`
 
@@ -60,8 +60,8 @@ export async function GET(request: Request) {
   return NextResponse.json({
     listings: mapped,
     total: data.num_found || 0,
-    totalPages: 1,
-    page: 1,
-    sources: { marketcheck: mapped.length, ebay: 0 }
+    totalFiltered: data.num_found || 0,
+    totalPages: Math.ceil((data.num_found || 0) / 50),
+    page,
   })
 }
