@@ -2,52 +2,52 @@ import { NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
-  const sp    = new URL(request.url).searchParams
-  const key   = process.env.MARKETCHECK_API_KEY || ''
-  const make  = sp.get('make')  || 'ford'
-  const model = sp.get('model') || 'mustang'
-  const zip   = sp.get('zip')   || ''
-  const rad   = sp.get('radius') || '250'
+  const sp     = new URL(request.url).searchParams
+  const mcKey  = process.env.MARKETCHECK_API_KEY || ''
+  const ebayId = process.env.EBAY_APP_ID         || ''
+  const make   = sp.get('make')   || 'ford'
+  const model  = sp.get('model')  || 'mustang'
 
-  if (!key) return NextResponse.json({ error: 'MARKETCHECK_API_KEY not set' })
+  // ── Marketcheck test ──────────────────────────────────────────────────────
+  const mcUrl = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${mcKey}&rows=3&start=0&make=${make}&model=${model}`
+  const mcResult = await fetch(mcUrl, { cache: 'no-store' })
+    .then(async r => {
+      const text = await r.text()
+      const data = (() => { try { return JSON.parse(text) } catch { return null } })()
+      return { status: r.status, num_found: data?.num_found ?? 'N/A', listings: data?.listings?.length ?? 0, raw: text.slice(0, 200) }
+    })
+    .catch(e => ({ status: 'EXCEPTION', error: String(e) }))
 
-  // Test 1: with zip+radius
-  const withGeo = new URLSearchParams({ api_key: key, rows: '5', start: '0', make, model })
-  if (zip) { withGeo.set('zip', zip); withGeo.set('radius', rad) }
-  const url1 = `https://mc-api.marketcheck.com/v2/search/car/active?${withGeo}`
-
-  // Test 2: without zip+radius
-  const noGeo = new URLSearchParams({ api_key: key, rows: '5', start: '0', make, model })
-  const url2 = `https://mc-api.marketcheck.com/v2/search/car/active?${noGeo}`
-
-  const [r1, r2] = await Promise.all([
-    fetch(url1, { cache: 'no-store' }).then(async r => ({
-      status: r.status,
-      body: await r.text().then(t => { try { return JSON.parse(t) } catch { return t } })
-    })).catch(e => ({ status: 'EXCEPTION', body: String(e) })),
-    fetch(url2, { cache: 'no-store' }).then(async r => ({
-      status: r.status,
-      body: await r.text().then(t => { try { return JSON.parse(t) } catch { return t } })
-    })).catch(e => ({ status: 'EXCEPTION', body: String(e) })),
-  ])
+  // ── eBay test ─────────────────────────────────────────────────────────────
+  const ebayUrl = new URLSearchParams({
+    'OPERATION-NAME':                 'findItemsAdvanced',
+    'SERVICE-VERSION':                '1.13.0',
+    'SECURITY-APPNAME':               ebayId,
+    'RESPONSE-DATA-FORMAT':           'JSON',
+    'categoryId':                     '6001',
+    'keywords':                       `${make} ${model}`,
+    'paginationInput.entriesPerPage': '5',
+    'sortOrder':                      'PricePlusShippingLowest',
+  })
+  const ebayResult = await fetch(`https://svcs.ebay.com/services/search/FindingService/v1?${ebayUrl}`, {
+    headers: { Accept: 'application/json' }, cache: 'no-store'
+  })
+    .then(async r => {
+      const data = await r.json()
+      const ack   = data.findItemsAdvancedResponse?.[0]?.ack?.[0]
+      const total = data.findItemsAdvancedResponse?.[0]?.paginationOutput?.[0]?.totalEntries?.[0]
+      const items = data.findItemsAdvancedResponse?.[0]?.searchResult?.[0]?.item?.length ?? 0
+      const err   = data.findItemsAdvancedResponse?.[0]?.errorMessage?.[0]?.error?.[0]?.message?.[0]
+      return { status: r.status, ack, totalEntries: total, itemsReturned: items, error: err }
+    })
+    .catch(e => ({ status: 'EXCEPTION', error: String(e) }))
 
   return NextResponse.json({
-    keySet: !!key,
-    keyPrefix: key.slice(0, 8),
-    make, model, zip, radius: rad,
-    withGeo: {
-      url: url1.replace(key, 'KEY'),
-      status: r1.status,
-      num_found: (r1.body as any)?.num_found ?? 'N/A',
-      listingsCount: Array.isArray((r1.body as any)?.listings) ? (r1.body as any).listings.length : 0,
-      rawPreview: typeof r1.body === 'string' ? r1.body.slice(0, 400) : JSON.stringify(r1.body).slice(0, 400),
+    env: {
+      MARKETCHECK_API_KEY: mcKey  ? `SET (${mcKey.slice(0,6)}...)` : 'MISSING',
+      EBAY_APP_ID:         ebayId ? `SET (${ebayId.slice(0,6)}...)` : 'MISSING',
     },
-    noGeo: {
-      url: url2.replace(key, 'KEY'),
-      status: r2.status,
-      num_found: (r2.body as any)?.num_found ?? 'N/A',
-      listingsCount: Array.isArray((r2.body as any)?.listings) ? (r2.body as any).listings.length : 0,
-      rawPreview: typeof r2.body === 'string' ? r2.body.slice(0, 400) : JSON.stringify(r2.body).slice(0, 400),
-    },
+    marketcheck: mcResult,
+    ebay:        ebayResult,
   })
 }
