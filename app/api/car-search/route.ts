@@ -11,9 +11,8 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number): numb
 }
 
 // ── Marketcheck ───────────────────────────────────────────────────────────────
-// IMPORTANT: zip/radius causes 422 on this plan — do NOT send them.
-// We fetch national inventory (rows=50 is the plan max) and apply
-// Haversine distance client-side using dealer lat/lon.
+// zip/radius causes 422 on this plan — do NOT send them.
+// We fetch national inventory (rows=50 plan max) and apply Haversine client-side.
 async function fetchMarketcheck(
   key: string, make: string, model: string,
   yearMin: string, yearMax: string,
@@ -56,6 +55,7 @@ function mapMC(l: any, uLat: number, uLon: number): any {
     ? Math.round(haversine(uLat, uLon, dlat, dlon)) : null
   return {
     id:             `mc_${l.id ?? Math.random()}`,
+    vin:            l.vin                      || null,
     year:           Number(l.build?.year      || 0),
     make:           l.build?.make             || '',
     model:          l.build?.model            || '',
@@ -87,6 +87,7 @@ function mapEbay(item: any, make: string, model: string): any {
   const ym    = title.match(/\b(19|20)\d{2}\b/)
   return {
     id:             `ebay_${item.itemId?.[0] ?? Math.random()}`,
+    vin:            null,
     year:           ym ? parseInt(ym[0]) : 0,
     make, model,
     trim:           title,
@@ -107,40 +108,56 @@ async function ebaySearch(
   priceMin: string, priceMax: string, sort: string, page: number
 ): Promise<any[]> {
   try {
-    const p = new URLSearchParams({
-      'OPERATION-NAME':                 'findItemsAdvanced',
-      'SERVICE-VERSION':                '1.0.0',
-      'SECURITY-APPNAME':               appId,
-      'RESPONSE-DATA-FORMAT':           'JSON',
-      'categoryId':                     '6001',
-      'keywords':                       keywords,
-      'paginationInput.entriesPerPage': '50',
-      'paginationInput.pageNumber':     String(page),
-      'sortOrder':                      sort,
-      'outputSelector(0)':              'PictureURLLarge',
-      'outputSelector(1)':              'SellerInfo',
-    })
+    // Build URL manually — URLSearchParams percent-encodes ( ) in param names which breaks
+    // some eBay API versions (itemFilter%280%29.name vs itemFilter(0).name)
+    const parts: string[] = [
+      'OPERATION-NAME=findItemsAdvanced',
+      'SERVICE-VERSION=1.0.0',
+      `SECURITY-APPNAME=${encodeURIComponent(appId)}`,
+      'RESPONSE-DATA-FORMAT=JSON',
+      'categoryId=6001',
+      `keywords=${encodeURIComponent(keywords)}`,
+      'paginationInput.entriesPerPage=50',
+      `paginationInput.pageNumber=${page}`,
+      `sortOrder=${sort}`,
+      'outputSelector(0)=PictureURLLarge',
+      'outputSelector(1)=SellerInfo',
+    ]
     let fi = 0
     if (priceMin) {
-      p.set(`itemFilter(${fi}).name`,       'MinPrice')
-      p.set(`itemFilter(${fi}).value`,      priceMin)
-      p.set(`itemFilter(${fi}).paramName`,  'Currency')
-      p.set(`itemFilter(${fi}).paramValue`, 'USD')
+      parts.push(
+        `itemFilter(${fi}).name=MinPrice`,
+        `itemFilter(${fi}).value=${priceMin}`,
+        `itemFilter(${fi}).paramName=Currency`,
+        `itemFilter(${fi}).paramValue=USD`,
+      )
       fi++
     }
     if (priceMax) {
-      p.set(`itemFilter(${fi}).name`,       'MaxPrice')
-      p.set(`itemFilter(${fi}).value`,      priceMax)
-      p.set(`itemFilter(${fi}).paramName`,  'Currency')
-      p.set(`itemFilter(${fi}).paramValue`, 'USD')
+      parts.push(
+        `itemFilter(${fi}).name=MaxPrice`,
+        `itemFilter(${fi}).value=${priceMax}`,
+        `itemFilter(${fi}).paramName=Currency`,
+        `itemFilter(${fi}).paramValue=USD`,
+      )
     }
-    const res = await fetch(`https://svcs.ebay.com/services/search/FindingService/v1?${p}`,
-      { headers: { Accept: 'application/json' }, cache: 'no-store' })
-    if (!res.ok) { console.error('[eBay] HTTP', res.status); return [] }
-    const data  = await res.json()
-    const ack   = data.findItemsAdvancedResponse?.[0]?.ack?.[0]
+    const url = `https://svcs.ebay.com/services/search/FindingService/v1?${parts.join('&')}`
+    console.log(`[eBay] GET kw="${keywords}" page=${page} sort=${sort}`)
+
+    const res  = await fetch(url, { headers: { Accept: 'application/json' }, cache: 'no-store' })
+    const text = await res.text()
+    if (!res.ok) { console.error('[eBay] HTTP', res.status, text.slice(0, 300)); return [] }
+
+    let data: any
+    try { data = JSON.parse(text) }
+    catch { console.error('[eBay] bad JSON:', text.slice(0, 300)); return [] }
+
+    const ack    = data.findItemsAdvancedResponse?.[0]?.ack?.[0]
+    const total  = data.findItemsAdvancedResponse?.[0]?.paginationOutput?.[0]?.totalEntries?.[0]
     const items: any[] = data.findItemsAdvancedResponse?.[0]?.searchResult?.[0]?.item ?? []
-    console.log(`[eBay] kw="${keywords}" page=${page} ack=${ack} items=${items.length}`)
+    const errMsg = data.findItemsAdvancedResponse?.[0]?.errorMessage?.[0]?.error?.[0]?.message?.[0]
+    console.log(`[eBay] kw="${keywords}" page=${page} ack=${ack} total=${total} items=${items.length}${errMsg ? ` ERR:${errMsg}` : ''}`)
+
     return items.map(i => mapEbay(i, make, model))
   } catch (e) { console.error('[eBay] exception', e); return [] }
 }
@@ -158,11 +175,13 @@ async function fetchEbay(
 
   let searches: Promise<any[]>[]
   if (rangeSize > 0 && rangeSize <= 8) {
+    // Per-year keyword searches for small ranges — forces year into title for accurate parsing
     searches = []
     for (let y = min; y <= max; y++) {
-      searches.push(ebaySearch(appId, `${y} ${make} ${model}`, make, model, priceMin, priceMax, 'PricePlusShippingLowest', 1))
-      searches.push(ebaySearch(appId, `${y} ${make} ${model}`, make, model, priceMin, priceMax, 'PricePlusShippingLowest', 2))
-      searches.push(ebaySearch(appId, `${y} ${make} ${model}`, make, model, priceMin, priceMax, 'StartTimeNewest',         1))
+      const kw = `${y} ${make} ${model}`.trim()
+      searches.push(ebaySearch(appId, kw, make, model, priceMin, priceMax, 'PricePlusShippingLowest', 1))
+      searches.push(ebaySearch(appId, kw, make, model, priceMin, priceMax, 'PricePlusShippingLowest', 2))
+      searches.push(ebaySearch(appId, kw, make, model, priceMin, priceMax, 'StartTimeNewest',         1))
     }
   } else {
     const kw = `${make} ${model}`.trim()
@@ -182,9 +201,9 @@ async function fetchEbay(
 
 // ── Main handler ──────────────────────────────────────────────────────────────
 export async function GET(request: Request) {
-  const sp    = new URL(request.url).searchParams
-  const mcKey = process.env.MARKETCHECK_API_KEY || ''
-  const ebayId = process.env.EBAY_APP_ID        || ''
+  const sp     = new URL(request.url).searchParams
+  const mcKey  = process.env.MARKETCHECK_API_KEY || ''
+  const ebayId = process.env.EBAY_APP_ID         || ''
 
   console.log(`[car-search] mcKey=${mcKey ? 'SET' : 'MISSING'} ebayId=${ebayId ? 'SET' : 'MISSING'}`)
 
@@ -228,21 +247,26 @@ export async function GET(request: Request) {
   const seenIds = new Set<string>()
   const all     = allRaw.filter(l => { if (seenIds.has(l.id)) return false; seenIds.add(l.id); return true })
 
-  console.log(`[car-search] MC=${mcMapped.length} eBay=${ebayRaw.length} total=${all.length}`)
+  console.log(`[car-search] MC=${mcMapped.length} eBay=${ebayRaw.length} deduped=${all.length}`)
 
-  // ── Filters ───────────────────────────────���─────────────────────────────────
+  // ── Filters ───────────────────────────────────────────────────────────────
   const yMin = parseInt(yearMin)    || 0
-  const yMax = parseInt(yearMax)    || 9999
+  const yMax = parseInt(yearMax)    || 0
   const pMin = parseInt(priceMin)   || 0
   const pMax = parseInt(priceMax)   || 0
   const mMax = parseInt(mileageMax) || 0
 
-  function applyFilters(list: any[], checkYear: boolean) {
+  // Hard year filter — always enforced, never relaxed (Issue 1 & 5)
+  // Listings with unknown year (year=0) always pass through
+  const yearFiltered = all.filter(l => {
+    if (!l.year || l.year === 0) return true
+    if (yMin && l.year < yMin) return false
+    if (yMax && l.year > yMax) return false
+    return true
+  })
+
+  function applyOtherFilters(list: any[]) {
     return list.filter(l => {
-      if (checkYear && l.year > 0) {
-        if (yMin && l.year < yMin) return false
-        if (yMax && l.year > yMax) return false
-      }
       if (l.price > 0) {
         if (pMin && l.price < pMin) return false
         if (pMax && l.price > pMax) return false
@@ -259,22 +283,27 @@ export async function GET(request: Request) {
     })
   }
 
-  let filtered       = applyFilters(all, true)
+  let filtered = applyOtherFilters(yearFiltered)
   let filtersRelaxed = false
 
-  if (filtered.length === 0 && all.length > 0 && (yearMin || yearMax)) {
-    filtered       = applyFilters(all, false)
+  // Relax non-year filters if no results — year stays hard
+  if (filtered.length === 0 && yearFiltered.length > 0) {
+    filtered       = [...yearFiltered]
     filtersRelaxed = true
   }
+  // Absolute last resort: even year range relaxed
   if (filtered.length === 0 && all.length > 0) {
     filtered       = [...all]
     filtersRelaxed = true
   }
 
-  console.log(`[car-search] filtered=${filtered.length} filtersRelaxed=${filtersRelaxed}`)
+  // Issue 2: strip $0 / null-price listings before returning
+  filtered = filtered.filter(l => l.price !== null && l.price > 0)
+
+  console.log(`[car-search] yearFiltered=${yearFiltered.length} filtered=${filtered.length} filtersRelaxed=${filtersRelaxed}`)
 
   // ── Distance filter ───────────────────────────────────────────────────────
-  // eBay has no location (distance=null) — always included after local results
+  // eBay has no location (distance=null) — always appended after local results
   let locationMode = 'nationwide'
   if (uLat && uLon && filtered.length > 0) {
     const local  = filtered.filter(l => l.distance !== null && (l.distance as number) <= radius)
@@ -286,10 +315,9 @@ export async function GET(request: Request) {
       locationMode = 'local'
     } else if (far.length > 0) {
       far.sort((a, b) => (a.distance as number) - (b.distance as number))
-      filtered     = [...far.slice(0, 20), ...online]   // show nearest 20 dealers + all eBay
+      filtered     = [...far.slice(0, 20), ...online]
       locationMode = 'nearest_only'
     }
-    // if both are empty (all results are online), locationMode stays 'nationwide'
   }
 
   // ── Sort ──────────────────────────────────────────────────────────────────
@@ -298,7 +326,7 @@ export async function GET(request: Request) {
   else if (sortBy === 'distance-asc') filtered.sort((a, b) => (a.distance ?? 99999) - (b.distance ?? 99999))
   else                                filtered.sort((a, b) => (a.price   || 0) - (b.price   || 0))
 
-  const PER_PAGE   = 50
+  const PER_PAGE   = 20
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
   const safePage   = Math.min(page, totalPages)
   const paginated  = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE)

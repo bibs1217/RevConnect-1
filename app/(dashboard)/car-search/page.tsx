@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 interface Listing {
   id: string
+  vin?: string | null
   year: number | null
   make: string | null
   model: string | null
@@ -60,13 +61,13 @@ export default function CarSearchPage() {
   const [filtersRelaxed, setFiltersRelaxed] = useState(false)
   const [sources, setSources]               = useState<{marketcheck?: number; carmax?: number; carvana?: number; ebay?: number}>({})
 
-
   function setF(k: string, v: string) {
     setFilters(f => ({ ...f, [k]: v }))
   }
 
   async function runSearch(pageNum: number) {
     setLoading(true)
+    setPage(pageNum)   // update immediately so UI reflects the new page
     setError('')
     setSelected(null)
 
@@ -126,7 +127,6 @@ export default function CarSearchPage() {
         setLocationMode(data.locationMode ?? '')
         setFiltersRelaxed(data.filtersRelaxed ?? false)
         setSources(data.sources ?? {})
-        // Show source counts in console so we can diagnose 0-result issues
         console.log('[car-search] sources:', data.sources, 'total:', data.total, 'filtered:', data.totalFiltered)
       }
       setSearched(true)
@@ -139,7 +139,6 @@ export default function CarSearchPage() {
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
-    setPage(1)
     runSearch(1)
   }
 
@@ -183,6 +182,11 @@ export default function CarSearchPage() {
   // ── Detail overlay ──────────────────────────────────────────────────────────
   if (selected) {
     const s = selected
+    const makeSlug  = encodeURIComponent((s.make  || '').toLowerCase())
+    const modelSlug = encodeURIComponent((s.model || '').toLowerCase())
+    const carvanaSlug = encodeURIComponent(
+      `${s.make || ''}-${s.model || ''}`.toLowerCase().replace(/\s+/g, '-')
+    )
     return (
       <div style={{ minHeight: '100vh', background: BG, color: TEXT, padding: 24 }}>
         <button onClick={() => setSelected(null)}
@@ -201,6 +205,16 @@ export default function CarSearchPage() {
                   {s.year} {s.make} {s.model}
                 </h1>
                 {s.trim && <div style={{ color: MUTED, fontSize: 15, marginTop: 4 }}>{s.trim}</div>}
+                {s.source && (
+                  <span style={{
+                    display: 'inline-block', marginTop: 8,
+                    background: s.source === 'eBay' ? '#E43137' : '#1B3A5A',
+                    color: '#fff', fontSize: 11, fontWeight: 700,
+                    padding: '2px 10px', borderRadius: 4,
+                  }}>
+                    {s.source}
+                  </span>
+                )}
               </div>
               <div style={{ textAlign: 'right' }}>
                 {s.price ? (
@@ -214,12 +228,12 @@ export default function CarSearchPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 14, marginTop: 24 }}>
               {[
-                ['Mileage', s.miles !== null ? `${s.miles.toLocaleString()} mi` : '—'],
-                ['Transmission', s.transmission || '—'],
-                ['Drivetrain', s.drivetrain || '—'],
-                ['Exterior Color', s.exterior_color || '—'],
-                ['Days on Market', s.dom !== null ? `${s.dom} days` : '—'],
-                ['Distance', s.distance !== null ? `${s.distance} mi away` : '—'],
+                ['Mileage',       s.miles !== null ? `${s.miles.toLocaleString()} mi` : '—'],
+                ['Transmission',  s.transmission || '—'],
+                ['Drivetrain',    s.drivetrain || '—'],
+                ['Exterior Color',s.exterior_color || '—'],
+                ['Days on Market',s.dom !== null ? `${s.dom} days` : '—'],
+                ['Distance',      s.distance !== null ? `${s.distance} mi away` : '—'],
               ].map(([label, val]) => (
                 <div key={label} style={{ background: INPUT, borderRadius: 8, padding: '10px 14px' }}>
                   <div style={{ color: MUTED, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{label}</div>
@@ -253,6 +267,39 @@ export default function CarSearchPage() {
                 {saved.has(s.id) ? '★ Saved' : '☆ Save'}
               </button>
             </div>
+
+            {/* Issue 4: External search links */}
+            <div style={{ marginTop: 24, borderTop: `1px solid ${BORDER}`, paddingTop: 20 }}>
+              <div style={{ color: MUTED, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+                Also Search On
+              </div>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {s.vin && (
+                  <a href={`https://www.cargurus.com/Cars/new/nl#listing=${s.vin}`}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ background: '#102A10', color: '#4DD88A', padding: '8px 18px', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600, border: '1px solid #1A5A1A' }}>
+                    CarGurus
+                  </a>
+                )}
+                {s.vin && (
+                  <a href={`https://www.autotrader.com/cars-for-sale/vehicledetails.xhtml?vin=${s.vin}`}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ background: '#0A1A30', color: '#7AB8FF', padding: '8px 18px', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600, border: '1px solid #1A3A60' }}>
+                    AutoTrader
+                  </a>
+                )}
+                <a href={`https://www.carmax.com/cars/${makeSlug}/${modelSlug}`}
+                  target="_blank" rel="noopener noreferrer"
+                  style={{ background: '#0A2018', color: '#4DD88A', padding: '8px 18px', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600, border: '1px solid #0D4020' }}>
+                  CarMax
+                </a>
+                <a href={`https://www.carvana.com/cars/${carvanaSlug}`}
+                  target="_blank" rel="noopener noreferrer"
+                  style={{ background: '#18102A', color: '#A78BFA', padding: '8px 18px', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600, border: '1px solid #30186A' }}>
+                  Carvana
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -275,17 +322,17 @@ export default function CarSearchPage() {
               <div>
                 <label style={labelStyle}>Make</label>
                 <input value={filters.make} onChange={e => setF('make', e.target.value)}
-                  placeholder="e.g. Toyota" style={inputStyle} />
+                  placeholder="e.g. Ford" style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Model</label>
                 <input value={filters.model} onChange={e => setF('model', e.target.value)}
-                  placeholder="e.g. Camry" style={inputStyle} />
+                  placeholder="e.g. Mustang" style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Year Min</label>
                 <input value={filters.yearMin} onChange={e => setF('yearMin', e.target.value)}
-                  placeholder="2015" style={inputStyle} />
+                  placeholder="2011" style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Year Max</label>
@@ -391,16 +438,21 @@ export default function CarSearchPage() {
             <div style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap', marginBottom: 8 }}>
                 <span style={{ fontSize: 18, fontWeight: 700 }}>
-                  {totalFiltered.toLocaleString()} matching result{totalFiltered !== 1 ? 's' : ''}
+                  {totalFiltered.toLocaleString()} result{totalFiltered !== 1 ? 's' : ''}
                 </span>
                 <span style={{ color: MUTED, fontSize: 13 }}>
-                  from {total.toLocaleString()} listings · page {page} of {totalPages}
+                  from {total.toLocaleString()} listings · Page {page} of {totalPages}
                 </span>
                 {(sources.marketcheck || sources.carmax || sources.carvana || sources.ebay) && (
                   <span style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                     {sources.marketcheck ? (
                       <span style={{ background: '#1B3A5A', color: '#7AB8FF', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
                         Dealers: {sources.marketcheck.toLocaleString()}
+                      </span>
+                    ) : null}
+                    {sources.ebay ? (
+                      <span style={{ background: '#3A1A1A', color: '#FF8080', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
+                        eBay: {sources.ebay.toLocaleString()}
                       </span>
                     ) : null}
                     {sources.carmax ? (
@@ -413,11 +465,6 @@ export default function CarSearchPage() {
                         Carvana: {sources.carvana.toLocaleString()}
                       </span>
                     ) : null}
-                    {sources.ebay ? (
-                      <span style={{ background: '#3A1A1A', color: '#FF8080', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
-                        eBay: {sources.ebay.toLocaleString()}
-                      </span>
-                    ) : null}
                   </span>
                 )}
                 {locationMode === 'local' && (
@@ -427,12 +474,7 @@ export default function CarSearchPage() {
                 )}
                 {locationMode === 'nearest_only' && (
                   <span style={{ color: '#FF9800', fontSize: 13 }}>
-                    None within {filters.radius} mi of {filters.zip} — showing nearest available
-                  </span>
-                )}
-                {locationMode === 'zip_invalid' && (
-                  <span style={{ color: '#FF9800', fontSize: 13 }}>
-                    Invalid ZIP — showing all locations
+                    None within {filters.radius} mi — showing nearest available
                   </span>
                 )}
               </div>
@@ -447,7 +489,7 @@ export default function CarSearchPage() {
               )}
               {filtersRelaxed && (
                 <div style={{ marginTop: 10, background: '#2A1F00', border: '1px solid #FF9800', borderRadius: 8, padding: '10px 14px', color: '#FF9800', fontSize: 13 }}>
-                  No exact year matches found in current inventory — showing similar {filters.make || ''} {filters.model || ''} listings sorted by price. Try widening your year range.
+                  No exact matches found — showing similar {filters.make || ''} {filters.model || ''} listings. Try widening your filters.
                 </div>
               )}
             </div>
@@ -474,6 +516,7 @@ export default function CarSearchPage() {
                             🚗
                           </div>
                         )}
+                        {/* Source badge */}
                         {l.source === 'eBay' && (
                           <span style={{ position: 'absolute', top: 8, left: 8, background: '#E43137', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>
                             eBay{l.listing_type === 'Auction' ? ' AUCTION' : ''}
@@ -504,17 +547,18 @@ export default function CarSearchPage() {
                         <div style={{ fontWeight: 700, fontSize: 15 }}>
                           {l.year} {l.make} {l.model}
                         </div>
-                        {l.trim && <div style={{ color: MUTED, fontSize: 12 }}>{l.trim}</div>}
+                        {l.trim && <div style={{ color: MUTED, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.trim}</div>}
 
+                        {/* Issue 2: never show $0 — use truthy check */}
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                          <span style={{ fontSize: 20, fontWeight: 700, color: GOLD }}>
-                            {l.price !== null ? `$${l.price.toLocaleString()}` : 'Call for price'}
+                          <span style={{ fontSize: 20, fontWeight: 700, color: l.price ? GOLD : MUTED }}>
+                            {l.price ? `$${l.price.toLocaleString()}` : 'Call for price'}
                           </span>
-                          {l.price && <span style={{ color: MUTED, fontSize: 12 }}>{monthly(l.price)}</span>}
+                          {l.price ? <span style={{ color: MUTED, fontSize: 12 }}>{monthly(l.price)}</span> : null}
                         </div>
 
                         <div style={{ display: 'flex', gap: 12, fontSize: 12, color: MUTED }}>
-                          {l.miles !== null && <span>{l.miles.toLocaleString()} mi</span>}
+                          {l.miles !== null && l.miles > 0 && <span>{l.miles.toLocaleString()} mi</span>}
                           {l.distance !== null && <span>📍 {l.distance} mi away</span>}
                         </div>
 
@@ -549,19 +593,34 @@ export default function CarSearchPage() {
                   ))}
                 </div>
 
+                {/* Issue 3: pagination — visible whenever totalPages > 1 */}
                 {totalPages > 1 && (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '16px 0' }}>
                     <button
-                      disabled={page <= 1}
+                      disabled={page <= 1 || loading}
                       onClick={() => runSearch(page - 1)}
-                      style={{ background: page <= 1 ? INPUT : BLUE2, color: page <= 1 ? MUTED : '#fff', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '8px 20px', cursor: page <= 1 ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 14 }}>
+                      style={{
+                        background: (page <= 1 || loading) ? INPUT : BLUE2,
+                        color: (page <= 1 || loading) ? MUTED : '#fff',
+                        border: `1px solid ${BORDER}`, borderRadius: 8,
+                        padding: '8px 20px', cursor: (page <= 1 || loading) ? 'not-allowed' : 'pointer',
+                        fontWeight: 600, fontSize: 14,
+                      }}>
                       ← Previous
                     </button>
-                    <span style={{ color: MUTED, fontSize: 14 }}>Page {page} of {totalPages}</span>
+                    <span style={{ color: TEXT, fontSize: 14, fontWeight: 600 }}>
+                      Page {page} of {totalPages}
+                    </span>
                     <button
-                      disabled={page >= totalPages}
+                      disabled={page >= totalPages || loading}
                       onClick={() => runSearch(page + 1)}
-                      style={{ background: page >= totalPages ? INPUT : BLUE2, color: page >= totalPages ? MUTED : '#fff', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '8px 20px', cursor: page >= totalPages ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 14 }}>
+                      style={{
+                        background: (page >= totalPages || loading) ? INPUT : BLUE2,
+                        color: (page >= totalPages || loading) ? MUTED : '#fff',
+                        border: `1px solid ${BORDER}`, borderRadius: 8,
+                        padding: '8px 20px', cursor: (page >= totalPages || loading) ? 'not-allowed' : 'pointer',
+                        fontWeight: 600, fontSize: 14,
+                      }}>
                       Next →
                     </button>
                   </div>
@@ -574,7 +633,7 @@ export default function CarSearchPage() {
         {loading && (
           <div style={{ textAlign: 'center', padding: '60px 0', color: MUTED }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>⏳</div>
-            <div style={{ fontSize: 16 }}>Fetching listings and applying filters…</div>
+            <div style={{ fontSize: 16 }}>Fetching listings from Marketcheck and eBay Motors…</div>
           </div>
         )}
 
@@ -583,6 +642,7 @@ export default function CarSearchPage() {
             <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
             <div style={{ fontSize: 20, marginBottom: 8, color: TEXT }}>Find your next car</div>
             <div style={{ fontSize: 14 }}>Enter make and model above, apply any filters, then click Search.</div>
+            <div style={{ fontSize: 13, marginTop: 8, color: MUTED }}>Pulls live listings from Marketcheck dealers + eBay Motors.</div>
           </div>
         )}
       </div>
