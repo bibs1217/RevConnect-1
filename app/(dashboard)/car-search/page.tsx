@@ -58,6 +58,8 @@ export default function CarSearchPage() {
   const [geoLoading, setGeoLoading]       = useState(false)
   const [activeFilters, setActiveFilters]   = useState<string[]>([])
   const [filtersRelaxed, setFiltersRelaxed] = useState(false)
+  const [sources, setSources]               = useState<{marketcheck?: number; ebay?: number}>({})
+
 
   function setF(k: string, v: string) {
     setFilters(f => ({ ...f, [k]: v }))
@@ -123,6 +125,7 @@ export default function CarSearchPage() {
         setPage(data.page ?? pageNum)
         setLocationMode(data.locationMode ?? '')
         setFiltersRelaxed(data.filtersRelaxed ?? false)
+        setSources(data.sources ?? {})
       }
       setSearched(true)
     } catch {
@@ -391,6 +394,20 @@ export default function CarSearchPage() {
                 <span style={{ color: MUTED, fontSize: 13 }}>
                   from {total.toLocaleString()} listings · page {page} of {totalPages}
                 </span>
+                {(sources.marketcheck || sources.ebay) && (
+                  <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    {sources.marketcheck ? (
+                      <span style={{ background: '#1B3A5A', color: '#7AB8FF', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
+                        Dealers: {sources.marketcheck.toLocaleString()}
+                      </span>
+                    ) : null}
+                    {sources.ebay ? (
+                      <span style={{ background: '#3A1A1A', color: '#FF8080', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
+                        eBay: {sources.ebay.toLocaleString()}
+                      </span>
+                    ) : null}
+                  </span>
+                )}
                 {locationMode === 'local' && (
                   <span style={{ color: '#4CAF50', fontSize: 13 }}>
                     Within {filters.radius} mi of {filters.zip}

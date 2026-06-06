@@ -11,16 +11,20 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number): numb
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-async function fetchMarketcheck(key: string, make: string, model: string, condition: string, yearMax: string): Promise<any[]> {
+// ── Marketcheck ─────────────────────────────────────────────────────────────
+// Up to 20 batches × 50 = 1000 listings. Time-guarded to stay under Vercel limit.
+async function fetchMarketcheck(
+  key: string, make: string, model: string, condition: string, yearMax: string
+): Promise<any[]> {
+  if (!key) return []
   const listings: any[] = []
-  for (let i = 0; i < 10; i++) {
+  const deadline = Date.now() + 8500 // bail before Vercel's 10s serverless limit
+  for (let i = 0; i < 20; i++) {
+    if (Date.now() > deadline) break
     try {
-      // No zip sent to Marketcheck — get the broadest national pool possible
-      // We do all location filtering server-side with Haversine
       let u = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${key}&rows=50&start=${i * 50}`
       if (make)  u += `&make=${encodeURIComponent(make)}`
       if (model) u += `&model=${encodeURIComponent(model)}`
-      // Send car_type to Marketcheck — it IS honored
       if (condition === 'new')       u += `&car_type=new`
       else if (condition === 'used') u += `&car_type=used`
       else if (condition === 'cpo')  u += `&car_type=certified`
@@ -37,8 +41,56 @@ async function fetchMarketcheck(key: string, make: string, model: string, condit
   return listings
 }
 
-async function fetchEbay(appId: string, make: string, model: string, priceMax: string): Promise<any[]> {
-  if (!appId || !make) return []
+// ── eBay ─────────────────────────────────────────────────────────────────────
+// Build eBay year aspect filter as a raw string — eBay uses literal parens in
+// parameter names that URLSearchParams would percent-encode, breaking the filter.
+function ebayYearAspect(yearMin: string, yearMax: string): string {
+  if (!yearMin && !yearMax) return ''
+  const min = parseInt(yearMin) || 2000
+  const max = parseInt(yearMax) || new Date().getFullYear()
+  if (max < min || max - min > 10) return '' // too wide a range — skip
+  let s = '&aspectFilter(0).aspectName=Year'
+  for (let y = min, i = 0; y <= max; y++, i++) {
+    s += `&aspectFilter(0).aspectValueName(${i})=${y}`
+  }
+  return s
+}
+
+function mapEbayItem(item: any, make: string, model: string): any {
+  const title: string  = item.title?.[0] ?? ''
+  const price          = parseFloat(item.sellingStatus?.[0]?.currentPrice?.[0]?.['__value__'] ?? '0')
+  const yearMatch      = title.match(/\b(19|20)\d{2}\b/)
+  return {
+    id:             `ebay_${item.itemId?.[0] ?? Math.random()}`,
+    year:           yearMatch ? parseInt(yearMatch[0]) : 0,
+    make:           make || '',
+    model:          model || '',
+    trim:           '',
+    price,
+    miles:          0,
+    exterior_color: '',
+    transmission:   '',
+    drivetrain:     '',
+    photo:          item.pictureURLLarge?.[0] ?? item.galleryURL?.[0] ?? null,
+    dealer_name:    item.sellerInfo?.[0]?.sellerUserName?.[0] ?? 'eBay Seller',
+    dealer_city:    item.location?.[0] ?? '',
+    dealer_state:   '',
+    dealer_phone:   '',
+    listing_url:    item.viewItemURL?.[0] ?? '',
+    dom:            0,
+    price_drop:     false,
+    inventory_type: 'used',
+    distance:       null,
+    source:         'eBay',
+    listing_type:   item.listingInfo?.[0]?.listingType?.[0] ?? '',
+  }
+}
+
+async function fetchEbayPass(
+  appId: string, make: string, model: string,
+  yearMin: string, yearMax: string, priceMax: string,
+  sortOrder: string, listingType: string, pageNum: number
+): Promise<any[]> {
   try {
     const keywords = [make, model].filter(Boolean).join(' ')
     const p = new URLSearchParams({
@@ -49,60 +101,61 @@ async function fetchEbay(appId: string, make: string, model: string, priceMax: s
       'categoryId':                     '6001',
       'keywords':                       keywords,
       'paginationInput.entriesPerPage': '50',
-      'sortOrder':                      'PricePlusShippingLowest',
+      'paginationInput.pageNumber':     String(pageNum),
+      'sortOrder':                      sortOrder,
       'outputSelector(0)':              'PictureURLLarge',
       'outputSelector(1)':              'SellerInfo',
     })
+    let fi = 0
     if (priceMax) {
-      p.set('itemFilter(0).name',  'MaxPrice')
-      p.set('itemFilter(0).value', priceMax)
+      p.set(`itemFilter(${fi}).name`,  'MaxPrice')
+      p.set(`itemFilter(${fi}).value`, priceMax)
+      fi++
     }
-    const res = await fetch(`https://svcs.ebay.com/services/search/FindingService/v1?${p}`, {
-      headers: { Accept: 'application/json' }, cache: 'no-store',
-    })
+    if (listingType) {
+      p.set(`itemFilter(${fi}).name`,  'ListingType')
+      p.set(`itemFilter(${fi}).value`, listingType)
+    }
+    // Append year aspect filter as raw string (parens must not be encoded)
+    const url = `https://svcs.ebay.com/services/search/FindingService/v1?${p}${ebayYearAspect(yearMin, yearMax)}`
+    const res = await fetch(url, { headers: { Accept: 'application/json' }, cache: 'no-store' })
     if (!res.ok) return []
     const data = await res.json()
     const items: any[] = data.findItemsAdvancedResponse?.[0]?.searchResult?.[0]?.item ?? []
-    return items.map((item: any) => {
-      const title: string = item.title?.[0] ?? ''
-      const price = parseFloat(item.sellingStatus?.[0]?.currentPrice?.[0]?.['__value__'] ?? '0')
-      const yearMatch = title.match(/\b(19|20)\d{2}\b/)
-      const year = yearMatch ? parseInt(yearMatch[0]) : 0
-      return {
-        id:             `ebay_${item.itemId?.[0] ?? Math.random()}`,
-        year,
-        make:           make || '',
-        model:          model || '',
-        trim:           '',
-        price,
-        miles:          0,
-        exterior_color: '',
-        transmission:   '',
-        drivetrain:     '',
-        photo:          item.pictureURLLarge?.[0] ?? item.galleryURL?.[0] ?? null,
-        dealer_name:    item.sellerInfo?.[0]?.sellerUserName?.[0] ?? 'eBay Seller',
-        dealer_city:    item.location?.[0] ?? '',
-        dealer_state:   '',
-        dealer_phone:   '',
-        listing_url:    item.viewItemURL?.[0] ?? '',
-        dom:            0,
-        price_drop:     false,
-        inventory_type: 'used',
-        distance:       null,
-        source:         'eBay',
-        listing_type:   item.listingInfo?.[0]?.listingType?.[0] ?? '',
-      }
-    })
+    return items.map((item: any) => mapEbayItem(item, make, model))
   } catch {
     return []
   }
 }
 
+// Three parallel eBay passes:
+//   1. All types,   price low→high, page 1  (with year aspect filter)
+//   2. FixedPrice,  newest first,   page 1  (with year aspect filter — Buy It Now)
+//   3. All types,   price low→high, page 2  (second page of results)
+async function fetchEbay(
+  appId: string, make: string, model: string,
+  yearMin: string, yearMax: string, priceMax: string
+): Promise<any[]> {
+  if (!appId || !make) return []
+  const [p1, p2, p3] = await Promise.all([
+    fetchEbayPass(appId, make, model, yearMin, yearMax, priceMax, 'PricePlusShippingLowest', '',           1),
+    fetchEbayPass(appId, make, model, yearMin, yearMax, priceMax, 'StartTimeNewest',         'FixedPrice', 1),
+    fetchEbayPass(appId, make, model, yearMin, yearMax, priceMax, 'PricePlusShippingLowest', '',           2),
+  ])
+  // Deduplicate by id
+  const seen = new Set<string>()
+  return [...p1, ...p2, ...p3].filter(item => {
+    if (seen.has(item.id)) return false
+    seen.add(item.id)
+    return true
+  })
+}
+
+// ── Filter helpers ───────────────────────────────────────────────────────────
 function applyFilters(
   listings: any[],
   yearMin: string, yearMax: string,
-  priceMin: string, priceMax: string,
-  mileageMax: string,
+  priceMin: string, priceMax: string, mileageMax: string,
   transmission: string, drivetrain: string, condition: string,
   includeYear: boolean
 ): any[] {
@@ -123,6 +176,7 @@ function applyFilters(
   })
 }
 
+// ── Main handler ─────────────────────────────────────────────────────────────
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const mcKey  = process.env.MARKETCHECK_API_KEY || ''
@@ -143,7 +197,7 @@ export async function GET(request: Request) {
   const sortBy       = searchParams.get('sortBy')       || 'price-asc'
   const page         = Math.max(1, parseInt(searchParams.get('page') || '1'))
 
-  // Geocode ZIP in parallel with data fetches
+  // Geocode ZIP in parallel with fetches
   let userLat = 0, userLon = 0
   const geoPromise = zip
     ? fetch(`https://api.zippopotam.us/us/${zip}`, { cache: 'no-store' })
@@ -152,13 +206,15 @@ export async function GET(request: Request) {
         .catch(() => {})
     : Promise.resolve()
 
+  // Run Marketcheck (sequential, up to 1000 results) and eBay (3 parallel passes)
+  // concurrently — eBay finishes fast, Marketcheck dominates the clock
   const [mcRaw, ebayRaw] = await Promise.all([
     fetchMarketcheck(mcKey, make, model, condition, yearMax),
-    fetchEbay(ebayId, make, model, priceMax),
+    fetchEbay(ebayId, make, model, yearMin, yearMax, priceMax),
     geoPromise,
   ]) as [any[], any[], void]
 
-  // Map Marketcheck listings with Haversine distance
+  // Map Marketcheck listings — compute Haversine distance from user ZIP
   const mcMapped = mcRaw.map((l: any) => {
     const dlat = parseFloat(l.dealer?.latitude  || '0')
     const dlon = parseFloat(l.dealer?.longitude || '0')
@@ -192,35 +248,37 @@ export async function GET(request: Request) {
 
   const allMapped = [...mcMapped, ...ebayRaw]
 
-  // --- GRACEFUL DEGRADATION ---
-  // Try strict filter (with year). If nothing matches, relax year filter.
-  // This prevents the search from ever returning 0 results when cars exist.
+  // ── GRACEFUL DEGRADATION ─────────────────────────────────────────────────
+  // 1. Try full strict filter (year + price + mileage + condition)
+  // 2. If nothing passes: relax ONLY the year filter — keep everything else
+  // 3. Never return an empty results page when inventory exists
   let filtered = applyFilters(allMapped, yearMin, yearMax, priceMin, priceMax, mileageMax, transmission, drivetrain, condition, true)
   let filtersRelaxed = false
 
   if (filtered.length === 0 && allMapped.length > 0 && (yearMin || yearMax)) {
-    // Year filter killed everything — relax it, keep price/mileage/condition
     filtered = applyFilters(allMapped, '', '', priceMin, priceMax, mileageMax, transmission, drivetrain, condition, false)
     filtersRelaxed = true
   }
 
-  // --- DISTANCE FILTER ---
-  // eBay has no location (distance=null) so always passes through
+  // ── DISTANCE FILTER ──────────────────────────────────────────────────────
+  // eBay listings carry no dealer lat/lon (distance=null) — always pass through.
+  // Marketcheck listings get filtered by actual Haversine distance.
   let locationMode = 'nationwide'
   if (userLat && userLon && filtered.length > 0) {
-    const local = filtered.filter((l: any) => l.source === 'eBay' || l.distance === null || (l.distance !== null && l.distance <= radius))
+    const local = filtered.filter((l: any) =>
+      l.source === 'eBay' || l.distance === null || l.distance <= radius
+    )
     if (local.length > 0) {
       filtered = local
       locationMode = 'local'
     } else {
-      // Cars match year/price/mileage but none are within the requested radius
-      // Show the nearest ones so user isn't left with nothing
+      // Matching cars exist but none within requested radius — show nearest
       filtered.sort((a: any, b: any) => (a.distance ?? 9999) - (b.distance ?? 9999))
       locationMode = 'nearest_only'
     }
   }
 
-  // Sort
+  // ── SORT ─────────────────────────────────────────────────────────────────
   if      (sortBy === 'price-desc')   filtered.sort((a: any, b: any) => b.price - a.price)
   else if (sortBy === 'mileage-asc')  filtered.sort((a: any, b: any) => a.miles - b.miles)
   else if (sortBy === 'distance-asc') filtered.sort((a: any, b: any) => (a.distance ?? 9999) - (b.distance ?? 9999))
@@ -239,7 +297,11 @@ export async function GET(request: Request) {
     page:           safePage,
     locationMode,
     filtersRelaxed,
+    sources: {
+      marketcheck: mcMapped.length,
+      ebay:        ebayRaw.length,
+    },
   }, {
-    headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+    headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
   })
 }
