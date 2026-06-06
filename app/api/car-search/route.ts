@@ -104,12 +104,12 @@ function mapEbay(item: any, make: string, model: string): any {
 
 async function ebaySearch(
   appId: string, keywords: string, make: string, model: string,
-  priceMax: string, sort: string, page: number
+  priceMin: string, priceMax: string, sort: string, page: number
 ): Promise<any[]> {
   try {
     const p = new URLSearchParams({
       'OPERATION-NAME':                 'findItemsAdvanced',
-      'SERVICE-VERSION':                '1.13.0',
+      'SERVICE-VERSION':                '1.0.0',
       'SECURITY-APPNAME':               appId,
       'RESPONSE-DATA-FORMAT':           'JSON',
       'categoryId':                     '6001',
@@ -120,7 +120,20 @@ async function ebaySearch(
       'outputSelector(0)':              'PictureURLLarge',
       'outputSelector(1)':              'SellerInfo',
     })
-    if (priceMax) { p.set('itemFilter(0).name', 'MaxPrice'); p.set('itemFilter(0).value', priceMax) }
+    let fi = 0
+    if (priceMin) {
+      p.set(`itemFilter(${fi}).name`,       'MinPrice')
+      p.set(`itemFilter(${fi}).value`,      priceMin)
+      p.set(`itemFilter(${fi}).paramName`,  'Currency')
+      p.set(`itemFilter(${fi}).paramValue`, 'USD')
+      fi++
+    }
+    if (priceMax) {
+      p.set(`itemFilter(${fi}).name`,       'MaxPrice')
+      p.set(`itemFilter(${fi}).value`,      priceMax)
+      p.set(`itemFilter(${fi}).paramName`,  'Currency')
+      p.set(`itemFilter(${fi}).paramValue`, 'USD')
+    }
     const res = await fetch(`https://svcs.ebay.com/services/search/FindingService/v1?${p}`,
       { headers: { Accept: 'application/json' }, cache: 'no-store' })
     if (!res.ok) { console.error('[eBay] HTTP', res.status); return [] }
@@ -134,7 +147,7 @@ async function ebaySearch(
 
 async function fetchEbay(
   appId: string, make: string, model: string,
-  yearMin: string, yearMax: string, priceMax: string
+  yearMin: string, yearMax: string, priceMin: string, priceMax: string
 ): Promise<any[]> {
   if (!appId) { console.warn('[eBay] EBAY_APP_ID not set'); return [] }
   if (!make)  { console.warn('[eBay] no make — skipping'); return [] }
@@ -147,16 +160,16 @@ async function fetchEbay(
   if (rangeSize > 0 && rangeSize <= 8) {
     searches = []
     for (let y = min; y <= max; y++) {
-      searches.push(ebaySearch(appId, `${y} ${make} ${model}`, make, model, priceMax, 'PricePlusShippingLowest', 1))
-      searches.push(ebaySearch(appId, `${y} ${make} ${model}`, make, model, priceMax, 'PricePlusShippingLowest', 2))
-      searches.push(ebaySearch(appId, `${y} ${make} ${model}`, make, model, priceMax, 'StartTimeNewest',         1))
+      searches.push(ebaySearch(appId, `${y} ${make} ${model}`, make, model, priceMin, priceMax, 'PricePlusShippingLowest', 1))
+      searches.push(ebaySearch(appId, `${y} ${make} ${model}`, make, model, priceMin, priceMax, 'PricePlusShippingLowest', 2))
+      searches.push(ebaySearch(appId, `${y} ${make} ${model}`, make, model, priceMin, priceMax, 'StartTimeNewest',         1))
     }
   } else {
     const kw = `${make} ${model}`.trim()
     searches = [
-      ebaySearch(appId, kw, make, model, priceMax, 'PricePlusShippingLowest', 1),
-      ebaySearch(appId, kw, make, model, priceMax, 'StartTimeNewest',         1),
-      ebaySearch(appId, kw, make, model, priceMax, 'PricePlusShippingLowest', 2),
+      ebaySearch(appId, kw, make, model, priceMin, priceMax, 'PricePlusShippingLowest', 1),
+      ebaySearch(appId, kw, make, model, priceMin, priceMax, 'StartTimeNewest',         1),
+      ebaySearch(appId, kw, make, model, priceMin, priceMax, 'PricePlusShippingLowest', 2),
     ]
   }
 
@@ -205,7 +218,7 @@ export async function GET(request: Request) {
   const [mcRaw, ebayRaw] = await Promise.all([
     fetchMarketcheck(mcKey, make, model, yearMin, yearMax,
                      priceMin, priceMax, mileageMax, transmission, drivetrain, condition),
-    fetchEbay(ebayId, make, model, yearMin, yearMax, priceMax),
+    fetchEbay(ebayId, make, model, yearMin, yearMax, priceMin, priceMax),
   ])
 
   const mcMapped = mcRaw.map(l => mapMC(l, uLat, uLon))
