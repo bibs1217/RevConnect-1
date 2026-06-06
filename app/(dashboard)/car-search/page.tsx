@@ -53,6 +53,7 @@ export default function CarSearchPage() {
   const [geoLoading, setGeoLoading] = useState(false)
   const [searchedZip, setSearchedZip] = useState('')
   const [searchedRadius, setSearchedRadius] = useState('')
+  const [locationMode, setLocationMode] = useState<'local'|'nationwide_fallback'|'nationwide'>('nationwide')
 
   const set = (k: string, v: string) => setFilters(f => ({ ...f, [k]: v }))
   const toggleSave = (id: string, e: React.MouseEvent) => {
@@ -106,6 +107,7 @@ export default function CarSearchPage() {
         setPage(newPage)
         setSearchedZip(searchZip)
         setSearchedRadius(searchRadius)
+        setLocationMode(data.locationMode ?? (searchZip ? 'local' : 'nationwide'))
         const ns = data.nextStart ?? 0
         setNextStart(ns)
         setPageStarts(prev => { const u = [...prev]; u[newPage] = startVal; return u })
@@ -267,8 +269,12 @@ export default function CarSearchPage() {
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1rem', flexWrap:'wrap', gap:'0.5rem' }}>
             <div>
               <p style={{ color:'#7090B0', fontSize:'0.875rem' }}>{total.toLocaleString()} vehicles found · showing {listings.length}</p>
-              <p style={{ color:'#A0B4CC', fontSize:'0.75rem', marginTop:'0.15rem' }}>
-                {searchedZip ? `Within ${searchedRadius} miles of ${searchedZip}` : 'Nationwide results'}
+              <p style={{ color: locationMode === 'nationwide_fallback' ? '#FFD700' : '#A0B4CC', fontSize:'0.75rem', marginTop:'0.15rem' }}>
+                {locationMode === 'local'
+                  ? `Within ${searchedRadius} miles of ${searchedZip}`
+                  : locationMode === 'nationwide_fallback'
+                  ? `Nationwide results — no local inventory found near ${searchedZip}`
+                  : 'Nationwide results'}
               </p>
             </div>
             {sources && (
