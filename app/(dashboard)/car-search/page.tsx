@@ -56,7 +56,8 @@ export default function CarSearchPage() {
   const [selected, setSelected]           = useState<Listing | null>(null)
   const [saved, setSaved]                 = useState<Set<string>>(new Set())
   const [geoLoading, setGeoLoading]       = useState(false)
-  const [activeFilters, setActiveFilters] = useState<string[]>([])
+  const [activeFilters, setActiveFilters]   = useState<string[]>([])
+  const [filtersRelaxed, setFiltersRelaxed] = useState(false)
 
   function setF(k: string, v: string) {
     setFilters(f => ({ ...f, [k]: v }))
@@ -121,6 +122,7 @@ export default function CarSearchPage() {
         setTotalPages(data.totalPages ?? 1)
         setPage(data.page ?? pageNum)
         setLocationMode(data.locationMode ?? '')
+        setFiltersRelaxed(data.filtersRelaxed ?? false)
       }
       setSearched(true)
     } catch {
@@ -412,6 +414,11 @@ export default function CarSearchPage() {
                       {f}
                     </span>
                   ))}
+                </div>
+              )}
+              {filtersRelaxed && (
+                <div style={{ marginTop: 10, background: '#2A1F00', border: '1px solid #FF9800', borderRadius: 8, padding: '10px 14px', color: '#FF9800', fontSize: 13 }}>
+                  No exact year matches found in current inventory — showing similar {filters.make || ''} {filters.model || ''} listings sorted by price. Try widening your year range.
                 </div>
               )}
             </div>
