@@ -14,7 +14,7 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number): numb
 // ── Marketcheck ─────────────────────────────────────────────────────────────
 // Up to 20 batches × 50 = 1000 listings. Time-guarded to stay under Vercel limit.
 async function fetchMarketcheck(
-  key: string, make: string, model: string, condition: string, yearMax: string
+  key: string, make: string, model: string, condition: string, yearMax: string, zip: string
 ): Promise<any[]> {
   if (!key) return []
   const listings: any[] = []
@@ -25,6 +25,10 @@ async function fetchMarketcheck(
       let u = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${key}&rows=50&start=${i * 50}`
       if (make)  u += `&make=${encodeURIComponent(make)}`
       if (model) u += `&model=${encodeURIComponent(model)}`
+      // Send zip so Marketcheck sorts by proximity — local dealers appear first in results.
+      // Use radius=5000 so we never hard-exclude anything; our Haversine filter handles
+      // the actual distance cutoff server-side.
+      if (zip) u += `&zip=${zip}&radius=5000`
       if (condition === 'new')       u += `&car_type=new`
       else if (condition === 'used') u += `&car_type=used`
       else if (condition === 'cpo')  u += `&car_type=certified`
@@ -209,7 +213,7 @@ export async function GET(request: Request) {
   // Run Marketcheck (sequential, up to 1000 results) and eBay (3 parallel passes)
   // concurrently — eBay finishes fast, Marketcheck dominates the clock
   const [mcRaw, ebayRaw] = await Promise.all([
-    fetchMarketcheck(mcKey, make, model, condition, yearMax),
+    fetchMarketcheck(mcKey, make, model, condition, yearMax, zip),
     fetchEbay(ebayId, make, model, yearMin, yearMax, priceMax),
     geoPromise,
   ]) as [any[], any[], void]
