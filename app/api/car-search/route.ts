@@ -21,16 +21,9 @@ async function fetchMarketcheck(
   for (let i = 0; i < 10; i++) {
     try {
       let u = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${key}&rows=50&start=${i * 50}`
-      if (make)         u += `&make=${encodeURIComponent(make)}`
-      if (model)        u += `&model=${encodeURIComponent(model)}`
-      if (yearMin)      u += `&year_min=${yearMin}`
-      if (yearMax)      u += `&year_max=${yearMax}`
-      if (priceMin)     u += `&price_min=${priceMin}`
-      if (priceMax)     u += `&price_max=${priceMax}`
-      if (mileageMax)   u += `&miles_max=${mileageMax}`
-      if (transmission) u += `&transmission=${encodeURIComponent(transmission)}`
-      if (drivetrain)   u += `&drivetrain=${encodeURIComponent(drivetrain)}`
-      if (zip)          u += `&zip=${zip}&radius=${radius}`
+      if (make)  u += `&make=${encodeURIComponent(make)}`
+      if (model) u += `&model=${encodeURIComponent(model)}`
+      if (zip)   u += `&zip=${zip}&radius=${radius}`
       if (condition === 'new')       u += `&car_type=new`
       else if (condition === 'used') u += `&car_type=used`
       else if (condition === 'cpo')  u += `&car_type=certified`
