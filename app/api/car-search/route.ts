@@ -120,16 +120,11 @@ export async function GET(request: Request) {
     return true
   })
 
-  // Apply distance filter — fall back to nationwide if no local results found
+  // Apply distance filter — always enforce when ZIP is provided
   let locationMode = 'nationwide'
   if (userLat && userLon) {
-    const local = filtered.filter(l => l.distance === null || l.distance <= radius)
-    if (local.length > 0) {
-      filtered = local
-      locationMode = 'local'
-    } else {
-      locationMode = 'nationwide_fallback'
-    }
+    filtered = filtered.filter(l => l.distance === null || l.distance <= radius)
+    locationMode = 'local'
   }
 
   console.log(`[MC] filtered: ${filtered.length} of ${mapped.length} (mode: ${locationMode})`)
