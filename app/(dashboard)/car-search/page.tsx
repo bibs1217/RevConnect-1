@@ -126,6 +126,8 @@ export default function CarSearchPage() {
         setLocationMode(data.locationMode ?? '')
         setFiltersRelaxed(data.filtersRelaxed ?? false)
         setSources(data.sources ?? {})
+        // Show source counts in console so we can diagnose 0-result issues
+        console.log('[car-search] sources:', data.sources, 'total:', data.total, 'filtered:', data.totalFiltered)
       }
       setSearched(true)
     } catch {

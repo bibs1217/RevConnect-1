@@ -22,20 +22,21 @@ function dist(uLat: number, uLon: number, lat: any, lon: any): number | null {
 // 10 sequential batches × 50 = up to 500 listings.
 async function fetchMarketcheck(
   key: string, make: string, model: string,
-  condition: string, yearMax: string, zip: string
+  condition: string, yearMax: string
 ): Promise<any[]> {
   if (!key) return []
   const listings: any[] = []
   for (let i = 0; i < 10; i++) {
     try {
+      // No zip/radius — geographic params break certain API tiers.
+      // Distance is computed server-side via Haversine after fetch.
       let u = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${key}&rows=50&start=${i * 50}`
       if (make)  u += `&make=${encodeURIComponent(make)}`
       if (model) u += `&model=${encodeURIComponent(model)}`
-      if (zip)   u += `&zip=${zip}&radius=500`
-      if (condition === 'new')                              u += `&car_type=new`
-      else if (condition === 'used')                        u += `&car_type=used`
-      else if (condition === 'cpo')                         u += `&car_type=certified`
-      else if (yearMax && parseInt(yearMax) < 2025)         u += `&car_type=used`
+      if (condition === 'new')                      u += `&car_type=new`
+      else if (condition === 'used')                u += `&car_type=used`
+      else if (condition === 'cpo')                 u += `&car_type=certified`
+      else if (yearMax && parseInt(yearMax) < 2025) u += `&car_type=used`
       const r = await fetch(u, { cache: 'no-store' })
       if (!r.ok) break
       const d = await r.json()
@@ -341,7 +342,7 @@ export async function GET(request: Request) {
 
   // All sources in parallel
   const [mcRaw, carmaxRaw, carvanaRaw, ebayRaw] = await Promise.all([
-    fetchMarketcheck(mcKey, make, model, condition, yearMax, zip),
+    fetchMarketcheck(mcKey, make, model, condition, yearMax),
     fetchCarmax(make, model, yearMin, yearMax, priceMax, zip, radius, uLat, uLon),
     fetchCarvana(make, model, yearMin, yearMax, priceMax),
     fetchEbay(ebayId, make, model, priceMax),
