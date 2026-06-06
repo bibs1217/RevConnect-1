@@ -95,6 +95,11 @@ export default function CarSearchPage() {
       if (data.error) { setError(data.error); setListings([]); setTotal(0) }
       else {
         let results: Listing[] = data.listings ?? []
+        if (yMin) results = results.filter(l => l.year === null || l.year >= parseInt(yMin))
+        if (yMax) results = results.filter(l => l.year === null || l.year <= parseInt(yMax))
+        if (pMin) results = results.filter(l => l.price === null || l.price >= parseInt(pMin))
+        if (pMax) results = results.filter(l => l.price === null || l.price <= parseInt(pMax))
+        if (mMax) results = results.filter(l => l.miles === null || l.miles <= parseInt(mMax))
         const sortBy = filters.sortBy
         if (sortBy === 'price-asc')    results = [...results].sort((a,b) => (a.price ?? 999999) - (b.price ?? 999999))
         if (sortBy === 'price-desc')   results = [...results].sort((a,b) => (b.price ?? 0) - (a.price ?? 0))

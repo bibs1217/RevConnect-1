@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   const condition = searchParams.get('condition') || ''
   const start = searchParams.get('start') || '0'
 
-  let url = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${key}&rows=50&start=${start}`
+  let url = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${key}&rows=100&start=${start}`
   if (make) url += `&make=${encodeURIComponent(make)}`
   if (model) url += `&model=${encodeURIComponent(model)}`
   if (yearMin) url += `&year_min=${yearMin}`
@@ -64,10 +64,25 @@ export async function GET(request: Request) {
     price_drop: (l.price_change ?? 0) < 0,
   }))
 
-  console.log('[MC] mapped listings count:', listings.length)
+  const yMin = yearMin ? parseInt(yearMin) : null
+  const yMax = yearMax ? parseInt(yearMax) : null
+  const pMin = priceMin ? parseInt(priceMin) : null
+  const pMax = priceMax ? parseInt(priceMax) : null
+  const mMax = mileageMax ? parseInt(mileageMax) : null
+
+  const filtered = listings.filter((l: any) => {
+    if (yMin !== null && l.year !== null && l.year < yMin) return false
+    if (yMax !== null && l.year !== null && l.year > yMax) return false
+    if (pMin !== null && l.price !== null && l.price < pMin) return false
+    if (pMax !== null && l.price !== null && l.price > pMax) return false
+    if (mMax !== null && l.miles !== null && l.miles > mMax) return false
+    return true
+  })
+
+  console.log(`[MC] mapped=${listings.length} after_filter=${filtered.length}`)
 
   return NextResponse.json({
-    listings,
+    listings: filtered,
     total: data.num_found ?? 0,
     sources: { marketcheck: listings.length, ebay: 0 },
     _debug_mc_url: url.replace(key!, 'KEY_HIDDEN')
