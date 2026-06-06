@@ -394,6 +394,11 @@ export default function CarSearchPage() {
                     Within {filters.radius} mi of {filters.zip}
                   </span>
                 )}
+                {locationMode === 'nearest_only' && (
+                  <span style={{ color: '#FF9800', fontSize: 13 }}>
+                    None within {filters.radius} mi of {filters.zip} — showing nearest available
+                  </span>
+                )}
                 {locationMode === 'zip_invalid' && (
                   <span style={{ color: '#FF9800', fontSize: 13 }}>
                     Invalid ZIP — showing all locations

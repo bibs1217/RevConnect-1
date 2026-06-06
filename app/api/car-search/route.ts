@@ -14,7 +14,8 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number): numb
 async function fetchMarketcheck(
   key: string, make: string, model: string,
   yearMin: string, yearMax: string, priceMin: string, priceMax: string,
-  mileageMax: string, transmission: string, drivetrain: string, condition: string
+  mileageMax: string, transmission: string, drivetrain: string, condition: string,
+  zip: string, radius: number
 ): Promise<any[]> {
   const listings: any[] = []
   for (let i = 0; i < 10; i++) {
@@ -29,6 +30,7 @@ async function fetchMarketcheck(
       if (mileageMax)   u += `&miles_max=${mileageMax}`
       if (transmission) u += `&transmission=${encodeURIComponent(transmission)}`
       if (drivetrain)   u += `&drivetrain=${encodeURIComponent(drivetrain)}`
+      if (zip)          u += `&zip=${zip}&radius=${radius}`
       if (condition === 'new')       u += `&car_type=new`
       else if (condition === 'used') u += `&car_type=used`
       else if (condition === 'cpo')  u += `&car_type=certified`
@@ -144,7 +146,7 @@ export async function GET(request: Request) {
     : Promise.resolve()
 
   const [mcRaw, ebayRaw] = await Promise.all([
-    fetchMarketcheck(mcKey, make, model, yearMin, yearMax, priceMin, priceMax, mileageMax, transmission, drivetrain, condition),
+    fetchMarketcheck(mcKey, make, model, yearMin, yearMax, priceMin, priceMax, mileageMax, transmission, drivetrain, condition, zip, radius),
     fetchEbay(ebayId, make, model, yearMin, yearMax, priceMax),
     geoPromise,
   ]) as [any[], any[], void]
@@ -201,11 +203,18 @@ export async function GET(request: Request) {
     return true
   })
 
-  // Distance filter
+  // Distance filter — eBay listings have no location so always pass through
   let locationMode = 'nationwide'
   if (userLat && userLon) {
-    filtered = filtered.filter(l => l.distance === null || l.distance <= radius)
-    locationMode = 'local'
+    const local = filtered.filter((l: any) => l.source === 'eBay' || l.distance === null || l.distance <= radius)
+    if (local.length > 0) {
+      filtered = local
+      locationMode = 'local'
+    } else {
+      // No results in range — show nearest available so user isn't left with 0
+      filtered.sort((a: any, b: any) => (a.distance ?? 9999) - (b.distance ?? 9999))
+      locationMode = 'nearest_only'
+    }
   }
 
   console.log(`[FILTER] ${filtered.length} of ${allMapped.length} passed (mode: ${locationMode})`)
