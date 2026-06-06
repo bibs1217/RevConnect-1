@@ -44,11 +44,11 @@ export async function GET(request: Request) {
     } catch { console.log('[GEO] failed:', zip) }
   }
 
-  // Fetch up to 500 listings sequentially to avoid rate limiting
+  // Fetch up to 500 listings sequentially — rows=50 matches confirmed API plan limit
   const allListings: any[] = []
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 10; i++) {
     try {
-      let u = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${key}&rows=100&start=${i * 100}`
+      let u = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${key}&rows=50&start=${i * 50}`
       if (make)  u += `&make=${encodeURIComponent(make)}`
       if (model) u += `&model=${encodeURIComponent(model)}`
       const r = await fetch(u, { cache: 'no-store' })
@@ -56,7 +56,7 @@ export async function GET(request: Request) {
       const batch = d.listings || []
       allListings.push(...batch)
       console.log(`[MC] batch ${i}: ${batch.length} listings (total so far: ${allListings.length})`)
-      if (batch.length < 100) break // no more results available
+      if (batch.length === 0) break // no more results
     } catch (e) {
       console.log(`[MC] batch ${i} failed:`, e)
       break
