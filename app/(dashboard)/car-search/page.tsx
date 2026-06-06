@@ -50,6 +50,9 @@ export default function CarSearchPage() {
   const [page, setPage] = useState(0)
   const [pageStarts, setPageStarts] = useState<number[]>([0])
   const [nextStart, setNextStart] = useState(0)
+  const [geoLoading, setGeoLoading] = useState(false)
+  const [searchedZip, setSearchedZip] = useState('')
+  const [searchedRadius, setSearchedRadius] = useState('')
 
   const set = (k: string, v: string) => setFilters(f => ({ ...f, [k]: v }))
   const toggleSave = (id: string, e: React.MouseEvent) => {
@@ -59,6 +62,8 @@ export default function CarSearchPage() {
 
   async function runSearch(startVal: number, newPage: number) {
     setLoading(true); setError(''); setSelected(null)
+    const searchZip = filters.zip.trim()
+    const searchRadius = filters.radius
     const params = new URLSearchParams()
     if (filters.make)         params.set('make', filters.make)
     if (filters.model)        params.set('model', filters.model)
@@ -99,6 +104,8 @@ export default function CarSearchPage() {
         setTotal(data.total ?? 0)
         setSources(data.sources ?? null)
         setPage(newPage)
+        setSearchedZip(searchZip)
+        setSearchedRadius(searchRadius)
         const ns = data.nextStart ?? 0
         setNextStart(ns)
         setPageStarts(prev => { const u = [...prev]; u[newPage] = startVal; return u })
@@ -113,6 +120,24 @@ export default function CarSearchPage() {
     setPageStarts([0])
     setNextStart(0)
     await runSearch(0, 0)
+  }
+
+  async function useMyLocation() {
+    if (!navigator.geolocation) { setError('Geolocation not supported by your browser'); return }
+    setGeoLoading(true)
+    navigator.geolocation.getCurrentPosition(
+      async pos => {
+        try {
+          const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&localityLanguage=en`)
+          const geo = await res.json()
+          const zip = geo.postcode || ''
+          if (zip) set('zip', zip)
+          else setError('Could not determine ZIP from your location')
+        } catch { setError('Failed to get location data') }
+        finally { setGeoLoading(false) }
+      },
+      () => { setError('Location access denied'); setGeoLoading(false) }
+    )
   }
 
   const inp: React.CSSProperties = { width:'100%', background:'#0E1825', border:'1px solid #1E3A6E', borderRadius:'0.625rem', padding:'0.625rem 0.75rem', color:'white', fontSize:'0.875rem', outline:'none' }
@@ -162,7 +187,15 @@ export default function CarSearchPage() {
             </div>
             <div>
               <label style={lbl}>ZIP Code</label>
-              <input value={filters.zip} onChange={e => set('zip', e.target.value)} placeholder="Leave blank for nationwide" style={inp} />
+              <div style={{ display:'flex', gap:'0.375rem' }}>
+                <input value={filters.zip} onChange={e => set('zip', e.target.value)} placeholder="Blank = nationwide" style={{ ...inp, flex:1, minWidth:0 }} />
+                <button type="button" onClick={useMyLocation} disabled={geoLoading} title="Use my location"
+                  style={{ background:'#0E1825', border:'1px solid #1E3A6E', borderRadius:'0.625rem', padding:'0 0.625rem', cursor: geoLoading ? 'default' : 'pointer', color: geoLoading ? '#7090B0' : '#A0B4CC', fontSize:'1rem', flexShrink:0, transition:'border-color 0.15s' }}
+                  onMouseEnter={e => { if (!geoLoading) (e.target as HTMLElement).style.borderColor = '#2255EE' }}
+                  onMouseLeave={e => { (e.target as HTMLElement).style.borderColor = '#1E3A6E' }}>
+                  {geoLoading ? '⌛' : '📍'}
+                </button>
+              </div>
             </div>
             <div>
               <label style={lbl}>Radius</label>
@@ -232,7 +265,12 @@ export default function CarSearchPage() {
       {searched && !loading && !selected && (
         <div>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1rem', flexWrap:'wrap', gap:'0.5rem' }}>
-            <p style={{ color:'#7090B0', fontSize:'0.875rem' }}>{total.toLocaleString()} vehicles found · showing {listings.length}</p>
+            <div>
+              <p style={{ color:'#7090B0', fontSize:'0.875rem' }}>{total.toLocaleString()} vehicles found · showing {listings.length}</p>
+              <p style={{ color:'#A0B4CC', fontSize:'0.75rem', marginTop:'0.15rem' }}>
+                {searchedZip ? `Within ${searchedRadius} miles of ${searchedZip}` : 'Nationwide results'}
+              </p>
+            </div>
             {sources && (
               <span style={{ background:'rgba(34,85,238,0.08)', border:'1px solid rgba(34,85,238,0.15)', color:'#2255EE', padding:'0.2rem 0.625rem', borderRadius:'9999px', fontSize:'0.75rem' }}>
                 🏪 {sources.marketcheck} dealer listings

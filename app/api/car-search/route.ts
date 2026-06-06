@@ -79,6 +79,7 @@ export async function GET(request: Request) {
     if (pMin !== null && l.price !== null && l.price < pMin) return false
     if (pMax !== null && l.price !== null && l.price > pMax) return false
     if (mMax !== null && l.miles !== null && l.miles > mMax) return false
+    if (zip  && (!l.dealer_city || !l.dealer_state)) return false
     return true
   }
 
