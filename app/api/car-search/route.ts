@@ -44,13 +44,23 @@ export async function GET(request: Request) {
     } catch { console.log('[GEO] failed:', zip) }
   }
 
-  // Fetch up to 500 listings sequentially — rows=50 matches confirmed API plan limit
+  // Fetch up to 500 listings sequentially — send all filters to Marketcheck so results are relevant
   const allListings: any[] = []
   for (let i = 0; i < 10; i++) {
     try {
       let u = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${key}&rows=50&start=${i * 50}`
-      if (make)  u += `&make=${encodeURIComponent(make)}`
-      if (model) u += `&model=${encodeURIComponent(model)}`
+      if (make)         u += `&make=${encodeURIComponent(make)}`
+      if (model)        u += `&model=${encodeURIComponent(model)}`
+      if (yearMin)      u += `&year_min=${yearMin}`
+      if (yearMax)      u += `&year_max=${yearMax}`
+      if (priceMin)     u += `&price_min=${priceMin}`
+      if (priceMax)     u += `&price_max=${priceMax}`
+      if (mileageMax)   u += `&miles_max=${mileageMax}`
+      if (transmission) u += `&transmission=${encodeURIComponent(transmission)}`
+      if (drivetrain)   u += `&drivetrain=${encodeURIComponent(drivetrain)}`
+      if (condition === 'new')  u += `&car_type=new`
+      if (condition === 'used') u += `&car_type=used`
+      if (condition === 'cpo')  u += `&car_type=certified`
       const r = await fetch(u, { cache: 'no-store' })
       const d = await r.json()
       const batch = d.listings || []
