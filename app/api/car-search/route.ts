@@ -58,9 +58,10 @@ export async function GET(request: Request) {
       if (mileageMax)   u += `&miles_max=${mileageMax}`
       if (transmission) u += `&transmission=${encodeURIComponent(transmission)}`
       if (drivetrain)   u += `&drivetrain=${encodeURIComponent(drivetrain)}`
-      if (condition === 'new')  u += `&car_type=new`
-      if (condition === 'used') u += `&car_type=used`
-      if (condition === 'cpo')  u += `&car_type=certified`
+      if (condition === 'new')        u += `&car_type=new`
+      else if (condition === 'used')  u += `&car_type=used`
+      else if (condition === 'cpo')   u += `&car_type=certified`
+      else if (yearMax && parseInt(yearMax) < 2025) u += `&car_type=used`
       const r = await fetch(u, { cache: 'no-store' })
       const d = await r.json()
       const batch = d.listings || []
