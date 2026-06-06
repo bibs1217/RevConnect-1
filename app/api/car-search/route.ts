@@ -23,7 +23,7 @@ async function fetchMarketcheck(
       let u = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${key}&rows=50&start=${i * 50}`
       if (make)  u += `&make=${encodeURIComponent(make)}`
       if (model) u += `&model=${encodeURIComponent(model)}`
-      if (zip)   u += `&zip=${zip}&radius=${radius}`
+      if (zip)   u += `&zip=${zip}&radius=2000`
       if (condition === 'new')       u += `&car_type=new`
       else if (condition === 'used') u += `&car_type=used`
       else if (condition === 'cpo')  u += `&car_type=certified`
