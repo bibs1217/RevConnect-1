@@ -47,6 +47,7 @@ export default function CarSearchPage() {
   const [selected, setSelected] = useState<Listing | null>(null)
   const [error, setError] = useState('')
   const [saved, setSaved] = useState<Set<string>>(new Set())
+  const [page, setPage] = useState(0)
 
   const set = (k: string, v: string) => setFilters(f => ({ ...f, [k]: v }))
   const toggleSave = (id: string, e: React.MouseEvent) => {
@@ -54,22 +55,25 @@ export default function CarSearchPage() {
     setSaved(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next })
   }
 
-  async function handleSearch(e: React.FormEvent) {
-    e.preventDefault()
+  async function runSearch(pageNum: number) {
     setLoading(true); setError(''); setSelected(null)
     const params = new URLSearchParams()
     if (filters.make)         params.set('make', filters.make)
     if (filters.model)        params.set('model', filters.model)
-    if (filters.yearMin)      params.set('yearMin', filters.yearMin)
-    if (filters.yearMax)      params.set('yearMax', filters.yearMax)
-    if (filters.priceMin)     params.set('priceMin', filters.priceMin)
-    if (filters.priceMax)     params.set('priceMax', filters.priceMax)
-    if (filters.mileageMax)   params.set('mileageMax', filters.mileageMax)
+    if (filters.yearMin)      params.set('yearMin', filters.yearMin.replace(/[^0-9]/g, ''))
+    if (filters.yearMax)      params.set('yearMax', filters.yearMax.replace(/[^0-9]/g, ''))
+    const pMin = filters.priceMin.replace(/[^0-9]/g, '')
+    const pMax = filters.priceMax.replace(/[^0-9]/g, '')
+    const mMax = filters.mileageMax.replace(/[^0-9]/g, '')
+    if (pMin)                 params.set('priceMin', pMin)
+    if (pMax)                 params.set('priceMax', pMax)
+    if (mMax)                 params.set('mileageMax', mMax)
     if (filters.zip)          params.set('zip', filters.zip)
     if (filters.zip && filters.radius) params.set('radius', filters.radius)
     if (filters.condition)    params.set('condition', filters.condition)
     if (filters.transmission) params.set('transmission', filters.transmission)
     if (filters.drivetrain)   params.set('drivetrain', filters.drivetrain)
+    params.set('start', String(pageNum * 50))
     console.log('SEARCH URL:', `/api/car-search?${params.toString()}`)
     try {
       const res = await fetch(`/api/car-search?${params}`, { cache: 'no-store' })
@@ -85,10 +89,16 @@ export default function CarSearchPage() {
         setListings(results)
         setTotal(data.total ?? 0)
         setSources(data.sources ?? null)
+        setPage(pageNum)
       }
       setSearched(true)
     } catch { setError('Search failed. Please try again.') }
     finally { setLoading(false) }
+  }
+
+  async function handleSearch(e: React.FormEvent) {
+    e.preventDefault()
+    await runSearch(0)
   }
 
   const inp: React.CSSProperties = { width:'100%', background:'#0E1825', border:'1px solid #1E3A6E', borderRadius:'0.625rem', padding:'0.625rem 0.75rem', color:'white', fontSize:'0.875rem', outline:'none' }
@@ -284,6 +294,22 @@ export default function CarSearchPage() {
                   </div>
                 )
               })}
+            </div>
+          )}
+
+          {listings.length > 0 && (
+            <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:'1rem', marginTop:'1.5rem' }}>
+              {page > 0 && (
+                <button onClick={() => runSearch(page - 1)} style={{ background:'#152234', border:'1px solid #1E3A6E', color:'#A0B4CC', padding:'0.625rem 1.25rem', borderRadius:'0.75rem', cursor:'pointer', fontWeight:600, fontSize:'0.875rem' }}>
+                  ← Prev Page
+                </button>
+              )}
+              <span style={{ color:'#7090B0', fontSize:'0.875rem' }}>Page {page + 1} · {total.toLocaleString()} total</span>
+              {listings.length === 50 && (
+                <button onClick={() => runSearch(page + 1)} style={{ background:'#152234', border:'1px solid #1E3A6E', color:'#A0B4CC', padding:'0.625rem 1.25rem', borderRadius:'0.75rem', cursor:'pointer', fontWeight:600, fontSize:'0.875rem' }}>
+                  Next Page →
+                </button>
+              )}
             </div>
           )}
         </div>
