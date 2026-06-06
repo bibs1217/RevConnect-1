@@ -46,7 +46,7 @@ export async function GET(request: Request) {
 
   // Fetch up to 500 listings sequentially — rows=50 matches confirmed API plan limit
   const allListings: any[] = []
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 20; i++) {
     try {
       let u = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${key}&rows=50&start=${i * 50}`
       if (make)  u += `&make=${encodeURIComponent(make)}`
