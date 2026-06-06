@@ -1,27 +1,19 @@
 import { NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const key = process.env.MARKETCHECK_API_KEY
 
-  const make        = searchParams.get('make')        || ''
-  const model       = searchParams.get('model')       || ''
-  const yearMin     = searchParams.get('yearMin')     ? parseInt(searchParams.get('yearMin')!)     : null
-  const yearMax     = searchParams.get('yearMax')     ? parseInt(searchParams.get('yearMax')!)     : null
-  const priceMin    = searchParams.get('priceMin')    ? parseInt(searchParams.get('priceMin')!)    : null
-  const priceMax    = searchParams.get('priceMax')    ? parseInt(searchParams.get('priceMax')!)    : null
-  const mileageMax  = searchParams.get('mileageMax')  ? parseInt(searchParams.get('mileageMax')!)  : null
-  const zip         = (searchParams.get('zip') || '').replace(/[^0-9]/g, '')
-  const transmission = searchParams.get('transmission') || ''
-  const drivetrain  = searchParams.get('drivetrain')  || ''
-  const condition   = searchParams.get('condition')   || ''
-  const sortBy      = searchParams.get('sortBy')      || 'price-asc'
-  const page        = Math.max(1, parseInt(searchParams.get('page') || '1'))
-  const PAGE_SIZE   = 50
-
-  const locationMode = 'nationwide'
+  const make       = searchParams.get('make')       || ''
+  const model      = searchParams.get('model')      || ''
+  const yearMin    = searchParams.get('yearMin')     || ''
+  const yearMax    = searchParams.get('yearMax')     || ''
+  const priceMin   = searchParams.get('priceMin')   || ''
+  const priceMax   = searchParams.get('priceMax')   || ''
+  const mileageMax = searchParams.get('mileageMax') || ''
+  const sortBy     = searchParams.get('sortBy')     || 'price-asc'
+  const page       = searchParams.get('page')       || '1'
 
   // Fetch 500 listings from Marketcheck — ONLY make and model as filters
   const urls: string[] = []
@@ -38,72 +30,73 @@ export async function GET(request: Request) {
   )
 
   const numFound: number = settled[0].status === 'fulfilled' ? (settled[0].value?.num_found ?? 0) : 0
-  const allRaw: any[] = settled.flatMap(r => r.status === 'fulfilled' ? (r.value?.listings ?? []) : [])
-  console.log(`[MC] raw=${allRaw.length} numFound=${numFound}`)
+  const all: any[] = settled.flatMap(r => r.status === 'fulfilled' ? (r.value?.listings ?? []) : [])
+  console.log(`[MC] raw=${all.length} numFound=${numFound}`)
 
-  // Filter directly on raw Marketcheck data — no mapping, no Haversine
-  const all = allRaw
+  // Log first item raw to inspect field names
+  if (all.length > 0) {
+    const firstItem = all[0]
+    console.log('[FIRST-ITEM-RAW]', JSON.stringify(firstItem).slice(0, 1000))
+  }
 
   const filtered = all.filter((l: any) => {
-    const year  = l.build?.year ?? l.year ?? null
-    const price = l.price ?? null
-    const miles = l.miles ?? null
+    const year  = Number(l.build?.year  || l.year     || 0)
+    const price = Number(l.price        || 0)
+    const miles = Number(l.miles        || l.mileage  || 0)
 
-    console.log('[ITEM]', JSON.stringify({ year, price, miles, dealer_lat: l.dealer?.latitude, dealer_lon: l.dealer?.longitude }))
-
-    if (yearMin && year && year < yearMin) return false
-    if (yearMax && year && year > yearMax) return false
-    if (priceMin && price && price < priceMin) return false
-    if (priceMax && price && price > priceMax) return false
-    if (mileageMax && miles && miles > mileageMax) return false
+    if (yearMin    && year  && year  < Number(yearMin))    return false
+    if (yearMax    && year  && year  > Number(yearMax))    return false
+    if (priceMin   && price && price < Number(priceMin))   return false
+    if (priceMax   && price && price > Number(priceMax))   return false
+    if (mileageMax && miles && miles > Number(mileageMax)) return false
     return true
   })
 
   console.log('[FILTER-RESULT]', filtered.length, 'of', all.length, 'passed')
 
-  // Sort raw filtered results
-  if (sortBy === 'price-asc')   filtered.sort((a: any, b: any) => (a.price ?? 999999) - (b.price ?? 999999))
-  if (sortBy === 'price-desc')  filtered.sort((a: any, b: any) => (b.price ?? 0) - (a.price ?? 0))
-  if (sortBy === 'mileage-asc') filtered.sort((a: any, b: any) => (a.miles ?? 999999) - (b.miles ?? 999999))
+  // Sort
+  if (sortBy === 'price-asc')   filtered.sort((a: any, b: any) => Number(a.price || 0) - Number(b.price || 0))
+  if (sortBy === 'price-desc')  filtered.sort((a: any, b: any) => Number(b.price || 0) - Number(a.price || 0))
+  if (sortBy === 'mileage-asc') filtered.sort((a: any, b: any) => Number(a.miles || 0) - Number(b.miles || 0))
 
-  const totalFiltered = filtered.length
-  const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE))
-  const safePage = Math.min(page, totalPages)
-  const pageRaw = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
-
-  // Map to clean objects for the frontend
-  const pageListings = pageRaw.map((l: any) => ({
-    id:             l.id,
-    year:           l.build?.year           ?? null,
-    make:           l.build?.make           ?? null,
-    model:          l.build?.model          ?? null,
-    trim:           l.build?.trim           ?? null,
-    price:          l.price                 ?? null,
-    miles:          l.miles                 ?? null,
-    exterior_color: l.exterior_color        ?? null,
-    transmission:   l.build?.transmission   ?? null,
-    drivetrain:     l.build?.drivetrain     ?? null,
-    car_type:       l.car_type              ?? null,
+  const mapped = filtered.map((l: any) => ({
+    id:             l.id || Math.random().toString(),
+    year:           Number(l.build?.year  || l.year    || 0),
+    make:           l.build?.make  || l.make  || '',
+    model:          l.build?.model || l.model || '',
+    trim:           l.build?.trim  || l.trim  || '',
+    price:          Number(l.price || 0),
+    miles:          Number(l.miles || l.mileage || 0),
+    exterior_color: l.exterior_color    || l.build?.ext_color || '',
+    transmission:   l.build?.transmission || l.transmission   || '',
+    drivetrain:     l.build?.drivetrain   || l.drivetrain     || '',
     photo:          l.media?.photo_links?.[0] || null,
-    dealer_name:    l.dealer?.name          ?? null,
-    dealer_city:    l.dealer?.city          ?? null,
-    dealer_state:   l.dealer?.state         ?? null,
-    dealer_phone:   l.dealer?.phone         ?? null,
-    listing_url:    l.vdp_url               ?? null,
-    dom:            l.dom                   ?? null,
-    price_drop:     (l.price_change ?? 0) < 0,
-    distance:       null,
+    dealer_name:    l.dealer?.name  || '',
+    dealer_city:    l.dealer?.city  || '',
+    dealer_state:   l.dealer?.state || '',
+    dealer_phone:   l.dealer?.phone || '',
+    dealer_lat:     Number(l.dealer?.latitude  || 0),
+    dealer_lon:     Number(l.dealer?.longitude || 0),
+    listing_url:    l.vdp_url || '',
+    dom:            Number(l.dom || 0),
+    price_drop:     Number(l.price_change || 0) < 0,
   }))
 
-  console.log(`[FILTER] raw=${allRaw.length} filtered=${totalFiltered} page=${safePage}/${totalPages} returning=${pageListings.length}`)
+  const perPage    = 50
+  const pageNum    = Number(page || 1)
+  const start      = (pageNum - 1) * perPage
+  const paginated  = mapped.slice(start, start + perPage)
+  const totalPages = Math.ceil(mapped.length / perPage)
+
+  console.log(`[PAGINATE] total=${mapped.length} page=${pageNum}/${totalPages} returning=${paginated.length}`)
 
   return NextResponse.json({
-    listings: pageListings,
-    total: numFound,
-    totalFiltered,
-    page: safePage,
+    listings:   paginated,
+    total:      numFound,
+    totalFiltered: mapped.length,
     totalPages,
-    locationMode,
+    page:       pageNum,
+    locationMode: 'nationwide',
   }, {
     headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
   })
