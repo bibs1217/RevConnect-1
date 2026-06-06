@@ -69,5 +69,7 @@ export async function GET(request: Request) {
     listings,
     total: data.num_found ?? 0,
     sources: { marketcheck: listings.length, ebay: 0 }
+  }, {
+    headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
   })
 }
