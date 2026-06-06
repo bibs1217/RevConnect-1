@@ -22,6 +22,8 @@ interface Listing {
   dom: number | null
   price_drop: boolean
   distance: number | null
+  source?: string
+  listing_type?: string
 }
 
 const BG      = '#1B2A3E'
@@ -431,7 +433,12 @@ export default function CarSearchPage() {
                             🚗
                           </div>
                         )}
-                        {l.price_drop && (
+                        {l.source === 'eBay' && (
+                          <span style={{ position: 'absolute', top: 8, left: 8, background: '#E43137', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>
+                            eBay{l.listing_type === 'Auction' ? ' AUCTION' : ''}
+                          </span>
+                        )}
+                        {l.price_drop && l.source !== 'eBay' && (
                           <span style={{ position: 'absolute', top: 8, left: 8, background: RED, color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>
                             PRICE DROP
                           </span>
