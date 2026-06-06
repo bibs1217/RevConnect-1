@@ -71,6 +71,8 @@ export async function GET(request: Request) {
   const allRaw: any[] = settled.flatMap(r => r.status === 'fulfilled' ? (r.value?.listings ?? []) : [])
   console.log(`[MC] raw=${allRaw.length} numFound=${numFound}`)
 
+  console.log('[DEBUG-GEO]', JSON.stringify({ zip, lat: userLat, lon: userLon }))
+
   // Map to clean objects
   const mapped = allRaw.map((l: any) => {
     const dLat = l.dealer?.latitude  ?? l.dealer?.lat  ?? null
@@ -102,12 +104,41 @@ export async function GET(request: Request) {
     }
   })
 
-  // Apply ALL filters server-side
-  const filtered = mapped.filter((l: any) => {
-    if (yearMin !== null  && l.year  !== null && l.year  < yearMin)  return false
-    if (yearMax !== null  && l.year  !== null && l.year  > yearMax)  return false
+  if (mapped.length > 0) {
+    const first = mapped[0]
+    console.log('[DEBUG-FIRST]', JSON.stringify({
+      year: first.year,
+      make: first.make,
+      dealer_lat: (allRaw[0]?.dealer?.latitude ?? allRaw[0]?.dealer?.lat ?? null),
+      dealer_lon: (allRaw[0]?.dealer?.longitude ?? allRaw[0]?.dealer?.lon ?? allRaw[0]?.dealer?.lng ?? null),
+      distance: first.distance,
+    }))
+  }
+
+  // Apply filters stage by stage for diagnostics
+  console.log('[DEBUG-FILTER] total mapped:', mapped.length)
+
+  const afterYear = mapped.filter((l: any) => {
+    if (yearMin !== null && l.year !== null && l.year < yearMin) return false
+    if (yearMax !== null && l.year !== null && l.year > yearMax) return false
+    return true
+  })
+  console.log('[DEBUG-FILTER] after year filter:', afterYear.length)
+
+  const afterDistance = afterYear.filter((l: any) => {
+    if (userLat !== null && l.distance !== null && l.distance > radius) return false
+    return true
+  })
+  console.log('[DEBUG-FILTER] after distance filter:', afterDistance.length)
+
+  const afterPrice = afterDistance.filter((l: any) => {
     if (priceMin !== null && l.price !== null && l.price < priceMin) return false
     if (priceMax !== null && l.price !== null && l.price > priceMax) return false
+    return true
+  })
+  console.log('[DEBUG-FILTER] after price filter:', afterPrice.length)
+
+  const filtered = afterPrice.filter((l: any) => {
     if (mileageMax !== null && l.miles !== null && l.miles > mileageMax) return false
     if (transmission && l.transmission && !l.transmission.toLowerCase().startsWith(transmission.toLowerCase())) return false
     if (drivetrain   && l.drivetrain   && !l.drivetrain.toLowerCase().startsWith(drivetrain.toLowerCase()))   return false
@@ -115,7 +146,6 @@ export async function GET(request: Request) {
       const target = condition === 'cpo' ? 'certified' : condition
       if (l.car_type.toLowerCase() !== target) return false
     }
-    if (userLat !== null && l.distance !== null && l.distance > radius) return false
     return true
   })
 
