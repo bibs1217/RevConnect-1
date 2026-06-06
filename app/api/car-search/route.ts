@@ -17,26 +17,28 @@ function dist(uLat: number, uLon: number, lat: any, lon: any): number | null {
   return Math.round(haversine(uLat, uLon, la, lo))
 }
 
-// ── Marketcheck ──────────────────────────────────────────────────────────────
-// Sends zip for proximity-ordered results; radius=500 (validated range).
-// 10 sequential batches × 50 = up to 500 listings.
+// ── Marketcheck ───────────────────────────────────────────────────────────────
+// Passes year_min/year_max to Marketcheck (honored on most plans).
+// When yearMax < 2020 also requests year_asc sort so older inventory surfaces first.
 async function fetchMarketcheck(
   key: string, make: string, model: string,
-  condition: string, yearMax: string
+  condition: string, yearMin: string, yearMax: string
 ): Promise<any[]> {
   if (!key) return []
   const listings: any[] = []
+  const oldSearch = yearMax && parseInt(yearMax) < 2020
   for (let i = 0; i < 10; i++) {
     try {
-      // No zip/radius — geographic params break certain API tiers.
-      // Distance is computed server-side via Haversine after fetch.
       let u = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${key}&rows=50&start=${i * 50}`
-      if (make)  u += `&make=${encodeURIComponent(make)}`
-      if (model) u += `&model=${encodeURIComponent(model)}`
-      if (condition === 'new')                      u += `&car_type=new`
-      else if (condition === 'used')                u += `&car_type=used`
-      else if (condition === 'cpo')                 u += `&car_type=certified`
-      else if (yearMax && parseInt(yearMax) < 2025) u += `&car_type=used`
+      if (make)     u += `&make=${encodeURIComponent(make)}`
+      if (model)    u += `&model=${encodeURIComponent(model)}`
+      if (yearMin)  u += `&year_min=${yearMin}`
+      if (yearMax)  u += `&year_max=${yearMax}`
+      if (oldSearch) u += `&sort=year_asc`   // surface older inventory first
+      if (condition === 'new')                       u += `&car_type=new`
+      else if (condition === 'used')                 u += `&car_type=used`
+      else if (condition === 'cpo')                  u += `&car_type=certified`
+      else if (yearMax && parseInt(yearMax) < 2025)  u += `&car_type=used`
       const r = await fetch(u, { cache: 'no-store' })
       if (!r.ok) break
       const d = await r.json()
@@ -75,8 +77,7 @@ function mapMC(l: any, uLat: number, uLon: number): any {
   }
 }
 
-// ── CarMax ───────────────────────────────────────────────────────────────────
-// Uses CarMax's internal frontend API (no public API exists).
+// ── CarMax ────────────────────────────────────────────────────────────────────
 async function fetchCarmax(
   make: string, model: string,
   yearMin: string, yearMax: string, priceMax: string,
@@ -85,12 +86,9 @@ async function fetchCarmax(
   if (!zip) return []
   try {
     const p: Record<string, string> = {
-      'api_key':   'vespa',
-      'zipCode':   zip,
-      'range':     String(Math.min(radius, 500)),
-      'stocktype': 'used',
-      'page':      '0',
-      'take':      '100',
+      'api_key': 'vespa', 'zipCode': zip,
+      'range': String(Math.min(radius, 500)),
+      'stocktype': 'used', 'page': '0', 'take': '100',
     }
     if (make)     p['makes']    = make.toUpperCase()
     if (model)    p['models']   = model
@@ -112,34 +110,31 @@ async function fetchCarmax(
     const vehicles: any[] = data.vehicles ?? data.inventory ?? data.items ?? []
     return vehicles.map((v: any) => ({
       id:             `carmax_${v.stockNumber ?? v.vehicleId ?? Math.random()}`,
-      year:           Number(v.year           || 0),
-      make:           v.make                  || make,
-      model:          v.model                 || model,
-      trim:           v.trim                  || '',
+      year:           Number(v.year || 0),
+      make:           v.make  || make,
+      model:          v.model || model,
+      trim:           v.trim  || '',
       price:          Number(v.price ?? v.totalPrice ?? 0),
       miles:          Number(v.mileage ?? v.odometer ?? 0),
-      exterior_color: v.exteriorColor         || '',
-      transmission:   v.transmission          || '',
+      exterior_color: v.exteriorColor || '',
+      transmission:   v.transmission  || '',
       drivetrain:     v.driveTrain ?? v.drivetrain ?? '',
       photo:          v.imageUrl ?? v.firstPhotoUrl ?? null,
       dealer_name:    'CarMax',
-      dealer_city:    v.storeCity ?? v.city   ?? '',
+      dealer_city:    v.storeCity ?? v.city ?? '',
       dealer_state:   v.storeState ?? v.state ?? '',
       dealer_phone:   '',
       listing_url:    v.vehicleDetailPageUrl
         ? `https://www.carmax.com${v.vehicleDetailPageUrl}`
         : `https://www.carmax.com/cars/${make.toLowerCase()}/${model.toLowerCase()}`,
-      dom:            0,
-      price_drop:     false,
-      inventory_type: 'used',
-      source:         'CarMax',
-      listing_type:   '',
-      distance:       dist(uLat, uLon, v.lat ?? v.latitude, v.lon ?? v.longitude),
+      dom: 0, price_drop: false, inventory_type: 'used',
+      source: 'CarMax', listing_type: '',
+      distance: dist(uLat, uLon, v.lat ?? v.latitude, v.lon ?? v.longitude),
     }))
   } catch { return [] }
 }
 
-// ── Carvana ──────────────────────────────────────────────────────────────────
+// ── Carvana ───────────────────────────────────────────────────────────────────
 async function fetchCarvana(
   make: string, model: string,
   yearMin: string, yearMax: string, priceMax: string
@@ -160,34 +155,28 @@ async function fetchCarvana(
     const vehicles: any[] = data.data ?? data.vehicles ?? data.listings ?? data.items ?? []
     return vehicles.map((v: any) => ({
       id:             `carvana_${v.vehicleId ?? v.id ?? Math.random()}`,
-      year:           Number(v.year           || 0),
-      make:           v.make                  || make,
-      model:          v.model                 || model,
-      trim:           v.trim                  || '',
+      year:           Number(v.year || 0),
+      make:           v.make  || make,
+      model:          v.model || model,
+      trim:           v.trim  || '',
       price:          Number(v.price ?? v.listPrice ?? 0),
       miles:          Number(v.miles ?? v.mileage ?? 0),
       exterior_color: v.exteriorColor ?? v.color ?? '',
-      transmission:   v.transmission          || '',
+      transmission:   v.transmission  || '',
       drivetrain:     v.driveType ?? v.drivetrain ?? '',
       photo:          v.imageUrl ?? v.primaryImageUrl ?? null,
       dealer_name:    'Carvana',
-      dealer_city:    '',
-      dealer_state:   '',
-      dealer_phone:   '',
+      dealer_city: '', dealer_state: '', dealer_phone: '',
       listing_url:    v.url
         ? (v.url.startsWith('http') ? v.url : `https://www.carvana.com${v.url}`)
         : `https://www.carvana.com/cars/${make.toLowerCase()}`,
-      dom:            0,
-      price_drop:     false,
-      inventory_type: 'used',
-      source:         'Carvana',
-      listing_type:   '',
-      distance:       null, // Carvana ships nationwide
+      dom: 0, price_drop: false, inventory_type: 'used',
+      source: 'Carvana', listing_type: '', distance: null,
     }))
   } catch { return [] }
 }
 
-// ── eBay ─────────────────────────────────────────────────────────────────────
+// ── eBay ──────────────────────────────────────────────────────────────────────
 function mapEbay(item: any, make: string, model: string): any {
   const title = item.title?.[0] ?? ''
   const price  = parseFloat(item.sellingStatus?.[0]?.currentPrice?.[0]?.['__value__'] ?? '0')
@@ -195,32 +184,22 @@ function mapEbay(item: any, make: string, model: string): any {
   return {
     id:             `ebay_${item.itemId?.[0] ?? Math.random()}`,
     year:           ym ? parseInt(ym[0]) : 0,
-    make:           make  || '',
-    model:          model || '',
-    trim:           '',
-    price,
-    miles:          0,
-    exterior_color: '',
-    transmission:   '',
-    drivetrain:     '',
+    make, model, trim: '',
+    price, miles: 0, exterior_color: '', transmission: '', drivetrain: '',
     photo:          item.pictureURLLarge?.[0] ?? item.galleryURL?.[0] ?? null,
     dealer_name:    item.sellerInfo?.[0]?.sellerUserName?.[0] ?? 'eBay Seller',
     dealer_city:    item.location?.[0] ?? '',
-    dealer_state:   '',
-    dealer_phone:   '',
+    dealer_state: '', dealer_phone: '',
     listing_url:    item.viewItemURL?.[0] ?? '',
-    dom:            0,
-    price_drop:     false,
-    inventory_type: 'used',
-    source:         'eBay',
-    listing_type:   item.listingInfo?.[0]?.listingType?.[0] ?? '',
-    distance:       null,
+    dom: 0, price_drop: false, inventory_type: 'used',
+    source: 'eBay', listing_type: item.listingInfo?.[0]?.listingType?.[0] ?? '',
+    distance: null,
   }
 }
 
-async function ebayPass(
-  appId: string, make: string, model: string, priceMax: string,
-  sort: string, listingType: string, page: number
+async function ebaySearch(
+  appId: string, keywords: string, make: string, model: string,
+  priceMax: string, sort: string, listingType: string, page: number
 ): Promise<any[]> {
   try {
     const p = new URLSearchParams({
@@ -229,7 +208,7 @@ async function ebayPass(
       'SECURITY-APPNAME':               appId,
       'RESPONSE-DATA-FORMAT':           'JSON',
       'categoryId':                     '6001',
-      'keywords':                       [make, model].filter(Boolean).join(' '),
+      'keywords':                       keywords,
       'paginationInput.entriesPerPage': '50',
       'paginationInput.pageNumber':     String(page),
       'sortOrder':                      sort,
@@ -237,18 +216,10 @@ async function ebayPass(
       'outputSelector(1)':              'SellerInfo',
     })
     let fi = 0
-    if (priceMax) {
-      p.set(`itemFilter(${fi}).name`,  'MaxPrice')
-      p.set(`itemFilter(${fi}).value`, priceMax); fi++
-    }
-    if (listingType) {
-      p.set(`itemFilter(${fi}).name`,  'ListingType')
-      p.set(`itemFilter(${fi}).value`, listingType)
-    }
-    const res = await fetch(
-      `https://svcs.ebay.com/services/search/FindingService/v1?${p}`,
-      { headers: { Accept: 'application/json' }, cache: 'no-store' }
-    )
+    if (priceMax) { p.set(`itemFilter(${fi}).name`, 'MaxPrice'); p.set(`itemFilter(${fi}).value`, priceMax); fi++ }
+    if (listingType) { p.set(`itemFilter(${fi}).name`, 'ListingType'); p.set(`itemFilter(${fi}).value`, listingType) }
+    const res = await fetch(`https://svcs.ebay.com/services/search/FindingService/v1?${p}`,
+      { headers: { Accept: 'application/json' }, cache: 'no-store' })
     if (!res.ok) return []
     const data = await res.json()
     const items: any[] = data.findItemsAdvancedResponse?.[0]?.searchResult?.[0]?.item ?? []
@@ -257,50 +228,66 @@ async function ebayPass(
 }
 
 async function fetchEbay(
-  appId: string, make: string, model: string, priceMax: string
+  appId: string, make: string, model: string,
+  yearMin: string, yearMax: string, priceMax: string
 ): Promise<any[]> {
   if (!appId || !make) return []
-  const [p1, p2, p3] = await Promise.all([
-    ebayPass(appId, make, model, priceMax, 'PricePlusShippingLowest', '',           1),
-    ebayPass(appId, make, model, priceMax, 'StartTimeNewest',         'FixedPrice', 1),
-    ebayPass(appId, make, model, priceMax, 'PricePlusShippingLowest', '',           2),
-  ])
+  const min = parseInt(yearMin) || 0
+  const max = parseInt(yearMax) || 0
+  const rangeSize = (min && max) ? max - min + 1 : 0
+
+  let searches: Promise<any[]>[]
+
+  if (rangeSize > 0 && rangeSize <= 6) {
+    // Small year range: search per-year so the year appears in every title
+    // e.g. "2013 ford mustang" — guarantees year is parsed correctly
+    searches = []
+    for (let y = min; y <= max; y++) {
+      searches.push(ebaySearch(appId, `${y} ${make} ${model}`, make, model, priceMax, 'PricePlusShippingLowest', '', 1))
+    }
+  } else {
+    // Large range or no year filter: 3 general passes
+    const kw = `${make} ${model}`
+    searches = [
+      ebaySearch(appId, kw, make, model, priceMax, 'PricePlusShippingLowest', '',           1),
+      ebaySearch(appId, kw, make, model, priceMax, 'StartTimeNewest',         'FixedPrice', 1),
+      ebaySearch(appId, kw, make, model, priceMax, 'PricePlusShippingLowest', '',           2),
+    ]
+  }
+
+  const results = await Promise.all(searches)
   const seen = new Set<string>()
-  return [...p1, ...p2, ...p3].filter(l => {
+  return results.flat().filter(l => {
     if (seen.has(l.id)) return false; seen.add(l.id); return true
   })
 }
 
-// ── Filters ──────────────────────────────────────────────────────────────────
+// ── Filters ───────────────────────────────────────────────────────────────────
 function filterListings(
-  all: any[],
-  yearMin: string, yearMax: string,
+  all: any[], yearMin: string, yearMax: string,
   priceMin: string, priceMax: string, mileageMax: string,
   transmission: string, drivetrain: string, condition: string,
   applyYear: boolean
 ): any[] {
-  const yMin = parseInt(yearMin)   || 0
-  const yMax = parseInt(yearMax)   || 9999
-  const pMin = parseInt(priceMin)  || 0
-  const pMax = parseInt(priceMax)  || 0
-  const mMax = parseInt(mileageMax)|| 0
+  const yMin = parseInt(yearMin)    || 0
+  const yMax = parseInt(yearMax)    || 9999
+  const pMin = parseInt(priceMin)   || 0
+  const pMax = parseInt(priceMax)   || 0
+  const mMax = parseInt(mileageMax) || 0
   return all.filter(l => {
-    // Year: only filter if the listing has a known year (>0)
     if (applyYear && l.year > 0) {
       if (yearMin && l.year < yMin) return false
       if (yearMax && l.year > yMax) return false
     }
-    // Price: only filter if listing has a known price (>0)
     if (l.price > 0) {
       if (pMin && l.price < pMin) return false
       if (pMax && l.price > pMax) return false
     }
-    // Miles: only filter if listing has known miles (>0)
     if (mMax && l.miles > 0 && l.miles > mMax) return false
     if (transmission && l.transmission &&
         !l.transmission.toLowerCase().includes(transmission.toLowerCase())) return false
     if (drivetrain && l.drivetrain &&
-        !l.drivetrain.toLowerCase().includes(drivetrain.toLowerCase())) return false
+        !l.drivetrain.toLowerCase().includes(drivetrain.toLowerCase()))   return false
     if (condition === 'new'  && l.inventory_type && l.inventory_type !== 'new')       return false
     if (condition === 'used' && l.inventory_type && l.inventory_type !== 'used')      return false
     if (condition === 'cpo'  && l.inventory_type && l.inventory_type !== 'certified') return false
@@ -308,11 +295,11 @@ function filterListings(
   })
 }
 
-// ── Main handler ─────────────────────────────────────────────────────────────
+// ── Main handler ──────────────────────────────────────────────────────────────
 export async function GET(request: Request) {
-  const sp = new URL(request.url).searchParams
-  const mcKey  = process.env.MARKETCHECK_API_KEY || ''
-  const ebayId = process.env.EBAY_APP_ID         || ''
+  const sp      = new URL(request.url).searchParams
+  const mcKey   = process.env.MARKETCHECK_API_KEY || ''
+  const ebayId  = process.env.EBAY_APP_ID         || ''
 
   const make         = sp.get('make')         || ''
   const model        = sp.get('model')        || ''
@@ -329,72 +316,70 @@ export async function GET(request: Request) {
   const sortBy       = sp.get('sortBy')       || 'price-asc'
   const page         = Math.max(1, parseInt(sp.get('page') || '1'))
 
-  // Geocode ZIP first so CarMax can use lat/lon for distance
+  // Geocode ZIP first so CarMax can receive correct coordinates
   let uLat = 0, uLon = 0
   if (zip) {
     try {
-      const g = await fetch(`https://api.zippopotam.us/us/${zip}`, { cache: 'no-store' })
+      const g  = await fetch(`https://api.zippopotam.us/us/${zip}`, { cache: 'no-store' })
       const gd = await g.json()
       uLat = parseFloat(gd.places[0].latitude)
       uLon = parseFloat(gd.places[0].longitude)
-    } catch { /* use 0,0 — distance filter will be skipped */ }
+    } catch { /* distance filter skipped if geocode fails */ }
   }
 
-  // All sources in parallel
+  // All four sources in parallel
   const [mcRaw, carmaxRaw, carvanaRaw, ebayRaw] = await Promise.all([
-    fetchMarketcheck(mcKey, make, model, condition, yearMax),
+    fetchMarketcheck(mcKey, make, model, condition, yearMin, yearMax),
     fetchCarmax(make, model, yearMin, yearMax, priceMax, zip, radius, uLat, uLon),
     fetchCarvana(make, model, yearMin, yearMax, priceMax),
-    fetchEbay(ebayId, make, model, priceMax),
+    fetchEbay(ebayId, make, model, yearMin, yearMax, priceMax),
   ])
 
   const mcMapped = mcRaw.map(l => mapMC(l, uLat, uLon))
   const allRaw   = [...mcMapped, ...carmaxRaw, ...carvanaRaw, ...ebayRaw]
 
   // Deduplicate by id
-  const seen = new Set<string>()
-  const all  = allRaw.filter(l => { if (seen.has(l.id)) return false; seen.add(l.id); return true })
+  const seenIds = new Set<string>()
+  const all     = allRaw.filter(l => { if (seenIds.has(l.id)) return false; seenIds.add(l.id); return true })
 
-  // ── FILTERING ─────────────────────────────────────────────────────────────
-  // Pass 1: strict — all filters including year
-  let filtered = filterListings(all, yearMin, yearMax, priceMin, priceMax, mileageMax, transmission, drivetrain, condition, true)
+  // ── Filtering (3-pass graceful degradation) ───────────────────────────────
+  // Pass 1: strict — all filters
+  let filtered      = filterListings(all, yearMin, yearMax, priceMin, priceMax, mileageMax, transmission, drivetrain, condition, true)
   let filtersRelaxed = false
 
-  // Pass 2: if year filter wiped everything, relax it but keep price/mileage
+  // Pass 2: year filter eliminated everything — relax it, keep price/mileage
   if (filtered.length === 0 && all.length > 0 && (yearMin || yearMax)) {
-    filtered = filterListings(all, '', '', priceMin, priceMax, mileageMax, transmission, drivetrain, condition, false)
+    filtered      = filterListings(all, '', '', priceMin, priceMax, mileageMax, transmission, drivetrain, condition, false)
     filtersRelaxed = true
   }
 
-  // Pass 3: if STILL nothing (price/mileage too strict), show everything for this make/model
+  // Pass 3: still nothing — show all results for this make/model
   if (filtered.length === 0 && all.length > 0) {
-    filtered = [...all]
+    filtered      = [...all]
     filtersRelaxed = true
   }
 
-  // ── DISTANCE ──────────────────────────────────────────────────────────────
+  // ── Distance filter ───────────────────────────────────────────────────────
   let locationMode = 'nationwide'
   if (uLat && uLon && filtered.length > 0) {
-    // eBay and Carvana have no store location — always include them
     const local = filtered.filter(l =>
       l.source === 'eBay' || l.source === 'Carvana' ||
       l.distance === null || l.distance <= radius
     )
     if (local.length > 0) {
-      filtered  = local
+      filtered     = local
       locationMode = 'local'
     } else {
-      // Nothing within radius — show nearest instead of empty screen
       filtered.sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999))
       locationMode = 'nearest_only'
     }
   }
 
-  // ── SORT ──────────────────────────────────────────────────────────────────
-  if      (sortBy === 'price-desc')   filtered.sort((a, b) => b.price - a.price)
-  else if (sortBy === 'mileage-asc')  filtered.sort((a, b) => a.miles - b.miles)
+  // ── Sort ──────────────────────────────────────────────────────────────────
+  if      (sortBy === 'price-desc')   filtered.sort((a, b) => b.price   - a.price)
+  else if (sortBy === 'mileage-asc')  filtered.sort((a, b) => a.miles   - b.miles)
   else if (sortBy === 'distance-asc') filtered.sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999))
-  else                                filtered.sort((a, b) => a.price - b.price)
+  else                                filtered.sort((a, b) => a.price   - b.price)
 
   const PER_PAGE   = 50
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
@@ -402,13 +387,9 @@ export async function GET(request: Request) {
   const paginated  = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE)
 
   return NextResponse.json({
-    listings:      paginated,
-    total:         all.length,
-    totalFiltered: filtered.length,
-    totalPages,
-    page:          safePage,
-    locationMode,
-    filtersRelaxed,
+    listings: paginated, total: all.length,
+    totalFiltered: filtered.length, totalPages,
+    page: safePage, locationMode, filtersRelaxed,
     sources: {
       marketcheck: mcMapped.length,
       carmax:      carmaxRaw.length,
