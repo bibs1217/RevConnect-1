@@ -18,36 +18,56 @@ function dist(uLat: number, uLon: number, lat: any, lon: any): number | null {
 }
 
 // ── Marketcheck ───────────────────────────────────────────────────────────────
-// Passes year_min/year_max to Marketcheck (honored on most plans).
-// When yearMax < 2020 also requests year_asc sort so older inventory surfaces first.
+// Sends zip+radius so Marketcheck returns LOCAL dealer inventory.
+// Also passes year_min/year_max (honored on most plans).
+// Falls back to a second pass WITHOUT year filter if the first returns 0,
+// so graceful degradation always has local cars to work with.
 async function fetchMarketcheck(
   key: string, make: string, model: string,
-  condition: string, yearMin: string, yearMax: string
+  condition: string, yearMin: string, yearMax: string,
+  zip: string, radius: number
 ): Promise<any[]> {
   if (!key) return []
-  const listings: any[] = []
-  const oldSearch = yearMax && parseInt(yearMax) < 2020
-  for (let i = 0; i < 10; i++) {
-    try {
-      let u = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${key}&rows=50&start=${i * 50}`
-      if (make)     u += `&make=${encodeURIComponent(make)}`
-      if (model)    u += `&model=${encodeURIComponent(model)}`
-      if (yearMin)  u += `&year_min=${yearMin}`
-      if (yearMax)  u += `&year_max=${yearMax}`
-      if (oldSearch) u += `&sort=year_asc`   // surface older inventory first
-      if (condition === 'new')                       u += `&car_type=new`
-      else if (condition === 'used')                 u += `&car_type=used`
-      else if (condition === 'cpo')                  u += `&car_type=certified`
-      else if (yearMax && parseInt(yearMax) < 2025)  u += `&car_type=used`
-      const r = await fetch(u, { cache: 'no-store' })
-      if (!r.ok) break
-      const d = await r.json()
-      const batch: any[] = Array.isArray(d.listings) ? d.listings : []
-      listings.push(...batch)
-      if (batch.length === 0) break
-    } catch { break }
+
+  async function mcFetch(withYear: boolean): Promise<any[]> {
+    const listings: any[] = []
+    const oldSearch = withYear && yearMax && parseInt(yearMax) < 2020
+    for (let i = 0; i < 10; i++) {
+      try {
+        let u = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${key}&rows=50&start=${i * 50}`
+        if (make)  u += `&make=${encodeURIComponent(make)}`
+        if (model) u += `&model=${encodeURIComponent(model)}`
+        if (withYear && yearMin) u += `&year_min=${yearMin}`
+        if (withYear && yearMax) u += `&year_max=${yearMax}`
+        if (oldSearch) u += `&sort=year_asc`
+        // Send zip+radius so Marketcheck filters to local dealers
+        if (zip && radius) u += `&zip=${zip}&radius=${Math.min(radius, 500)}`
+        if (condition === 'new')                       u += `&car_type=new`
+        else if (condition === 'used')                 u += `&car_type=used`
+        else if (condition === 'cpo')                  u += `&car_type=certified`
+        else if (yearMax && parseInt(yearMax) < 2025)  u += `&car_type=used`
+        const r = await fetch(u, { cache: 'no-store' })
+        if (!r.ok) { console.error('[MC] bad status', r.status, await r.text().then(t => t.slice(0, 200))); break }
+        const d = await r.json()
+        const batch: any[] = Array.isArray(d.listings) ? d.listings : []
+        console.log(`[MC] pass=${withYear?'year':'open'} batch=${i} got=${batch.length} numFound=${d.num_found ?? '?'}`)
+        listings.push(...batch)
+        if (batch.length === 0) break
+      } catch (e) { console.error('[MC] exception', e); break }
+    }
+    return listings
   }
-  return listings
+
+  // Pass 1: with year filter (to get exact matches)
+  const withYear = await mcFetch(true)
+  if (withYear.length > 0) return withYear
+
+  // Pass 2: no year filter (so graceful-degradation has local cars to fall back on)
+  if (yearMin || yearMax) {
+    console.log('[MC] 0 year-filtered results, fetching open to enable graceful degradation')
+    return mcFetch(false)
+  }
+  return withYear
 }
 
 function mapMC(l: any, uLat: number, uLon: number): any {
@@ -329,7 +349,7 @@ export async function GET(request: Request) {
 
   // All four sources in parallel
   const [mcRaw, carmaxRaw, carvanaRaw, ebayRaw] = await Promise.all([
-    fetchMarketcheck(mcKey, make, model, condition, yearMin, yearMax),
+    fetchMarketcheck(mcKey, make, model, condition, yearMin, yearMax, zip, radius),
     fetchCarmax(make, model, yearMin, yearMax, priceMax, zip, radius, uLat, uLon),
     fetchCarvana(make, model, yearMin, yearMax, priceMax),
     fetchEbay(ebayId, make, model, yearMin, yearMax, priceMax),
@@ -362,24 +382,45 @@ export async function GET(request: Request) {
   // ── Distance filter ───────────────────────────────────────────────────────
   let locationMode = 'nationwide'
   if (uLat && uLon && filtered.length > 0) {
-    const local = filtered.filter(l =>
-      l.source === 'eBay' || l.source === 'Carvana' ||
-      l.distance === null || l.distance <= radius
-    )
-    if (local.length > 0) {
-      filtered     = local
+    // Split: listings WITH a known distance vs online-only (eBay/Carvana, distance=null)
+    const located  = filtered.filter(l => l.distance !== null)
+    const online   = filtered.filter(l => l.distance === null)
+
+    const inRadius = located.filter(l => (l.distance as number) <= radius)
+
+    if (inRadius.length > 0) {
+      // We have local dealer results — show them first, online sources appended after
+      filtered     = [...inRadius, ...online]
       locationMode = 'local'
-    } else {
-      filtered.sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999))
+    } else if (located.length > 0) {
+      // No dealers within radius — show nearest dealers + online sources
+      located.sort((a, b) => (a.distance as number) - (b.distance as number))
+      filtered     = [...located, ...online]
       locationMode = 'nearest_only'
+    } else {
+      // No located listings at all (all online) — show as-is
+      locationMode = 'nationwide'
     }
   }
 
-  // ── Sort ──────────────────────────────────────────────────────────────────
-  if      (sortBy === 'price-desc')   filtered.sort((a, b) => b.price   - a.price)
-  else if (sortBy === 'mileage-asc')  filtered.sort((a, b) => a.miles   - b.miles)
-  else if (sortBy === 'distance-asc') filtered.sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999))
-  else                                filtered.sort((a, b) => a.price   - b.price)
+  // ── Sort (within each group, preserve local-first order) ─────────────────
+  // When a ZIP is provided, always keep located results before null-distance ones
+  function stableSort(arr: any[]) {
+    if      (sortBy === 'price-desc')   arr.sort((a, b) => (b.price ?? 0) - (a.price ?? 0))
+    else if (sortBy === 'mileage-asc')  arr.sort((a, b) => (a.miles ?? 0) - (b.miles ?? 0))
+    else if (sortBy === 'distance-asc') arr.sort((a, b) => (a.distance ?? 99999) - (b.distance ?? 99999))
+    else                                arr.sort((a, b) => (a.price ?? 0) - (b.price ?? 0))
+    return arr
+  }
+
+  if (uLat && uLon && locationMode !== 'nationwide') {
+    // Sort each group independently, then re-join so local results stay first
+    const located = filtered.filter(l => l.distance !== null)
+    const online  = filtered.filter(l => l.distance === null)
+    filtered = [...stableSort(located), ...stableSort(online)]
+  } else {
+    stableSort(filtered)
+  }
 
   const PER_PAGE   = 50
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
