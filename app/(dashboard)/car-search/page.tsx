@@ -6,43 +6,30 @@ const MAKES = ['','Acura','Audi','BMW','Chevrolet','Dodge','Ford','Honda','Hyund
 
 interface Listing {
   id: string
-  source_name: string
-  source_badge: string
-  listing_type: string
   year: number | null
   make: string | null
   model: string | null
   trim: string | null
   price: number | null
-  mileage: number | null
-  location: string
-  distance: number | null
-  images: string[]
+  miles: number | null
   exterior_color: string | null
   transmission: string | null
   drivetrain: string | null
-  engine: string | null
-  mpg_city: number | null
-  mpg_hwy: number | null
-  is_certified: boolean
+  photo: string | null
   dealer_name: string | null
+  dealer_city: string | null
+  dealer_state: string | null
   dealer_phone: string | null
   listing_url: string | null
-  days_on_market: number | null
+  dom: number | null
   price_drop: boolean
-  deal_rating: string | null
-  time_left: string | null
-  bid_count: string | null
 }
 
 function monthly(price: number) { return Math.round(price / 60 * 1.05) }
 
 function getDealBadge(l: Listing): { label: string; bg: string; color: string; border: string } | null {
-  if (l.is_certified) return { label: '✓ CPO Certified', bg: 'rgba(21,57,204,0.15)', color: '#1539CC', border: 'rgba(21,57,204,0.3)' }
-  if (l.deal_rating === 'great') return { label: '🔥 Great Deal', bg: 'rgba(0,180,60,0.12)', color: '#00C44A', border: 'rgba(0,180,60,0.3)' }
-  if (l.deal_rating === 'good') return { label: '👍 Good Deal', bg: 'rgba(21,57,204,0.1)', color: '#2255EE', border: 'rgba(21,57,204,0.25)' }
   if (l.price_drop) return { label: '↓ Price Drop', bg: 'rgba(204,0,0,0.12)', color: '#CC0000', border: 'rgba(204,0,0,0.3)' }
-  if (l.days_on_market !== null && l.days_on_market <= 2) return { label: '⚡ Just Listed', bg: 'rgba(255,215,0,0.1)', color: '#FFD700', border: 'rgba(255,215,0,0.25)' }
+  if (l.dom !== null && l.dom <= 2) return { label: '⚡ Just Listed', bg: 'rgba(255,215,0,0.1)', color: '#FFD700', border: 'rgba(255,215,0,0.25)' }
   return null
 }
 
@@ -77,7 +64,16 @@ export default function CarSearchPage() {
       const data = await res.json()
       console.log('[car-search] response:', data)
       if (data.error) { setError(data.error); setListings([]); setTotal(0) }
-      else { setListings(data.listings ?? []); setTotal(data.total ?? 0); setSources(data.sources ?? null) }
+      else {
+        let results: Listing[] = data.listings ?? []
+        const sortBy = filters.sortBy
+        if (sortBy === 'price-asc')    results = [...results].sort((a,b) => (a.price ?? 999999) - (b.price ?? 999999))
+        if (sortBy === 'price-desc')   results = [...results].sort((a,b) => (b.price ?? 0) - (a.price ?? 0))
+        if (sortBy === 'mileage-asc')  results = [...results].sort((a,b) => (a.miles ?? 999999) - (b.miles ?? 999999))
+        setListings(results)
+        setTotal(data.total ?? 0)
+        setSources(data.sources ?? null)
+      }
       setSearched(true)
     } catch { setError('Search failed. Please try again.') }
     finally { setLoading(false) }
@@ -90,9 +86,7 @@ export default function CarSearchPage() {
     <div style={{ maxWidth:'1200px', margin:'0 auto' }}>
       <div style={{ marginBottom:'1.5rem' }}>
         <h1 style={{ fontSize:'1.75rem', fontWeight:800 }}>🔍 Buy a Car</h1>
-        <p style={{ color:'#7090B0', marginTop:'0.25rem' }}>
-          Live dealer inventory + eBay Motors auctions &amp; buy-it-now listings
-        </p>
+        <p style={{ color:'#7090B0', marginTop:'0.25rem' }}>Live dealer inventory from Marketcheck — 6 million+ listings</p>
       </div>
 
       {/* Search form */}
@@ -108,7 +102,7 @@ export default function CarSearchPage() {
             </div>
             <div>
               <label style={lbl}>Model</label>
-              <input value={filters.model} onChange={e => set('model', e.target.value)} placeholder="e.g. Supra" style={inp} />
+              <input value={filters.model} onChange={e => set('model', e.target.value)} placeholder="e.g. Mustang" style={inp} />
             </div>
             <div>
               <label style={lbl}>Year Min</label>
@@ -188,75 +182,58 @@ export default function CarSearchPage() {
         <div style={{ textAlign:'center', padding:'4rem 2rem' }}>
           <p style={{ fontSize:'4rem', marginBottom:'1rem' }}>🚗</p>
           <h2 style={{ fontSize:'1.25rem', fontWeight:700, marginBottom:'0.75rem' }}>Search live inventory</h2>
-          <div style={{ display:'flex', gap:'1rem', justifyContent:'center', flexWrap:'wrap' }}>
-            <span style={{ background:'rgba(34,85,238,0.1)', border:'1px solid rgba(34,85,238,0.2)', color:'#2255EE', padding:'0.375rem 0.875rem', borderRadius:'9999px', fontSize:'0.8rem' }}>🏪 Dealer Inventory via Marketcheck</span>
-            <span style={{ background:'rgba(255,215,0,0.08)', border:'1px solid rgba(255,215,0,0.2)', color:'#FFD700', padding:'0.375rem 0.875rem', borderRadius:'9999px', fontSize:'0.8rem' }}>🏁 eBay Motors Auctions &amp; Buy-It-Now</span>
-          </div>
+          <p style={{ color:'#7090B0', fontSize:'0.875rem' }}>Select a make, enter a ZIP code, or just hit Search to browse all listings</p>
         </div>
       )}
 
       {loading && (
         <div style={{ textAlign:'center', padding:'4rem' }}>
           <p style={{ fontSize:'2rem', marginBottom:'1rem' }}>🔍</p>
-          <p style={{ color:'#7090B0' }}>Searching dealer inventory + eBay Motors simultaneously…</p>
+          <p style={{ color:'#7090B0' }}>Searching live dealer inventory…</p>
         </div>
       )}
 
       {searched && !loading && !selected && (
         <div>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1rem', flexWrap:'wrap', gap:'0.5rem' }}>
-            <p style={{ color:'#7090B0', fontSize:'0.875rem' }}>{total} vehicles found</p>
+            <p style={{ color:'#7090B0', fontSize:'0.875rem' }}>{total.toLocaleString()} vehicles found · showing {listings.length}</p>
             {sources && (
-              <div style={{ display:'flex', gap:'0.625rem' }}>
-                <span style={{ background:'rgba(34,85,238,0.08)', border:'1px solid rgba(34,85,238,0.15)', color:'#2255EE', padding:'0.2rem 0.625rem', borderRadius:'9999px', fontSize:'0.75rem' }}>🏪 {sources.marketcheck} dealers</span>
-                <span style={{ background:'rgba(255,215,0,0.06)', border:'1px solid rgba(255,215,0,0.15)', color:'#FFD700', padding:'0.2rem 0.625rem', borderRadius:'9999px', fontSize:'0.75rem' }}>🏁 {sources.ebay} eBay</span>
-              </div>
+              <span style={{ background:'rgba(34,85,238,0.08)', border:'1px solid rgba(34,85,238,0.15)', color:'#2255EE', padding:'0.2rem 0.625rem', borderRadius:'9999px', fontSize:'0.75rem' }}>
+                🏪 {sources.marketcheck} dealer listings
+              </span>
             )}
           </div>
 
-          <p style={{ fontSize:'0.7rem', color:'#3A5A80', marginBottom:'0.5rem' }}>
-            debug: {listings.length} listings in state · total={total}
-          </p>
-
           {listings.length === 0 ? (
             <div style={{ textAlign:'center', padding:'3rem', background:'#152234', border:'1px solid #1E3A6E', borderRadius:'1rem' }}>
-              <p style={{ color:'#7090B0' }}>No vehicles found. Try broadening your search — different make, higher price, wider radius.</p>
+              <p style={{ color:'#7090B0' }}>No vehicles found. Try a different make, wider radius, or leave ZIP blank for nationwide results.</p>
             </div>
           ) : (
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:'1.25rem' }}>
-              {listings.map((l, idx) => {
-                if (idx === 0) console.log('[car-search] first listing shape:', JSON.stringify(l))
+              {listings.map(l => {
                 const badge = getDealBadge(l)
                 const isSaved = saved.has(l.id)
+                const location = [l.dealer_city, l.dealer_state].filter(Boolean).join(', ')
                 return (
                   <div key={l.id} onClick={() => setSelected(l)}
                     style={{ background:'#152234', border:'1px solid #1E3A6E', borderRadius:'1rem', overflow:'hidden', cursor:'pointer', transition:'border-color 0.15s, transform 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = l.listing_type === 'auction' ? '#FFD700' : '#2255EE'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#2255EE'; e.currentTarget.style.transform = 'translateY(-2px)' }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = '#1E3A6E'; e.currentTarget.style.transform = 'translateY(0)' }}>
                     <div style={{ height:'180px', background:'linear-gradient(135deg, rgba(34,85,238,0.06), transparent)', position:'relative', overflow:'hidden' }}>
-                      {l.images?.[0]
-                        ? <img src={l.images[0]} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
+                      {l.photo
+                        ? <img src={l.photo} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
                         : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem' }}>🚗</div>
                       }
-                      {/* Source badge */}
                       <span style={{ position:'absolute', top:'0.5rem', right:'0.5rem', background:'rgba(5,10,20,0.9)', border:'1px solid #1E3A6E', padding:'0.2rem 0.5rem', borderRadius:'9999px', fontSize:'0.7rem', color:'#A0B4CC' }}>
-                        {l.source_badge} {l.source_name}
+                        🏪 Dealer
                       </span>
-                      {/* Save button */}
                       <button
                         onClick={e => toggleSave(l.id, e)}
                         style={{ position:'absolute', top:'0.5rem', left:'0.5rem', background: isSaved ? 'rgba(204,0,0,0.85)' : 'rgba(5,10,20,0.75)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'9999px', width:'2rem', height:'2rem', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:'0.9rem', transition:'background 0.15s' }}>
                         {isSaved ? '❤️' : '🤍'}
                       </button>
-                      {/* Auction badge */}
-                      {l.listing_type === 'auction' && (
-                        <span style={{ position:'absolute', bottom:'0.5rem', left:'0.5rem', background:'rgba(255,215,0,0.15)', border:'1px solid rgba(255,215,0,0.35)', padding:'0.2rem 0.625rem', borderRadius:'9999px', fontSize:'0.7rem', color:'#FFD700', fontWeight:700 }}>
-                          🏁 Auction{l.bid_count && l.bid_count !== '0' ? ` · ${l.bid_count} bids` : ''}
-                        </span>
-                      )}
                     </div>
                     <div style={{ padding:'1rem' }}>
-                      {/* Deal badge */}
                       {badge && (
                         <span style={{ display:'inline-block', background:badge.bg, border:`1px solid ${badge.border}`, color:badge.color, padding:'0.15rem 0.5rem', borderRadius:'9999px', fontSize:'0.7rem', fontWeight:600, marginBottom:'0.5rem' }}>
                           {badge.label}
@@ -265,17 +242,16 @@ export default function CarSearchPage() {
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'0.375rem' }}>
                         <div style={{ flex:1, minWidth:0 }}>
                           <h3 style={{ fontWeight:700, fontSize:'0.95rem' }}>{l.year} {l.make} {l.model}</h3>
-                          <p style={{ color:'#7090B0', fontSize:'0.8rem', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis', maxWidth:'165px' }}>{l.trim}</p>
+                          <p style={{ color:'#7090B0', fontSize:'0.8rem', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis', maxWidth:'165px' }}>{l.trim || ' '}</p>
                         </div>
                         <div style={{ textAlign:'right', flexShrink:0 }}>
                           <p style={{ fontWeight:800, color:'#CC0000', fontSize:'1.1rem' }}>{l.price ? `$${l.price.toLocaleString()}` : 'Call'}</p>
-                          {l.price && l.listing_type !== 'auction' && <p style={{ color:'#FFD700', fontSize:'0.75rem' }}>~${monthly(l.price).toLocaleString()}/mo</p>}
-                          {l.listing_type === 'auction' && l.time_left && <p style={{ color:'#FFD700', fontSize:'0.7rem' }}>⏱ {l.time_left.replace('P','').replace('T',' ').replace('H','h ').replace('M','m').replace('D','d ')}</p>}
+                          {l.price && <p style={{ color:'#FFD700', fontSize:'0.75rem' }}>~${monthly(l.price).toLocaleString()}/mo</p>}
                         </div>
                       </div>
                       <div style={{ display:'flex', gap:'0.625rem', fontSize:'0.8rem', color:'#7090B0', flexWrap:'wrap', marginBottom:'0.625rem' }}>
-                        {l.mileage && <span>🔢 {l.mileage.toLocaleString()} mi</span>}
-                        {l.distance !== null && <span>📍 {l.distance}mi</span>}
+                        {l.miles != null && <span>🔢 {l.miles.toLocaleString()} mi</span>}
+                        {location && <span>📍 {location}</span>}
                         {l.transmission && <span>⚙️ {l.transmission}</span>}
                         {l.drivetrain && <span>🚘 {l.drivetrain.toUpperCase()}</span>}
                       </div>
@@ -311,22 +287,15 @@ export default function CarSearchPage() {
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'2rem' }}>
             <div>
-              {selected.images?.[0]
-                ? <img src={selected.images[0]} alt="" style={{ width:'100%', borderRadius:'0.75rem', marginBottom:'0.75rem' }} />
+              {selected.photo
+                ? <img src={selected.photo} alt="" style={{ width:'100%', borderRadius:'0.75rem', marginBottom:'0.75rem' }} />
                 : <div style={{ height:'260px', background:'rgba(34,85,238,0.06)', borderRadius:'0.75rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'5rem', marginBottom:'0.75rem' }}>🚗</div>
               }
-              {selected.images && selected.images.length > 1 && (
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:'0.375rem' }}>
-                  {selected.images.slice(1,5).map((img, i) => (
-                    <img key={i} src={img} alt="" style={{ aspectRatio:'4/3', objectFit:'cover', borderRadius:'0.375rem', width:'100%' }} />
-                  ))}
-                </div>
-              )}
             </div>
             <div>
-              <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.5rem', flexWrap:'wrap' }}>
-                <span style={{ background: selected.listing_type === 'auction' ? 'rgba(255,215,0,0.1)' : 'rgba(34,85,238,0.1)', border:`1px solid ${selected.listing_type === 'auction' ? 'rgba(255,215,0,0.25)' : 'rgba(34,85,238,0.25)'}`, color: selected.listing_type === 'auction' ? '#FFD700' : '#2255EE', padding:'0.2rem 0.625rem', borderRadius:'9999px', fontSize:'0.75rem', fontWeight:600 }}>
-                  {selected.source_badge} {selected.source_name} {selected.listing_type === 'auction' ? '· Auction' : '· Buy Now'}
+              <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.5rem' }}>
+                <span style={{ background:'rgba(34,85,238,0.1)', border:'1px solid rgba(34,85,238,0.25)', color:'#2255EE', padding:'0.2rem 0.625rem', borderRadius:'9999px', fontSize:'0.75rem', fontWeight:600 }}>
+                  🏪 Dealer Inventory
                 </span>
                 {(() => { const b = getDealBadge(selected); return b ? <span style={{ background:b.bg, border:`1px solid ${b.border}`, color:b.color, padding:'0.2rem 0.625rem', borderRadius:'9999px', fontSize:'0.75rem', fontWeight:600 }}>{b.label}</span> : null })()}
               </div>
@@ -335,19 +304,16 @@ export default function CarSearchPage() {
               <p style={{ fontSize:'2.25rem', fontWeight:900, color:'#CC0000', marginBottom:'0.25rem' }}>
                 {selected.price ? `$${selected.price.toLocaleString()}` : 'Call for Price'}
               </p>
-              {selected.price && selected.listing_type !== 'auction' && <p style={{ color:'#FFD700', marginBottom:'1.25rem' }}>~${monthly(selected.price).toLocaleString()}/mo est.</p>}
-              {selected.listing_type === 'auction' && selected.bid_count && <p style={{ color:'#FFD700', marginBottom:'1.25rem' }}>🏁 {selected.bid_count} bids · {selected.time_left}</p>}
+              {selected.price && <p style={{ color:'#FFD700', marginBottom:'1.25rem' }}>~${monthly(selected.price).toLocaleString()}/mo est.</p>}
 
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.625rem', marginBottom:'1.5rem' }}>
                 {[
-                  ['🔢','Mileage', selected.mileage ? `${selected.mileage.toLocaleString()} mi` : '—'],
-                  ['📍','Location', selected.location || '—'],
-                  ['⚙️','Engine', selected.engine || '—'],
-                  ['🔄','Transmission', selected.transmission || '—'],
-                  ['🚘','Drivetrain', selected.drivetrain ? selected.drivetrain.toUpperCase() : '—'],
-                  ['⛽','MPG', selected.mpg_city && selected.mpg_hwy ? `${selected.mpg_city}/${selected.mpg_hwy}` : '—'],
-                  ['🎨','Color', selected.exterior_color || '—'],
-                  ['📅','Days Listed', selected.days_on_market ? `${selected.days_on_market}d` : '—'],
+                  ['🔢', 'Mileage',      selected.miles != null ? `${selected.miles.toLocaleString()} mi` : '—'],
+                  ['📍', 'Location',     [selected.dealer_city, selected.dealer_state].filter(Boolean).join(', ') || '—'],
+                  ['🔄', 'Transmission', selected.transmission || '—'],
+                  ['🚘', 'Drivetrain',   selected.drivetrain ? selected.drivetrain.toUpperCase() : '—'],
+                  ['🎨', 'Color',        selected.exterior_color || '—'],
+                  ['📅', 'Days Listed',  selected.dom != null ? `${selected.dom}d` : '—'],
                 ].map(([icon, label, val]) => (
                   <div key={label as string} style={{ background:'#0E1825', borderRadius:'0.5rem', padding:'0.625rem', border:'1px solid #1E3A6E' }}>
                     <p style={{ fontSize:'0.7rem', color:'#7090B0' }}>{icon} {label as string}</p>
@@ -362,7 +328,7 @@ export default function CarSearchPage() {
               <div style={{ display:'flex', flexDirection:'column', gap:'0.625rem' }}>
                 {selected.listing_url
                   ? <a href={selected.listing_url} target="_blank" rel="noopener" style={{ background:'#CC0000', color:'white', padding:'0.875rem', borderRadius:'0.75rem', fontWeight:700, textAlign:'center', textDecoration:'none', fontSize:'0.95rem' }}>
-                      {selected.listing_type === 'auction' ? '🏁 Bid on eBay Motors →' : 'View Full Listing →'}
+                      View Full Listing →
                     </a>
                   : <button style={{ background:'#CC0000', color:'white', border:'none', padding:'0.875rem', borderRadius:'0.75rem', fontWeight:700, cursor:'pointer' }}>Contact Dealer</button>
                 }
