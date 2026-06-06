@@ -27,8 +27,8 @@ export async function GET(request: Request) {
   const mMax = mileageMax ? parseInt(mileageMax) : null
 
   const hasFilters = yMin !== null || yMax !== null || pMin !== null || pMax !== null || mMax !== null
-  const MAX_ATTEMPTS = hasFilters ? 5 : 1
-  const ROWS = 100
+  const MAX_ATTEMPTS = hasFilters ? 10 : 1
+  const ROWS = 200
   const TARGET = 20
 
   function buildUrl(fetchStart: number): string {
@@ -127,6 +127,7 @@ export async function GET(request: Request) {
     listings: allFiltered,
     total: numFound,
     sources: { marketcheck: allFiltered.length, ebay: 0 },
+    nextStart: baseStart + totalChecked,
     _debug: { checked: totalChecked, filtered: allFiltered.length, numFound }
   }, {
     headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }

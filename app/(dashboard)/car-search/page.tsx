@@ -48,7 +48,8 @@ export default function CarSearchPage() {
   const [error, setError] = useState('')
   const [saved, setSaved] = useState<Set<string>>(new Set())
   const [page, setPage] = useState(0)
-  const [appliedFilters, setAppliedFilters] = useState('')
+  const [pageStarts, setPageStarts] = useState<number[]>([0])
+  const [nextStart, setNextStart] = useState(0)
 
   const set = (k: string, v: string) => setFilters(f => ({ ...f, [k]: v }))
   const toggleSave = (id: string, e: React.MouseEvent) => {
@@ -56,7 +57,7 @@ export default function CarSearchPage() {
     setSaved(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next })
   }
 
-  async function runSearch(pageNum: number) {
+  async function runSearch(startVal: number, newPage: number) {
     setLoading(true); setError(''); setSelected(null)
     const params = new URLSearchParams()
     if (filters.make)         params.set('make', filters.make)
@@ -74,19 +75,7 @@ export default function CarSearchPage() {
     if (filters.condition)    params.set('condition', filters.condition)
     if (filters.transmission) params.set('transmission', filters.transmission)
     if (filters.drivetrain)   params.set('drivetrain', filters.drivetrain)
-    params.set('start', String(pageNum * 50))
-    const dbParts: string[] = []
-    if (filters.make || filters.model) dbParts.push([filters.make, filters.model].filter(Boolean).join(' '))
-    const yMin = filters.yearMin.replace(/[^0-9]/g, '')
-    const yMax = filters.yearMax.replace(/[^0-9]/g, '')
-    if (yMin || yMax) dbParts.push(`year ${yMin||'any'}–${yMax||'any'}`)
-    if (pMin || pMax) dbParts.push(`$${pMin||'0'}–$${pMax||'∞'}`)
-    if (mMax) dbParts.push(`≤${Number(mMax).toLocaleString()} mi`)
-    if (filters.transmission) dbParts.push(filters.transmission)
-    if (filters.drivetrain) dbParts.push(filters.drivetrain.toUpperCase())
-    if (filters.condition) dbParts.push(filters.condition)
-    if (filters.zip) dbParts.push(`near ${filters.zip} (${filters.radius}mi)`)
-    setAppliedFilters(dbParts.length ? dbParts.join(' · ') : 'No filters — all vehicles')
+    params.set('start', String(startVal))
     console.log('SEARCH URL:', `/api/car-search?${params.toString()}`)
     try {
       const res = await fetch(`/api/car-search?${params}`, { cache: 'no-store' })
@@ -94,6 +83,8 @@ export default function CarSearchPage() {
       console.log('[car-search] response:', data)
       if (data.error) { setError(data.error); setListings([]); setTotal(0) }
       else {
+        const yMin = filters.yearMin.replace(/[^0-9]/g, '')
+        const yMax = filters.yearMax.replace(/[^0-9]/g, '')
         let results: Listing[] = data.listings ?? []
         if (yMin) results = results.filter(l => l.year === null || l.year >= parseInt(yMin))
         if (yMax) results = results.filter(l => l.year === null || l.year <= parseInt(yMax))
@@ -107,7 +98,10 @@ export default function CarSearchPage() {
         setListings(results)
         setTotal(data.total ?? 0)
         setSources(data.sources ?? null)
-        setPage(pageNum)
+        setPage(newPage)
+        const ns = data.nextStart ?? 0
+        setNextStart(ns)
+        setPageStarts(prev => { const u = [...prev]; u[newPage] = startVal; return u })
       }
       setSearched(true)
     } catch { setError('Search failed. Please try again.') }
@@ -116,7 +110,9 @@ export default function CarSearchPage() {
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault()
-    await runSearch(0)
+    setPageStarts([0])
+    setNextStart(0)
+    await runSearch(0, 0)
   }
 
   const inp: React.CSSProperties = { width:'100%', background:'#0E1825', border:'1px solid #1E3A6E', borderRadius:'0.625rem', padding:'0.625rem 0.75rem', color:'white', fontSize:'0.875rem', outline:'none' }
@@ -235,11 +231,6 @@ export default function CarSearchPage() {
 
       {searched && !loading && !selected && (
         <div>
-          {appliedFilters && (
-            <div style={{ background:'rgba(255,215,0,0.06)', border:'1px solid rgba(255,215,0,0.2)', borderRadius:'0.75rem', padding:'0.625rem 1rem', marginBottom:'1rem', fontSize:'0.8rem', color:'#FFD700', fontFamily:'monospace' }}>
-              Searching: {appliedFilters}
-            </div>
-          )}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1rem', flexWrap:'wrap', gap:'0.5rem' }}>
             <p style={{ color:'#7090B0', fontSize:'0.875rem' }}>{total.toLocaleString()} vehicles found · showing {listings.length}</p>
             {sources && (
@@ -323,13 +314,13 @@ export default function CarSearchPage() {
           {listings.length > 0 && (
             <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:'1rem', marginTop:'1.5rem' }}>
               {page > 0 && (
-                <button onClick={() => runSearch(page - 1)} style={{ background:'#152234', border:'1px solid #1E3A6E', color:'#A0B4CC', padding:'0.625rem 1.25rem', borderRadius:'0.75rem', cursor:'pointer', fontWeight:600, fontSize:'0.875rem' }}>
+                <button onClick={() => runSearch(pageStarts[page - 1] ?? 0, page - 1)} style={{ background:'#152234', border:'1px solid #1E3A6E', color:'#A0B4CC', padding:'0.625rem 1.25rem', borderRadius:'0.75rem', cursor:'pointer', fontWeight:600, fontSize:'0.875rem' }}>
                   ← Prev Page
                 </button>
               )}
               <span style={{ color:'#7090B0', fontSize:'0.875rem' }}>Page {page + 1} · {total.toLocaleString()} total</span>
-              {listings.length === 50 && (
-                <button onClick={() => runSearch(page + 1)} style={{ background:'#152234', border:'1px solid #1E3A6E', color:'#A0B4CC', padding:'0.625rem 1.25rem', borderRadius:'0.75rem', cursor:'pointer', fontWeight:600, fontSize:'0.875rem' }}>
+              {nextStart > 0 && (
+                <button onClick={() => runSearch(nextStart, page + 1)} style={{ background:'#152234', border:'1px solid #1E3A6E', color:'#A0B4CC', padding:'0.625rem 1.25rem', borderRadius:'0.75rem', cursor:'pointer', fontWeight:600, fontSize:'0.875rem' }}>
                   Next Page →
                 </button>
               )}
