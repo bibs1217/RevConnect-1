@@ -58,7 +58,7 @@ export default function CarSearchPage() {
   const [geoLoading, setGeoLoading]       = useState(false)
   const [activeFilters, setActiveFilters]   = useState<string[]>([])
   const [filtersRelaxed, setFiltersRelaxed] = useState(false)
-  const [sources, setSources]               = useState<{marketcheck?: number; ebay?: number}>({})
+  const [sources, setSources]               = useState<{marketcheck?: number; carmax?: number; carvana?: number; ebay?: number}>({})
 
 
   function setF(k: string, v: string) {
@@ -394,11 +394,21 @@ export default function CarSearchPage() {
                 <span style={{ color: MUTED, fontSize: 13 }}>
                   from {total.toLocaleString()} listings · page {page} of {totalPages}
                 </span>
-                {(sources.marketcheck || sources.ebay) && (
-                  <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                {(sources.marketcheck || sources.carmax || sources.carvana || sources.ebay) && (
+                  <span style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                     {sources.marketcheck ? (
                       <span style={{ background: '#1B3A5A', color: '#7AB8FF', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
                         Dealers: {sources.marketcheck.toLocaleString()}
+                      </span>
+                    ) : null}
+                    {sources.carmax ? (
+                      <span style={{ background: '#0D2B1A', color: '#4DD88A', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
+                        CarMax: {sources.carmax.toLocaleString()}
+                      </span>
+                    ) : null}
+                    {sources.carvana ? (
+                      <span style={{ background: '#1A1A3A', color: '#A78BFA', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
+                        Carvana: {sources.carvana.toLocaleString()}
                       </span>
                     ) : null}
                     {sources.ebay ? (
@@ -465,6 +475,16 @@ export default function CarSearchPage() {
                         {l.source === 'eBay' && (
                           <span style={{ position: 'absolute', top: 8, left: 8, background: '#E43137', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>
                             eBay{l.listing_type === 'Auction' ? ' AUCTION' : ''}
+                          </span>
+                        )}
+                        {l.source === 'CarMax' && (
+                          <span style={{ position: 'absolute', top: 8, left: 8, background: '#006B3C', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>
+                            CarMax
+                          </span>
+                        )}
+                        {l.source === 'Carvana' && (
+                          <span style={{ position: 'absolute', top: 8, left: 8, background: '#4B3F8D', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>
+                            Carvana
                           </span>
                         )}
                         {l.price_drop && l.source !== 'eBay' && (
