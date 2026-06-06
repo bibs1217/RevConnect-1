@@ -18,56 +18,38 @@ function dist(uLat: number, uLon: number, lat: any, lon: any): number | null {
 }
 
 // ── Marketcheck ───────────────────────────────────────────────────────────────
-// Sends zip+radius so Marketcheck returns LOCAL dealer inventory.
-// Also passes year_min/year_max (honored on most plans).
-// Falls back to a second pass WITHOUT year filter if the first returns 0,
-// so graceful degradation always has local cars to work with.
+// NOTE: zip/radius geographic filtering is NOT supported on this plan (returns 422).
+// We fetch national inventory and apply Haversine distance client-side.
+// year_min/year_max are sent (honored on most plans); sort=year_asc for old searches.
 async function fetchMarketcheck(
   key: string, make: string, model: string,
-  condition: string, yearMin: string, yearMax: string,
-  zip: string, radius: number
+  condition: string, yearMin: string, yearMax: string
 ): Promise<any[]> {
   if (!key) return []
-
-  async function mcFetch(withYear: boolean): Promise<any[]> {
-    const listings: any[] = []
-    const oldSearch = withYear && yearMax && parseInt(yearMax) < 2020
-    for (let i = 0; i < 10; i++) {
-      try {
-        let u = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${key}&rows=50&start=${i * 50}`
-        if (make)  u += `&make=${encodeURIComponent(make)}`
-        if (model) u += `&model=${encodeURIComponent(model)}`
-        if (withYear && yearMin) u += `&year_min=${yearMin}`
-        if (withYear && yearMax) u += `&year_max=${yearMax}`
-        if (oldSearch) u += `&sort=year_asc`
-        // Send zip+radius so Marketcheck filters to local dealers
-        if (zip && radius) u += `&zip=${zip}&radius=${Math.min(radius, 500)}`
-        if (condition === 'new')                       u += `&car_type=new`
-        else if (condition === 'used')                 u += `&car_type=used`
-        else if (condition === 'cpo')                  u += `&car_type=certified`
-        else if (yearMax && parseInt(yearMax) < 2025)  u += `&car_type=used`
-        const r = await fetch(u, { cache: 'no-store' })
-        if (!r.ok) { console.error('[MC] bad status', r.status, await r.text().then(t => t.slice(0, 200))); break }
-        const d = await r.json()
-        const batch: any[] = Array.isArray(d.listings) ? d.listings : []
-        console.log(`[MC] pass=${withYear?'year':'open'} batch=${i} got=${batch.length} numFound=${d.num_found ?? '?'}`)
-        listings.push(...batch)
-        if (batch.length === 0) break
-      } catch (e) { console.error('[MC] exception', e); break }
-    }
-    return listings
+  const listings: any[] = []
+  const oldSearch = yearMax && parseInt(yearMax) < 2020
+  for (let i = 0; i < 10; i++) {
+    try {
+      let u = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${key}&rows=50&start=${i * 50}`
+      if (make)      u += `&make=${encodeURIComponent(make)}`
+      if (model)     u += `&model=${encodeURIComponent(model)}`
+      if (yearMin)   u += `&year_min=${yearMin}`
+      if (yearMax)   u += `&year_max=${yearMax}`
+      if (oldSearch) u += `&sort=year_asc`
+      if (condition === 'new')                       u += `&car_type=new`
+      else if (condition === 'used')                 u += `&car_type=used`
+      else if (condition === 'cpo')                  u += `&car_type=certified`
+      else if (yearMax && parseInt(yearMax) < 2025)  u += `&car_type=used`
+      const r = await fetch(u, { cache: 'no-store' })
+      if (!r.ok) { console.error('[MC] status', r.status, await r.text().then(t => t.slice(0, 200))); break }
+      const d = await r.json()
+      const batch: any[] = Array.isArray(d.listings) ? d.listings : []
+      console.log(`[MC] batch=${i} got=${batch.length} numFound=${d.num_found ?? '?'}`)
+      listings.push(...batch)
+      if (batch.length === 0) break
+    } catch (e) { console.error('[MC] exception', e); break }
   }
-
-  // Pass 1: with year filter (to get exact matches)
-  const withYear = await mcFetch(true)
-  if (withYear.length > 0) return withYear
-
-  // Pass 2: no year filter (so graceful-degradation has local cars to fall back on)
-  if (yearMin || yearMax) {
-    console.log('[MC] 0 year-filtered results, fetching open to enable graceful degradation')
-    return mcFetch(false)
-  }
-  return withYear
+  return listings
 }
 
 function mapMC(l: any, uLat: number, uLon: number): any {
@@ -259,11 +241,13 @@ async function fetchEbay(
   let searches: Promise<any[]>[]
 
   if (rangeSize > 0 && rangeSize <= 6) {
-    // Small year range: search per-year so the year appears in every title
-    // e.g. "2013 ford mustang" — guarantees year is parsed correctly
+    // Small year range: search per-year × 3 pages so year appears in every title
+    // e.g. "2013 ford mustang" page 1,2,3 — 150 results per year
     searches = []
     for (let y = min; y <= max; y++) {
       searches.push(ebaySearch(appId, `${y} ${make} ${model}`, make, model, priceMax, 'PricePlusShippingLowest', '', 1))
+      searches.push(ebaySearch(appId, `${y} ${make} ${model}`, make, model, priceMax, 'PricePlusShippingLowest', '', 2))
+      searches.push(ebaySearch(appId, `${y} ${make} ${model}`, make, model, priceMax, 'StartTimeNewest',         '', 1))
     }
   } else {
     // Large range or no year filter: 3 general passes
@@ -349,7 +333,7 @@ export async function GET(request: Request) {
 
   // All four sources in parallel
   const [mcRaw, carmaxRaw, carvanaRaw, ebayRaw] = await Promise.all([
-    fetchMarketcheck(mcKey, make, model, condition, yearMin, yearMax, zip, radius),
+    fetchMarketcheck(mcKey, make, model, condition, yearMin, yearMax),
     fetchCarmax(make, model, yearMin, yearMax, priceMax, zip, radius, uLat, uLon),
     fetchCarvana(make, model, yearMin, yearMax, priceMax),
     fetchEbay(ebayId, make, model, yearMin, yearMax, priceMax),
