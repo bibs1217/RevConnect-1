@@ -392,6 +392,11 @@ export default function CarSearchPage() {
                     Within {filters.radius} mi of {filters.zip}
                   </span>
                 )}
+                {locationMode === 'nationwide_fallback' && (
+                  <span style={{ color: '#FF9800', fontSize: 13 }}>
+                    No results within {filters.radius} mi of {filters.zip} — showing nationwide
+                  </span>
+                )}
                 {locationMode === 'zip_invalid' && (
                   <span style={{ color: '#FF9800', fontSize: 13 }}>
                     Invalid ZIP — showing all locations

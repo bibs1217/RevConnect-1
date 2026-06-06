@@ -30,8 +30,8 @@ export async function GET(request: Request) {
   const sortBy       = searchParams.get('sortBy')       || 'price-asc'
   const page         = Math.max(1, parseInt(searchParams.get('page') || '1'))
 
-  // Geocode ZIP if provided
-  let userLat = 0, userLon = 0, locationMode = 'nationwide'
+  // Geocode ZIP
+  let userLat = 0, userLon = 0
   if (zip) {
     try {
       const geo = await fetch(`https://api.zippopotam.us/us/${zip}`, { cache: 'no-store' })
@@ -39,29 +39,31 @@ export async function GET(request: Request) {
         const gd = await geo.json()
         userLat = parseFloat(gd.places[0].latitude)
         userLon = parseFloat(gd.places[0].longitude)
-        locationMode = 'local'
         console.log('[GEO]', zip, '->', userLat, userLon)
       }
-    } catch { console.log('[GEO] failed for zip:', zip) }
+    } catch { console.log('[GEO] failed:', zip) }
   }
 
-  // Fetch 500 listings — only make/model sent to Marketcheck
+  // Fetch up to 500 listings sequentially to avoid rate limiting
   const allListings: any[] = []
-  await Promise.all(
-    Array.from({ length: 5 }, (_, i) => {
+  for (let i = 0; i < 5; i++) {
+    try {
       let u = `https://mc-api.marketcheck.com/v2/search/car/active?api_key=${key}&rows=100&start=${i * 100}`
       if (make)  u += `&make=${encodeURIComponent(make)}`
       if (model) u += `&model=${encodeURIComponent(model)}`
-      return fetch(u, { cache: 'no-store' })
-        .then(r => r.json())
-        .then(d => { if (Array.isArray(d.listings)) allListings.push(...d.listings) })
-        .catch(() => {})
-    })
-  )
+      const r = await fetch(u, { cache: 'no-store' })
+      const d = await r.json()
+      const batch = d.listings || []
+      allListings.push(...batch)
+      console.log(`[MC] batch ${i}: ${batch.length} listings (total so far: ${allListings.length})`)
+      if (batch.length < 100) break // no more results available
+    } catch (e) {
+      console.log(`[MC] batch ${i} failed:`, e)
+      break
+    }
+  }
 
-  console.log('[MC] fetched:', allListings.length)
-
-  // Map all listings — compute distance while we have the raw dealer lat/lon strings
+  // Map all listings, computing distance from user ZIP
   const mapped = allListings.map((l: any) => {
     const dlat = parseFloat(l.dealer?.latitude  || '0')
     const dlon = parseFloat(l.dealer?.longitude || '0')
@@ -92,8 +94,8 @@ export async function GET(request: Request) {
     }
   })
 
-  // Apply all filters to the full 500-item set
-  const filtered = mapped.filter((l) => {
+  // Apply non-distance filters first
+  let filtered = mapped.filter((l) => {
     if (yearMin    && l.year  && l.year  < parseInt(yearMin))    return false
     if (yearMax    && l.year  && l.year  > parseInt(yearMax))    return false
     if (priceMin   && l.price && l.price < parseInt(priceMin))   return false
@@ -104,11 +106,22 @@ export async function GET(request: Request) {
     if (condition === 'new'  && l.inventory_type && l.inventory_type !== 'new')       return false
     if (condition === 'used' && l.inventory_type && l.inventory_type !== 'used')      return false
     if (condition === 'cpo'  && l.inventory_type && l.inventory_type !== 'certified') return false
-    if (userLat && userLon && l.distance !== null && l.distance > radius) return false
     return true
   })
 
-  console.log('[MC] filtered:', filtered.length, 'of', mapped.length)
+  // Apply distance filter — fall back to nationwide if no local results found
+  let locationMode = 'nationwide'
+  if (userLat && userLon) {
+    const local = filtered.filter(l => l.distance === null || l.distance <= radius)
+    if (local.length > 0) {
+      filtered = local
+      locationMode = 'local'
+    } else {
+      locationMode = 'nationwide_fallback'
+    }
+  }
+
+  console.log(`[MC] filtered: ${filtered.length} of ${mapped.length} (mode: ${locationMode})`)
 
   // Sort
   if      (sortBy === 'price-desc')   filtered.sort((a, b) => b.price - a.price)
