@@ -69,7 +69,8 @@ export async function GET(request: Request) {
   return NextResponse.json({
     listings,
     total: data.num_found ?? 0,
-    sources: { marketcheck: listings.length, ebay: 0 }
+    sources: { marketcheck: listings.length, ebay: 0 },
+    _debug_mc_url: url.replace(key!, 'KEY_HIDDEN')
   }, {
     headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
   })
