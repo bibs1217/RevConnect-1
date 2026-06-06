@@ -70,6 +70,7 @@ export default function CarSearchPage() {
     if (filters.condition)    params.set('condition', filters.condition)
     if (filters.transmission) params.set('transmission', filters.transmission)
     if (filters.drivetrain)   params.set('drivetrain', filters.drivetrain)
+    console.log('SEARCH URL:', `/api/car-search?${params.toString()}`)
     try {
       const res = await fetch(`/api/car-search?${params}`, { cache: 'no-store' })
       const data = await res.json()

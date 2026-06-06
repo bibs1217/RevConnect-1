@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
+  console.log('[PARAMS]', Object.fromEntries(searchParams))
   const key = process.env.MARKETCHECK_API_KEY
 
   const make = searchParams.get('make') || ''
