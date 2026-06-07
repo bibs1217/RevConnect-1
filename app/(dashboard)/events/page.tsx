@@ -137,40 +137,53 @@ export default function EventsPage() {
     setZipBusy(false)
   }
 
-  /* ── filter & sort ── */
-  const filtered = useMemo<(Ev & {distance?:number})[]>(() => {
-    const now = new Date()
+  /* ── filter & sort — useState+useEffect avoids any useMemo caching edge cases ── */
+  const [filtered, setFiltered] = useState<(Ev & {distance?:number})[]>([])
+
+  useEffect(() => {
+    console.log('[FILTER] running — events:', events.length, 'typeFilter:', typeFilter,
+      'search:', JSON.stringify(search), 'dateFilter:', dateFilter, 'anchor:', anchor, 'radius:', radius)
+
+    if (events.length === 0) { setFiltered([]); return }
+
+    const now      = new Date()
     const endWeek  = new Date(now); endWeek.setDate(now.getDate()+7)
     const endMonth = new Date(now.getFullYear(), now.getMonth()+1, 0, 23,59,59)
 
-    return events
-      .map(ev => ({
-        ...ev,
-        distance: anchor && ev.lat && ev.lng
-          ? Math.round(haversine(anchor.lat, anchor.lng, ev.lat, ev.lng))
-          : undefined,
-      }))
-      .filter(ev => {
-        if (typeFilter !== 'All' && ev.event_type !== typeFilter) return false
-        if (search.trim()) {
-          const q = search.toLowerCase()
-          if (!( (ev.title??'').toLowerCase().includes(q) ||
-                 (ev.city??'').toLowerCase().includes(q)  ||
-                 (ev.state??'').toLowerCase().includes(q) ||
-                 (ev.description??'').toLowerCase().includes(q) )) return false
-        }
-        if (anchor && ev.distance !== undefined && ev.distance > radius) return false
-        const d = new Date(ev.starts_at)
-        if (dateFilter==='upcoming'  && d < now)                       return false
-        if (dateFilter==='this_week' && (d < now || d > endWeek))      return false
-        if (dateFilter==='this_month'&& (d < now || d > endMonth))     return false
-        return true
-      })
-      .sort((a,b) => {
-        if (anchor && a.distance!==undefined && b.distance!==undefined)
-          return a.distance - b.distance
-        return new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
-      })
+    const withDist = events.map(ev => ({
+      ...ev,
+      distance: anchor && ev.lat && ev.lng
+        ? Math.round(haversine(anchor.lat, anchor.lng, ev.lat, ev.lng))
+        : undefined,
+    }))
+
+    let kept = 0, droppedType=0, droppedSearch=0, droppedDist=0, droppedDate=0
+    const result = withDist.filter(ev => {
+      if (typeFilter !== 'All' && ev.event_type !== typeFilter) { droppedType++;   return false }
+      if (search.trim()) {
+        const q = search.toLowerCase()
+        if (!( (ev.title??'').toLowerCase().includes(q) ||
+               (ev.city??'').toLowerCase().includes(q)  ||
+               (ev.state??'').toLowerCase().includes(q) ||
+               (ev.description??'').toLowerCase().includes(q) )) { droppedSearch++; return false }
+      }
+      if (anchor && ev.distance !== undefined && ev.distance > radius) { droppedDist++;   return false }
+      const d = new Date(ev.starts_at)
+      if (dateFilter==='upcoming'   && d < now)                    { droppedDate++;  return false }
+      if (dateFilter==='this_week'  && (d < now || d > endWeek))   { droppedDate++;  return false }
+      if (dateFilter==='this_month' && (d < now || d > endMonth))  { droppedDate++;  return false }
+      kept++; return true
+    })
+
+    console.log('[FILTER] kept:', kept, 'dropped — type:', droppedType, 'search:', droppedSearch,
+      'dist:', droppedDist, 'date:', droppedDate)
+
+    result.sort((a,b) => {
+      if (anchor && a.distance!==undefined && b.distance!==undefined) return a.distance-b.distance
+      return new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
+    })
+
+    setFiltered(result)
   }, [events, typeFilter, search, anchor, radius, dateFilter])
 
   /* ── create event ── */
