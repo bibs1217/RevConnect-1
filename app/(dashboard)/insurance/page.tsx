@@ -32,7 +32,6 @@ const CARRIERS = [
 const FILTERS_DEFAULT = { search:'', type:'All', agreed_value:false, mods:false, track:false, classic:false, daily:false, am_best_min:'', price_max:'', sort:'monthly-asc' }
 
 export default function InsurancePage() {
-  const [step, setStep] = useState<'quote'|'results'>('quote')
   const [profile, setProfile] = useState({ vehicle:'', year:'', make:'', model:'', mods_value:'0', use:'pleasure', mileage:'5000', zip:'', drivers:1, agreed_value:false, track:false, mods:false })
   const [filters, setFilters] = useState(FILTERS_DEFAULT)
   const [compare, setCompare] = useState<string[]>([])

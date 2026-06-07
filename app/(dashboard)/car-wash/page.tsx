@@ -51,13 +51,15 @@ export default function CarWashPage() {
     setLoading(false); setSearched(true)
   }
 
-  /* platform links with pre-filled search */
-  const searchQuery = encodeURIComponent(`${washType === 'mobile_detailer' ? 'mobile detailing' : washType === 'full_detail' ? 'auto detailing' : 'car wash'} ${city} ${stateVal}`)
+  /* platform links — always visible, pre-filled with current form values */
+  const typeKeyword = washType === 'mobile_detailer' ? 'mobile detailing' : washType === 'full_detail' ? 'auto detailing' : 'car wash'
+  const locationStr = [city, stateVal].filter(Boolean).join(' ')
   const platforms = [
-    { name:'Google Maps',  emoji:'📍', url:`https://www.google.com/maps/search/${searchQuery}`,                                                                  desc:'Search on Google Maps' },
-    { name:'Yelp',         emoji:'⭐', url:`https://www.yelp.com/search?find_desc=${encodeURIComponent(washType === 'mobile_detailer' ? 'mobile detailing' : 'car wash')}&find_loc=${encodeURIComponent(city + ' ' + stateVal)}`, desc:'Read reviews on Yelp' },
-    { name:'Thumbtack',    emoji:'🔨', url:`https://www.thumbtack.com/k/mobile-car-detailing/near-me/?zip=${zip || ''}`,                                          desc:'Get quotes from detailers' },
-    { name:'Angi',         emoji:'🔧', url:`https://www.angi.com/companylist/auto-detailing.htm?zip=${zip || ''}`,                                                desc:'Compare local detailers' },
+    { name:'Google Maps',  emoji:'📍', url:`https://www.google.com/maps/search/${encodeURIComponent(typeKeyword + ' ' + locationStr)}`,                                          desc:'Search on Google Maps' },
+    { name:'Yelp',         emoji:'⭐', url:`https://www.yelp.com/search?find_desc=${encodeURIComponent(typeKeyword)}&find_loc=${encodeURIComponent(locationStr)}`,               desc:'Read community reviews' },
+    { name:'Thumbtack',    emoji:'🔨', url:`https://www.thumbtack.com/k/mobile-car-detailing/near-me/${zip ? '?zip=' + zip : ''}`,                                              desc:'Get quotes from detailers' },
+    { name:'Angi',         emoji:'🔧', url:`https://www.angi.com/companylist/auto-detailing.htm${zip ? '?zip=' + zip : ''}`,                                                    desc:'Compare local detailers' },
+    { name:'TaskRabbit',   emoji:'🐰', url:`https://www.taskrabbit.com/services/auto-detailing${zip ? '?zip=' + zip : ''}`,                                                     desc:'Book a mobile detailer' },
   ]
 
   return (
@@ -193,31 +195,12 @@ export default function CarWashPage() {
               ))}
             </div>
           )}
-
-          {/* Platform buttons */}
-          <div style={{ marginBottom:'2rem' }}>
-            <h2 style={{ fontWeight:800, fontSize:'1.1rem', marginBottom:'0.4rem' }}>🌐 Search These Platforms Too</h2>
-            <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'0.78rem', marginBottom:'1rem' }}>
-              Pre-filled with your search — opens in a new tab
-            </p>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px,1fr))', gap:'0.875rem' }}>
-              {platforms.map((p, i) => (
-                <a key={i} href={p.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration:'none' }}>
-                  <div style={{ background:'#243547', borderRadius:'1rem', padding:'1.1rem', border:'1px solid rgba(255,255,255,0.07)', cursor:'pointer' }}>
-                    <div style={{ fontSize:'1.5rem', marginBottom:'0.4rem' }}>{p.emoji}</div>
-                    <p style={{ fontWeight:700, color:'white', fontSize:'0.9rem', margin:'0 0 0.2rem' }}>{p.name}</p>
-                    <p style={{ color:'rgba(255,255,255,0.38)', fontSize:'0.75rem', margin:0 }}>{p.desc}</p>
-                  </div>
-                </a>
-              ))}
-            </div>
-          </div>
         </>
       )}
 
       {/* Pre-search state */}
       {!searched && (
-        <div style={{ textAlign:'center', padding:'3rem 1rem', background:'rgba(255,255,255,0.02)', borderRadius:'1.25rem', border:'1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ textAlign:'center', padding:'3rem 1rem', background:'rgba(255,255,255,0.02)', borderRadius:'1.25rem', border:'1px solid rgba(255,255,255,0.05)', marginBottom:'2rem' }}>
           <div style={{ fontSize:'3rem', marginBottom:'1rem' }}>🚿</div>
           <h2 style={{ fontWeight:800, fontSize:'1.3rem', marginBottom:'0.5rem' }}>Find Car Washes Near You</h2>
           <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.9rem', maxWidth:'420px', margin:'0 auto' }}>
@@ -225,6 +208,25 @@ export default function CarWashPage() {
           </p>
         </div>
       )}
+
+      {/* Platform buttons — always visible */}
+      <div style={{ marginBottom:'2rem' }}>
+        <h2 style={{ fontWeight:800, fontSize:'1.1rem', marginBottom:'0.4rem' }}>🌐 Search These Platforms</h2>
+        <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'0.78rem', marginBottom:'1rem' }}>
+          {city ? `Pre-filled for ${city}, ${stateVal} — opens in a new tab` : 'Enter your city above then click to search directly on these platforms'}
+        </p>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px,1fr))', gap:'0.875rem' }}>
+          {platforms.map((p, i) => (
+            <a key={i} href={p.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration:'none' }}>
+              <div style={{ background:'#243547', borderRadius:'1rem', padding:'1.1rem', border:'1px solid rgba(255,255,255,0.07)', cursor:'pointer' }}>
+                <div style={{ fontSize:'1.5rem', marginBottom:'0.4rem' }}>{p.emoji}</div>
+                <p style={{ fontWeight:700, color:'white', fontSize:'0.9rem', margin:'0 0 0.2rem' }}>{p.name}</p>
+                <p style={{ color:'rgba(255,255,255,0.38)', fontSize:'0.75rem', margin:0 }}>{p.desc}</p>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
