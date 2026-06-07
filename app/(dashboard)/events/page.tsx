@@ -86,12 +86,8 @@ export default function EventsPage() {
     setLoadError('')
     try {
       const supabase = createClient()
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .eq('is_published', true)
-        .eq('is_cancelled', false)
-        .order('starts_at', { ascending: true })
+      const { data, error } = await supabase.from('events').select('*')
+      console.log('[EVENTS]', 'count:', data?.length, 'error:', error?.message, 'first:', JSON.stringify(data?.[0]))
       if (error) {
         console.error('[events] Supabase error:', error.message, error.code)
         setLoadError(`Could not load events: ${error.message}`)
