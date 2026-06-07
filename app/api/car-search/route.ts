@@ -1,105 +1,41 @@
 import { NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 
-function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 3958.8
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLon = (lon2 - lon1) * Math.PI / 180
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
-
-// ── Marketcheck ───────────────────────────────────────────────────────────────
-// zip/radius causes 422 on this plan — do NOT send them.
-// We fetch national inventory (rows=50 plan max) and apply Haversine client-side.
-async function fetchMarketcheck(
-  key: string, make: string, model: string,
-  yearMin: string, yearMax: string,
-  priceMin: string, priceMax: string, mileageMax: string,
-  transmission: string, drivetrain: string, condition: string
-): Promise<any[]> {
-  if (!key) return []
-  try {
-    const p = new URLSearchParams({ api_key: key, rows: '50', start: '0' })
-    if (make)         p.set('make',         make)
-    if (model)        p.set('model',        model)
-    if (yearMin)      p.set('year_min',     yearMin)
-    if (yearMax)      p.set('year_max',     yearMax)
-    if (priceMin)     p.set('price_min',    priceMin)
-    if (priceMax)     p.set('price_max',    priceMax)
-    if (mileageMax)   p.set('miles_max',    mileageMax)
-    if (transmission) p.set('transmission', transmission)
-    if (drivetrain)   p.set('drivetrain',   drivetrain)
-    if (condition === 'new')       p.set('car_type', 'new')
-    else if (condition === 'cpo')  p.set('car_type', 'certified')
-    else if (condition === 'used') p.set('car_type', 'used')
-
-    const url = `https://mc-api.marketcheck.com/v2/search/car/active?${p}`
-    console.log('[MC] GET', url.replace(key, 'KEY'))
-
-    const res  = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' } })
-    const text = await res.text()
-    if (!res.ok) { console.error('[MC] error', res.status, text.slice(0, 200)); return [] }
-    const data = JSON.parse(text)
-    const raw: any[] = Array.isArray(data.listings) ? data.listings : []
-    console.log(`[MC] num_found=${data.num_found ?? '?'} returned=${raw.length}`)
-    return raw
-  } catch (e) { console.error('[MC] exception', e); return [] }
-}
-
-function mapMC(l: any, uLat: number, uLon: number): any {
-  const dlat = parseFloat(l.dealer?.latitude  || '0')
-  const dlon = parseFloat(l.dealer?.longitude || '0')
-  const distance = (uLat && uLon && dlat && dlon)
-    ? Math.round(haversine(uLat, uLon, dlat, dlon)) : null
-  return {
-    id:             `mc_${l.id ?? Math.random()}`,
-    vin:            l.vin                      || null,
-    year:           Number(l.build?.year      || 0),
-    make:           l.build?.make             || '',
-    model:          l.build?.model            || '',
-    trim:           l.build?.trim             || '',
-    price:          Number(l.price            || 0),
-    miles:          Number(l.miles            || 0),
-    exterior_color: l.exterior_color          || '',
-    transmission:   l.build?.transmission     || '',
-    drivetrain:     l.build?.drivetrain       || '',
-    photo:          l.media?.photo_links?.[0] || null,
-    dealer_name:    l.dealer?.name            || '',
-    dealer_city:    l.dealer?.city            || '',
-    dealer_state:   l.dealer?.state           || '',
-    dealer_phone:   l.dealer?.phone           || '',
-    listing_url:    l.vdp_url                 || '',
-    dom:            Number(l.dom              || 0),
-    price_drop:     Number(l.price_change     || 0) < 0,
-    inventory_type: l.inventory_type          || '',
-    source:         'Marketcheck',
-    listing_type:   '',
-    distance,
-  }
-}
-
-// ── eBay ──────────────────────────────────────────────────────────────────────
+// ── eBay Motors ───────────────────────────────────────────────────────────────
 function mapEbay(item: any, make: string, model: string): any {
   const title = item.title?.[0] ?? ''
   const price = parseFloat(item.sellingStatus?.[0]?.currentPrice?.[0]?.['__value__'] ?? '0')
   const ym    = title.match(/\b(19|20)\d{2}\b/)
+
+  // Try to pull mileage from item specifics (not always present)
+  const specs: any[] = item.attribute ?? []
+  const miSpec = specs.find((s: any) =>
+    /mileage|odometer/i.test(s.name?.[0] ?? ''))
+  const miles = parseInt((miSpec?.value?.[0] ?? '').replace(/[^0-9]/g, '')) || 0
+
   return {
     id:             `ebay_${item.itemId?.[0] ?? Math.random()}`,
     vin:            null,
     year:           ym ? parseInt(ym[0]) : 0,
     make, model,
     trim:           title,
-    price, miles: 0, exterior_color: '', transmission: '', drivetrain: '',
+    price,
+    miles,
+    exterior_color: '',
+    transmission:   '',
+    drivetrain:     '',
     photo:          item.pictureURLLarge?.[0] ?? item.galleryURL?.[0] ?? null,
     dealer_name:    item.sellerInfo?.[0]?.sellerUserName?.[0] ?? 'eBay Seller',
     dealer_city:    item.location?.[0] ?? '',
-    dealer_state:   '', dealer_phone: '',
+    dealer_state:   '',
+    dealer_phone:   '',
     listing_url:    item.viewItemURL?.[0] ?? '',
-    dom: 0, price_drop: false, inventory_type: 'used',
-    source: 'eBay', listing_type: item.listingInfo?.[0]?.listingType?.[0] ?? '',
-    distance: null,
+    dom:            0,
+    price_drop:     false,
+    inventory_type: 'used',
+    source:         'eBay',
+    listing_type:   item.listingInfo?.[0]?.listingType?.[0] ?? '',
+    distance:       null,
   }
 }
 
@@ -108,8 +44,8 @@ async function ebaySearch(
   priceMin: string, priceMax: string, sort: string, page: number
 ): Promise<any[]> {
   try {
-    // Build URL manually — URLSearchParams percent-encodes ( ) in param names which breaks
-    // some eBay API versions (itemFilter%280%29.name vs itemFilter(0).name)
+    // Build URL manually — URLSearchParams encodes ( ) in param names which breaks
+    // eBay's itemFilter(N).name / outputSelector(N) syntax
     const parts: string[] = [
       'OPERATION-NAME=findItemsAdvanced',
       'SERVICE-VERSION=1.0.0',
@@ -174,13 +110,14 @@ async function fetchEbay(
   const rangeSize = (min && max) ? max - min + 1 : 0
 
   let searches: Promise<any[]>[]
+
   if (rangeSize > 0 && rangeSize <= 8) {
-    // Per-year keyword searches for small ranges — forces year into title for accurate parsing
+    // Per-year keyword searches for small ranges — forces year into the title
+    // so the regex in mapEbay parses it accurately instead of guessing
     searches = []
     for (let y = min; y <= max; y++) {
       const kw = `${y} ${make} ${model}`.trim()
       searches.push(ebaySearch(appId, kw, make, model, priceMin, priceMax, 'PricePlusShippingLowest', 1))
-      searches.push(ebaySearch(appId, kw, make, model, priceMin, priceMax, 'PricePlusShippingLowest', 2))
       searches.push(ebaySearch(appId, kw, make, model, priceMin, priceMax, 'StartTimeNewest',         1))
     }
   } else {
@@ -192,9 +129,9 @@ async function fetchEbay(
     ]
   }
 
-  const seen = new Set<string>()
-  const all  = (await Promise.all(searches)).flat()
-  const deduped = all.filter(l => { if (seen.has(l.id)) return false; seen.add(l.id); return true })
+  const seen    = new Set<string>()
+  const rawAll  = (await Promise.all(searches)).flat()
+  const deduped = rawAll.filter(l => { if (seen.has(l.id)) return false; seen.add(l.id); return true })
   console.log(`[eBay] total unique=${deduped.length}`)
   return deduped
 }
@@ -202,10 +139,9 @@ async function fetchEbay(
 // ── Main handler ──────────────────────────────────────────────────────────────
 export async function GET(request: Request) {
   const sp     = new URL(request.url).searchParams
-  const mcKey  = process.env.MARKETCHECK_API_KEY || ''
-  const ebayId = process.env.EBAY_APP_ID         || ''
+  const ebayId = process.env.EBAY_APP_ID || ''
 
-  console.log(`[car-search] mcKey=${mcKey ? 'SET' : 'MISSING'} ebayId=${ebayId ? 'SET' : 'MISSING'}`)
+  console.log(`[car-search] ebayId=${ebayId ? 'SET' : 'MISSING'}`)
 
   const make         = sp.get('make')         || ''
   const model        = sp.get('model')        || ''
@@ -214,40 +150,19 @@ export async function GET(request: Request) {
   const priceMin     = sp.get('priceMin')     || ''
   const priceMax     = sp.get('priceMax')     || ''
   const mileageMax   = sp.get('mileageMax')   || ''
-  const zip          = (sp.get('zip') || '').replace(/\D/g, '')
-  const radius       = parseInt(sp.get('radius') || '250')
   const transmission = sp.get('transmission') || ''
   const drivetrain   = sp.get('drivetrain')   || ''
   const condition    = sp.get('condition')    || ''
   const sortBy       = sp.get('sortBy')       || 'price-asc'
   const page         = Math.max(1, parseInt(sp.get('page') || '1'))
 
-  // Geocode ZIP for Haversine distance (Marketcheck doesn't accept zip+radius on this plan)
-  let uLat = 0, uLon = 0
-  if (zip) {
-    try {
-      const g  = await fetch(`https://api.zippopotam.us/us/${zip}`, { cache: 'no-store' })
-      const gd = await g.json()
-      uLat = parseFloat(gd.places[0].latitude)
-      uLon = parseFloat(gd.places[0].longitude)
-      console.log(`[geo] zip=${zip} lat=${uLat} lon=${uLon}`)
-    } catch (e) { console.warn('[geo] geocode failed', e) }
-  }
-
-  const [mcRaw, ebayRaw] = await Promise.all([
-    fetchMarketcheck(mcKey, make, model, yearMin, yearMax,
-                     priceMin, priceMax, mileageMax, transmission, drivetrain, condition),
-    fetchEbay(ebayId, make, model, yearMin, yearMax, priceMin, priceMax),
-  ])
-
-  const mcMapped = mcRaw.map(l => mapMC(l, uLat, uLon))
-  const allRaw   = [...mcMapped, ...ebayRaw]
+  const ebayRaw = await fetchEbay(ebayId, make, model, yearMin, yearMax, priceMin, priceMax)
 
   // Deduplicate
   const seenIds = new Set<string>()
-  const all     = allRaw.filter(l => { if (seenIds.has(l.id)) return false; seenIds.add(l.id); return true })
+  const all     = ebayRaw.filter(l => { if (seenIds.has(l.id)) return false; seenIds.add(l.id); return true })
 
-  console.log(`[car-search] MC=${mcMapped.length} eBay=${ebayRaw.length} deduped=${all.length}`)
+  console.log(`[car-search] eBay raw=${ebayRaw.length} deduped=${all.length}`)
 
   // ── Filters ───────────────────────────────────────────────────────────────
   const yMin = parseInt(yearMin)    || 0
@@ -256,16 +171,15 @@ export async function GET(request: Request) {
   const pMax = parseInt(priceMax)   || 0
   const mMax = parseInt(mileageMax) || 0
 
-  // Hard year filter — always enforced, never relaxed (Issue 1 & 5)
-  // Listings with unknown year (year=0) always pass through
+  // Hard year filter — always enforced, never relaxed
   const yearFiltered = all.filter(l => {
-    if (!l.year || l.year === 0) return true
+    if (!l.year || l.year === 0) return true   // keep unknown-year listings
     if (yMin && l.year < yMin) return false
     if (yMax && l.year > yMax) return false
     return true
   })
 
-  function applyOtherFilters(list: any[]) {
+  function applyFilters(list: any[]) {
     return list.filter(l => {
       if (l.price > 0) {
         if (pMin && l.price < pMin) return false
@@ -283,48 +197,27 @@ export async function GET(request: Request) {
     })
   }
 
-  let filtered = applyOtherFilters(yearFiltered)
+  let filtered       = applyFilters(yearFiltered)
   let filtersRelaxed = false
 
-  // Relax non-year filters if no results — year stays hard
   if (filtered.length === 0 && yearFiltered.length > 0) {
     filtered       = [...yearFiltered]
     filtersRelaxed = true
   }
-  // Absolute last resort: even year range relaxed
   if (filtered.length === 0 && all.length > 0) {
     filtered       = [...all]
     filtersRelaxed = true
   }
 
-  // Issue 2: strip $0 / null-price listings before returning
+  // Strip $0 / null-price listings
   filtered = filtered.filter(l => l.price !== null && l.price > 0)
 
-  console.log(`[car-search] yearFiltered=${yearFiltered.length} filtered=${filtered.length} filtersRelaxed=${filtersRelaxed}`)
-
-  // ── Distance filter ───────────────────────────────────────────────────────
-  // eBay has no location (distance=null) — always appended after local results
-  let locationMode = 'nationwide'
-  if (uLat && uLon && filtered.length > 0) {
-    const local  = filtered.filter(l => l.distance !== null && (l.distance as number) <= radius)
-    const online = filtered.filter(l => l.distance === null)
-    const far    = filtered.filter(l => l.distance !== null && (l.distance as number) >  radius)
-
-    if (local.length > 0) {
-      filtered     = [...local, ...online]
-      locationMode = 'local'
-    } else if (far.length > 0) {
-      far.sort((a, b) => (a.distance as number) - (b.distance as number))
-      filtered     = [...far.slice(0, 20), ...online]
-      locationMode = 'nearest_only'
-    }
-  }
+  console.log(`[car-search] yearFiltered=${yearFiltered.length} filtered=${filtered.length} relaxed=${filtersRelaxed}`)
 
   // ── Sort ──────────────────────────────────────────────────────────────────
-  if      (sortBy === 'price-desc')   filtered.sort((a, b) => (b.price   || 0) - (a.price   || 0))
-  else if (sortBy === 'mileage-asc')  filtered.sort((a, b) => (a.miles   || 0) - (b.miles   || 0))
-  else if (sortBy === 'distance-asc') filtered.sort((a, b) => (a.distance ?? 99999) - (b.distance ?? 99999))
-  else                                filtered.sort((a, b) => (a.price   || 0) - (b.price   || 0))
+  if      (sortBy === 'price-desc')  filtered.sort((a, b) => (b.price || 0) - (a.price || 0))
+  else if (sortBy === 'mileage-asc') filtered.sort((a, b) => (a.miles || 0) - (b.miles || 0))
+  else                               filtered.sort((a, b) => (a.price || 0) - (b.price || 0))
 
   const PER_PAGE   = 20
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
@@ -337,8 +230,7 @@ export async function GET(request: Request) {
     totalFiltered: filtered.length,
     totalPages,
     page:          safePage,
-    locationMode,
     filtersRelaxed,
-    sources: { marketcheck: mcMapped.length, carmax: 0, carvana: 0, ebay: ebayRaw.length },
+    sources: { ebay: all.length },
   }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } })
 }

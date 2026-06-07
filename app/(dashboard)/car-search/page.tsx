@@ -27,19 +27,95 @@ interface Listing {
   listing_type?: string
 }
 
-const BG      = '#1B2A3E'
-const CARD    = '#152234'
-const RED     = '#CC0000'
-const BLUE    = '#1539CC'
-const BLUE2   = '#2255EE'
-const GOLD    = '#FFD700'
-const INPUT   = '#0E1825'
-const BORDER  = '#2A3F5A'
-const TEXT    = '#E8EDF2'
-const MUTED   = '#7A9BBD'
+interface Filters {
+  make: string; model: string; yearMin: string; yearMax: string
+  priceMin: string; priceMax: string; mileageMax: string
+  zip: string; radius: string; condition: string
+  transmission: string; drivetrain: string; sortBy: string
+}
 
+const BG     = '#1B2A3E'
+const CARD   = '#152234'
+const RED    = '#CC0000'
+const BLUE   = '#1539CC'
+const BLUE2  = '#2255EE'
+const GOLD   = '#FFD700'
+const INPUT  = '#0E1825'
+const BORDER = '#2A3F5A'
+const TEXT   = '#E8EDF2'
+const MUTED  = '#7A9BBD'
+
+// ── External search link builder ──────────────────────────────────────────────
+function buildSearchLinks(f: Filters) {
+  const make  = f.make.trim()
+  const model = f.model.trim()
+  const yMin  = f.yearMin.replace(/\D/g, '')
+  const yMax  = f.yearMax.replace(/\D/g, '')
+  const pMax  = f.priceMax.replace(/\D/g, '')
+  const mMax  = f.mileageMax.replace(/\D/g, '')
+  const zip   = f.zip.replace(/\D/g, '')
+  const rad   = f.radius
+
+  // ── CarGurus ────────────────────────────────────────────────────────────
+  // Fragment format: d2|key=val|key=val  — encoded as d2%7Ckey%3Dval%7C...
+  const cgParts = ['d2', 'listingType%3Dused']
+  if (make)  cgParts.push(`make%3D${encodeURIComponent(make)}`)
+  if (model) cgParts.push(`model%3D${encodeURIComponent(model)}`)
+  if (yMin)  cgParts.push(`minYear%3D${yMin}`)
+  if (yMax)  cgParts.push(`maxYear%3D${yMax}`)
+  if (pMax)  cgParts.push(`maxPrice%3D${pMax}`)
+  if (mMax)  cgParts.push(`maxMileage%3D${mMax}`)
+  if (zip)  { cgParts.push(`zip%3D${zip}`); cgParts.push(`distance%3D${rad}`) }
+  const carGurus = `https://www.cargurus.com/Cars/new/nl#listing=${cgParts.join('%7C')}`
+
+  // ── AutoTrader ───────────────────────────────────────────────────────────
+  const atBase = (make && model)
+    ? `https://www.autotrader.com/cars-for-sale/used-cars/${encodeURIComponent(make.toLowerCase())}/${encodeURIComponent(model.toLowerCase())}`
+    : 'https://www.autotrader.com/cars-for-sale/used-cars'
+  const atP: string[] = []
+  if (zip)  atP.push(`zip=${zip}`)
+  if (pMax) atP.push(`maxPrice=${pMax}`)
+  if (yMin) atP.push(`startYear=${yMin}`)
+  if (yMax) atP.push(`endYear=${yMax}`)
+  if (mMax) atP.push(`mileage=${mMax}`)
+  if (zip && rad) atP.push(`searchRadius=${rad}`)
+  const autoTrader = atBase + (atP.length ? `?${atP.join('&')}` : '')
+
+  // ── CarMax ───────────────────────────────────────────────────────────────
+  const carMax = (make && model)
+    ? `https://www.carmax.com/cars/${encodeURIComponent(make.toLowerCase())}/${encodeURIComponent(model.toLowerCase())}`
+    : 'https://www.carmax.com/cars'
+
+  // ── Carvana ──────────────────────────────────────────────────────────────
+  const cvSlug = (make && model)
+    ? encodeURIComponent(`${make}-${model}`.toLowerCase().replace(/\s+/g, '-'))
+    : null
+  const cvBase  = cvSlug ? `https://www.carvana.com/cars/${cvSlug}` : 'https://www.carvana.com/cars'
+  const cvP: string[] = []
+  if (yMin) cvP.push(`year-min=${yMin}`)
+  if (yMax) cvP.push(`year-max=${yMax}`)
+  if (pMax) cvP.push(`price-max=${pMax}`)
+  if (mMax) cvP.push(`miles-max=${mMax}`)
+  const carvana = cvP.length ? `${cvBase}?${cvP.join('&')}` : cvBase
+
+  // ── Cars.com ─────────────────────────────────────────────────────────────
+  const carsP: string[] = ['stock_type=used']
+  if (make)  carsP.push(`makes[]=${encodeURIComponent(make.toLowerCase())}`)
+  if (model) carsP.push(`models[]=${encodeURIComponent(`${make}-${model}`.toLowerCase().replace(/\s+/g, '-'))}`)
+  if (zip)   carsP.push(`zip=${zip}`)
+  if (rad)   carsP.push(`maximum_distance=${rad}`)
+  if (yMin)  carsP.push(`year_min=${yMin}`)
+  if (yMax)  carsP.push(`year_max=${yMax}`)
+  if (pMax)  carsP.push(`price_max=${pMax}`)
+  if (mMax)  carsP.push(`mileage_max=${mMax}`)
+  const carsDotCom = `https://www.cars.com/shopping/results/?${carsP.join('&')}`
+
+  return { carGurus, autoTrader, carMax, carvana, carsDotCom }
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 export default function CarSearchPage() {
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<Filters>({
     make: '', model: '', yearMin: '', yearMax: '',
     priceMin: '', priceMax: '', mileageMax: '',
     zip: '', radius: '250', condition: '',
@@ -50,33 +126,33 @@ export default function CarSearchPage() {
   const [totalFiltered, setTotalFiltered] = useState(0)
   const [totalPages, setTotalPages]       = useState(0)
   const [page, setPage]                   = useState(1)
-  const [locationMode, setLocationMode]   = useState('')
   const [loading, setLoading]             = useState(false)
   const [searched, setSearched]           = useState(false)
   const [error, setError]                 = useState('')
   const [selected, setSelected]           = useState<Listing | null>(null)
   const [saved, setSaved]                 = useState<Set<string>>(new Set())
   const [geoLoading, setGeoLoading]       = useState(false)
-  const [activeFilters, setActiveFilters]   = useState<string[]>([])
+  const [activeFilters, setActiveFilters] = useState<string[]>([])
   const [filtersRelaxed, setFiltersRelaxed] = useState(false)
-  const [sources, setSources]               = useState<{marketcheck?: number; carmax?: number; carvana?: number; ebay?: number}>({})
+  const [ebayCount, setEbayCount]         = useState(0)
+  const [searchedFilters, setSearchedFilters] = useState<Filters | null>(null)
 
-  function setF(k: string, v: string) {
+  function setF(k: keyof Filters, v: string) {
     setFilters(f => ({ ...f, [k]: v }))
   }
 
   async function runSearch(pageNum: number) {
     setLoading(true)
-    setPage(pageNum)   // update immediately so UI reflects the new page
+    setPage(pageNum)
     setError('')
     setSelected(null)
 
-    const yMin = filters.yearMin.replace(/[^0-9]/g, '')
-    const yMax = filters.yearMax.replace(/[^0-9]/g, '')
-    const pMin = filters.priceMin.replace(/[^0-9]/g, '')
-    const pMax = filters.priceMax.replace(/[^0-9]/g, '')
-    const mMax = filters.mileageMax.replace(/[^0-9]/g, '')
-    const cleanZip = filters.zip.replace(/[^0-9]/g, '')
+    const yMin = filters.yearMin.replace(/\D/g, '')
+    const yMax = filters.yearMax.replace(/\D/g, '')
+    const pMin = filters.priceMin.replace(/\D/g, '')
+    const pMax = filters.priceMax.replace(/\D/g, '')
+    const mMax = filters.mileageMax.replace(/\D/g, '')
+    const cleanZip = filters.zip.replace(/\D/g, '')
 
     const params = new URLSearchParams()
     if (filters.make)  params.set('make', filters.make)
@@ -94,22 +170,14 @@ export default function CarSearchPage() {
     params.set('page', String(pageNum))
 
     const af: string[] = []
-    if (filters.make || filters.model)
-      af.push([filters.make, filters.model].filter(Boolean).join(' '))
-    if (yMin || yMax)
-      af.push(`${yMin || 'any'}–${yMax || 'any'} year`)
-    if (pMin || pMax)
-      af.push(`$${Number(pMin || 0).toLocaleString()}–$${pMax ? Number(pMax).toLocaleString() : '∞'}`)
-    if (mMax)
-      af.push(`≤${Number(mMax).toLocaleString()} mi`)
-    if (filters.condition)
-      af.push(filters.condition.toUpperCase())
-    if (filters.transmission)
-      af.push(filters.transmission.charAt(0).toUpperCase() + filters.transmission.slice(1))
-    if (filters.drivetrain)
-      af.push(filters.drivetrain.toUpperCase())
-    if (cleanZip)
-      af.push(`Within ${filters.radius} mi of ${cleanZip}`)
+    if (filters.make || filters.model) af.push([filters.make, filters.model].filter(Boolean).join(' '))
+    if (yMin || yMax) af.push(`${yMin || 'any'}–${yMax || 'any'} year`)
+    if (pMin || pMax) af.push(`$${Number(pMin||0).toLocaleString()}–$${pMax ? Number(pMax).toLocaleString() : '∞'}`)
+    if (mMax) af.push(`≤${Number(mMax).toLocaleString()} mi`)
+    if (filters.condition) af.push(filters.condition.toUpperCase())
+    if (filters.transmission) af.push(filters.transmission.charAt(0).toUpperCase() + filters.transmission.slice(1))
+    if (filters.drivetrain) af.push(filters.drivetrain.toUpperCase())
+    if (cleanZip) af.push(`Within ${filters.radius} mi of ${cleanZip}`)
     setActiveFilters(af)
 
     try {
@@ -124,10 +192,10 @@ export default function CarSearchPage() {
         setTotalFiltered(data.totalFiltered ?? 0)
         setTotalPages(data.totalPages ?? 1)
         setPage(data.page ?? pageNum)
-        setLocationMode(data.locationMode ?? '')
         setFiltersRelaxed(data.filtersRelaxed ?? false)
-        setSources(data.sources ?? {})
-        console.log('[car-search] sources:', data.sources, 'total:', data.total, 'filtered:', data.totalFiltered)
+        setEbayCount(data.sources?.ebay ?? 0)
+        setSearchedFilters({ ...filters })
+        console.log('[car-search] sources:', data.sources, 'total:', data.total)
       }
       setSearched(true)
     } catch {
@@ -159,11 +227,7 @@ export default function CarSearchPage() {
   }
 
   function toggleSave(id: string) {
-    setSaved(s => {
-      const n = new Set(s)
-      n.has(id) ? n.delete(id) : n.add(id)
-      return n
-    })
+    setSaved(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
   }
 
   const monthly = (price: number | null) =>
@@ -204,17 +268,12 @@ export default function CarSearchPage() {
                 <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700 }}>
                   {s.year} {s.make} {s.model}
                 </h1>
-                {s.trim && <div style={{ color: MUTED, fontSize: 15, marginTop: 4 }}>{s.trim}</div>}
-                {s.source && (
-                  <span style={{
-                    display: 'inline-block', marginTop: 8,
-                    background: s.source === 'eBay' ? '#E43137' : '#1B3A5A',
-                    color: '#fff', fontSize: 11, fontWeight: 700,
-                    padding: '2px 10px', borderRadius: 4,
-                  }}>
-                    {s.source}
-                  </span>
+                {s.trim && s.trim !== `${s.year} ${s.make} ${s.model}` && (
+                  <div style={{ color: MUTED, fontSize: 14, marginTop: 4 }}>{s.trim}</div>
                 )}
+                <span style={{ display: 'inline-block', marginTop: 8, background: '#E43137', color: '#fff', fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 4 }}>
+                  eBay Motors{s.listing_type === 'Auction' ? ' — AUCTION' : ''}
+                </span>
               </div>
               <div style={{ textAlign: 'right' }}>
                 {s.price ? (
@@ -228,12 +287,12 @@ export default function CarSearchPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 14, marginTop: 24 }}>
               {[
-                ['Mileage',       s.miles !== null ? `${s.miles.toLocaleString()} mi` : '—'],
-                ['Transmission',  s.transmission || '—'],
-                ['Drivetrain',    s.drivetrain || '—'],
-                ['Exterior Color',s.exterior_color || '—'],
-                ['Days on Market',s.dom !== null ? `${s.dom} days` : '—'],
-                ['Distance',      s.distance !== null ? `${s.distance} mi away` : '—'],
+                ['Mileage',      s.miles ? `${s.miles.toLocaleString()} mi` : '—'],
+                ['Transmission', s.transmission || '—'],
+                ['Drivetrain',   s.drivetrain || '—'],
+                ['Color',        s.exterior_color || '—'],
+                ['Seller',       s.dealer_name || '—'],
+                ['Location',     s.dealer_city || '—'],
               ].map(([label, val]) => (
                 <div key={label} style={{ background: INPUT, borderRadius: 8, padding: '10px 14px' }}>
                   <div style={{ color: MUTED, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{label}</div>
@@ -242,24 +301,11 @@ export default function CarSearchPage() {
               ))}
             </div>
 
-            {(s.dealer_name || s.dealer_city) && (
-              <div style={{ marginTop: 24, padding: '14px 18px', background: INPUT, borderRadius: 10 }}>
-                <div style={{ color: MUTED, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Dealer</div>
-                {s.dealer_name && <div style={{ fontWeight: 600, fontSize: 16 }}>{s.dealer_name}</div>}
-                {(s.dealer_city || s.dealer_state) && (
-                  <div style={{ color: MUTED, fontSize: 14, marginTop: 2 }}>
-                    {[s.dealer_city, s.dealer_state].filter(Boolean).join(', ')}
-                  </div>
-                )}
-                {s.dealer_phone && <div style={{ color: MUTED, fontSize: 14, marginTop: 2 }}>{s.dealer_phone}</div>}
-              </div>
-            )}
-
             <div style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap' }}>
               {s.listing_url && (
                 <a href={s.listing_url} target="_blank" rel="noopener noreferrer"
-                  style={{ background: BLUE2, color: '#fff', padding: '10px 24px', borderRadius: 8, textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>
-                  View Full Listing
+                  style={{ background: '#E43137', color: '#fff', padding: '10px 24px', borderRadius: 8, textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>
+                  View on eBay ↗
                 </a>
               )}
               <button onClick={() => toggleSave(s.id)}
@@ -268,35 +314,35 @@ export default function CarSearchPage() {
               </button>
             </div>
 
-            {/* Issue 4: External search links */}
+            {/* Also search on other sites */}
             <div style={{ marginTop: 24, borderTop: `1px solid ${BORDER}`, paddingTop: 20 }}>
               <div style={{ color: MUTED, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
-                Also Search On
+                Search This Vehicle On
               </div>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 {s.vin && (
                   <a href={`https://www.cargurus.com/Cars/new/nl#listing=${s.vin}`}
                     target="_blank" rel="noopener noreferrer"
                     style={{ background: '#102A10', color: '#4DD88A', padding: '8px 18px', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600, border: '1px solid #1A5A1A' }}>
-                    CarGurus
+                    CarGurus ↗
                   </a>
                 )}
                 {s.vin && (
                   <a href={`https://www.autotrader.com/cars-for-sale/vehicledetails.xhtml?vin=${s.vin}`}
                     target="_blank" rel="noopener noreferrer"
                     style={{ background: '#0A1A30', color: '#7AB8FF', padding: '8px 18px', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600, border: '1px solid #1A3A60' }}>
-                    AutoTrader
+                    AutoTrader ↗
                   </a>
                 )}
                 <a href={`https://www.carmax.com/cars/${makeSlug}/${modelSlug}`}
                   target="_blank" rel="noopener noreferrer"
                   style={{ background: '#0A2018', color: '#4DD88A', padding: '8px 18px', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600, border: '1px solid #0D4020' }}>
-                  CarMax
+                  CarMax ↗
                 </a>
                 <a href={`https://www.carvana.com/cars/${carvanaSlug}`}
                   target="_blank" rel="noopener noreferrer"
                   style={{ background: '#18102A', color: '#A78BFA', padding: '8px 18px', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600, border: '1px solid #30186A' }}>
-                  Carvana
+                  Carvana ↗
                 </a>
               </div>
             </div>
@@ -313,9 +359,13 @@ export default function CarSearchPage() {
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>
           <span style={{ color: RED }}>Rev</span>Connect Car Search
         </h1>
+        <div style={{ color: MUTED, fontSize: 12, marginTop: 4 }}>
+          Live listings from eBay Motors · Links to CarGurus, AutoTrader, CarMax, Carvana
+        </div>
       </div>
 
       <div style={{ maxWidth: 1300, margin: '0 auto', padding: '24px 20px' }}>
+        {/* ── Search form ── */}
         <form onSubmit={handleSearch}>
           <div style={{ background: CARD, borderRadius: 12, padding: 20, marginBottom: 20 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 14, marginBottom: 14 }}>
@@ -403,7 +453,6 @@ export default function CarSearchPage() {
                   <option value="price-asc">Price: Low → High</option>
                   <option value="price-desc">Price: High → Low</option>
                   <option value="mileage-asc">Mileage: Low → High</option>
-                  <option value="distance-asc">Distance: Nearest First</option>
                 </select>
               </div>
             </div>
@@ -411,7 +460,7 @@ export default function CarSearchPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
                 <span style={{ ...labelStyle, margin: 0 }}>Condition:</span>
-                {[['', 'All'], ['new', 'New'], ['used', 'Used'], ['cpo', 'CPO']].map(([val, label]) => (
+                {([['', 'All'], ['new', 'New'], ['used', 'Used'], ['cpo', 'CPO']] as const).map(([val, label]) => (
                   <label key={val} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', color: filters.condition === val ? TEXT : MUTED, fontSize: 13 }}>
                     <input type="radio" name="condition" value={val} checked={filters.condition === val}
                       onChange={() => setF('condition', val)} />
@@ -433,53 +482,61 @@ export default function CarSearchPage() {
           </div>
         )}
 
+        {/* ── Results area ── */}
         {searched && !loading && (
           <>
+            {/* ── Search these sites ── */}
+            {searchedFilters && (() => {
+              const links = buildSearchLinks(searchedFilters)
+              return (
+                <div style={{ background: CARD, borderRadius: 10, padding: '14px 18px', marginBottom: 16, border: `1px solid ${BORDER}` }}>
+                  <div style={{ color: MUTED, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+                    Search Other Sites With These Filters
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <a href={links.carGurus} target="_blank" rel="noopener noreferrer"
+                      style={{ background: '#102A10', color: '#4DD88A', padding: '7px 16px', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600, border: '1px solid #1A5A1A' }}>
+                      CarGurus ↗
+                    </a>
+                    <a href={links.autoTrader} target="_blank" rel="noopener noreferrer"
+                      style={{ background: '#0A1A30', color: '#7AB8FF', padding: '7px 16px', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600, border: '1px solid #1A3A60' }}>
+                      AutoTrader ↗
+                    </a>
+                    <a href={links.carMax} target="_blank" rel="noopener noreferrer"
+                      style={{ background: '#0A2018', color: '#4DD88A', padding: '7px 16px', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600, border: '1px solid #0D4020' }}>
+                      CarMax ↗
+                    </a>
+                    <a href={links.carvana} target="_blank" rel="noopener noreferrer"
+                      style={{ background: '#18102A', color: '#A78BFA', padding: '7px 16px', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600, border: '1px solid #30186A' }}>
+                      Carvana ↗
+                    </a>
+                    <a href={links.carsDotCom} target="_blank" rel="noopener noreferrer"
+                      style={{ background: '#1A1808', color: GOLD, padding: '7px 16px', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600, border: '1px solid #3A3208' }}>
+                      Cars.com ↗
+                    </a>
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* ── Status bar ── */}
             <div style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap', marginBottom: 8 }}>
                 <span style={{ fontSize: 18, fontWeight: 700 }}>
                   {totalFiltered.toLocaleString()} result{totalFiltered !== 1 ? 's' : ''}
                 </span>
                 <span style={{ color: MUTED, fontSize: 13 }}>
-                  from {total.toLocaleString()} listings · Page {page} of {totalPages}
+                  from {total.toLocaleString()} eBay listings · Page {page} of {totalPages}
                 </span>
-                {(sources.marketcheck || sources.carmax || sources.carvana || sources.ebay) && (
-                  <span style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                    {sources.marketcheck ? (
-                      <span style={{ background: '#1B3A5A', color: '#7AB8FF', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
-                        Dealers: {sources.marketcheck.toLocaleString()}
-                      </span>
-                    ) : null}
-                    {sources.ebay ? (
-                      <span style={{ background: '#3A1A1A', color: '#FF8080', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
-                        eBay: {sources.ebay.toLocaleString()}
-                      </span>
-                    ) : null}
-                    {sources.carmax ? (
-                      <span style={{ background: '#0D2B1A', color: '#4DD88A', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
-                        CarMax: {sources.carmax.toLocaleString()}
-                      </span>
-                    ) : null}
-                    {sources.carvana ? (
-                      <span style={{ background: '#1A1A3A', color: '#A78BFA', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
-                        Carvana: {sources.carvana.toLocaleString()}
-                      </span>
-                    ) : null}
-                  </span>
-                )}
-                {locationMode === 'local' && (
-                  <span style={{ color: '#4CAF50', fontSize: 13 }}>
-                    Within {filters.radius} mi of {filters.zip}
-                  </span>
-                )}
-                {locationMode === 'nearest_only' && (
-                  <span style={{ color: '#FF9800', fontSize: 13 }}>
-                    None within {filters.radius} mi — showing nearest available
+                {ebayCount > 0 && (
+                  <span style={{ background: '#3A1A1A', color: '#FF8080', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
+                    eBay Motors: {ebayCount.toLocaleString()}
                   </span>
                 )}
               </div>
+
               {activeFilters.length > 0 && (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
                   {activeFilters.map(f => (
                     <span key={f} style={{ background: BLUE, color: '#fff', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
                       {f}
@@ -487,18 +544,21 @@ export default function CarSearchPage() {
                   ))}
                 </div>
               )}
+
               {filtersRelaxed && (
-                <div style={{ marginTop: 10, background: '#2A1F00', border: '1px solid #FF9800', borderRadius: 8, padding: '10px 14px', color: '#FF9800', fontSize: 13 }}>
-                  No exact matches found — showing similar {filters.make || ''} {filters.model || ''} listings. Try widening your filters.
+                <div style={{ background: '#2A1F00', border: '1px solid #FF9800', borderRadius: 8, padding: '10px 14px', color: '#FF9800', fontSize: 13 }}>
+                  No exact matches — showing similar listings. Try widening your filters or use the links above to search other sites.
                 </div>
               )}
             </div>
 
+            {/* ── Result cards ── */}
             {listings.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 0', color: MUTED }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
-                <div style={{ fontSize: 18, marginBottom: 8, color: TEXT }}>No results found</div>
-                <div style={{ fontSize: 14 }}>Try adjusting your filters or expanding your search area.</div>
+                <div style={{ fontSize: 18, marginBottom: 8, color: TEXT }}>No eBay results found</div>
+                <div style={{ fontSize: 14, marginBottom: 16 }}>Try adjusting your filters.</div>
+                <div style={{ fontSize: 13, color: MUTED }}>Use the links above to search CarGurus, AutoTrader, CarMax, or Carvana directly.</div>
               </div>
             ) : (
               <>
@@ -516,27 +576,9 @@ export default function CarSearchPage() {
                             🚗
                           </div>
                         )}
-                        {/* Source badge */}
-                        {l.source === 'eBay' && (
-                          <span style={{ position: 'absolute', top: 8, left: 8, background: '#E43137', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>
-                            eBay{l.listing_type === 'Auction' ? ' AUCTION' : ''}
-                          </span>
-                        )}
-                        {l.source === 'CarMax' && (
-                          <span style={{ position: 'absolute', top: 8, left: 8, background: '#006B3C', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>
-                            CarMax
-                          </span>
-                        )}
-                        {l.source === 'Carvana' && (
-                          <span style={{ position: 'absolute', top: 8, left: 8, background: '#4B3F8D', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>
-                            Carvana
-                          </span>
-                        )}
-                        {l.price_drop && l.source !== 'eBay' && (
-                          <span style={{ position: 'absolute', top: 8, left: 8, background: RED, color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>
-                            PRICE DROP
-                          </span>
-                        )}
+                        <span style={{ position: 'absolute', top: 8, left: 8, background: '#E43137', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>
+                          eBay{l.listing_type === 'Auction' ? ' AUCTION' : ''}
+                        </span>
                         <button onClick={() => toggleSave(l.id)}
                           style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.55)', border: 'none', color: saved.has(l.id) ? GOLD : '#fff', fontSize: 18, cursor: 'pointer', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
                           {saved.has(l.id) ? '★' : '☆'}
@@ -545,11 +587,14 @@ export default function CarSearchPage() {
 
                       <div style={{ padding: '12px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
                         <div style={{ fontWeight: 700, fontSize: 15 }}>
-                          {l.year} {l.make} {l.model}
+                          {l.year ? `${l.year} ` : ''}{l.make} {l.model}
                         </div>
-                        {l.trim && <div style={{ color: MUTED, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.trim}</div>}
+                        {l.trim && (
+                          <div style={{ color: MUTED, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={l.trim ?? ''}>
+                            {l.trim}
+                          </div>
+                        )}
 
-                        {/* Issue 2: never show $0 — use truthy check */}
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                           <span style={{ fontSize: 20, fontWeight: 700, color: l.price ? GOLD : MUTED }}>
                             {l.price ? `$${l.price.toLocaleString()}` : 'Call for price'}
@@ -557,25 +602,16 @@ export default function CarSearchPage() {
                           {l.price ? <span style={{ color: MUTED, fontSize: 12 }}>{monthly(l.price)}</span> : null}
                         </div>
 
-                        <div style={{ display: 'flex', gap: 12, fontSize: 12, color: MUTED }}>
-                          {l.miles !== null && l.miles > 0 && <span>{l.miles.toLocaleString()} mi</span>}
-                          {l.distance !== null && <span>📍 {l.distance} mi away</span>}
+                        <div style={{ display: 'flex', gap: 12, fontSize: 12, color: MUTED, flexWrap: 'wrap' }}>
+                          {l.miles ? <span>{l.miles.toLocaleString()} mi</span> : null}
+                          {l.dealer_city && <span>📍 {l.dealer_city}</span>}
                         </div>
-
-                        {(l.dealer_name || l.dealer_city) && (
-                          <div style={{ fontSize: 12, color: MUTED, borderTop: `1px solid ${BORDER}`, paddingTop: 6, marginTop: 2 }}>
-                            {l.dealer_name && <div style={{ color: TEXT, fontWeight: 500 }}>{l.dealer_name}</div>}
-                            {(l.dealer_city || l.dealer_state) && (
-                              <div>{[l.dealer_city, l.dealer_state].filter(Boolean).join(', ')}</div>
-                            )}
-                          </div>
-                        )}
 
                         <div style={{ display: 'flex', gap: 8, marginTop: 'auto', paddingTop: 8 }}>
                           {l.listing_url ? (
                             <a href={l.listing_url} target="_blank" rel="noopener noreferrer"
-                              style={{ flex: 1, background: BLUE2, color: '#fff', padding: '7px 0', borderRadius: 6, textAlign: 'center', textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>
-                              View Listing
+                              style={{ flex: 1, background: '#E43137', color: '#fff', padding: '7px 0', borderRadius: 6, textAlign: 'center', textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>
+                              View on eBay ↗
                             </a>
                           ) : (
                             <button onClick={() => setSelected(l)}
@@ -593,34 +629,20 @@ export default function CarSearchPage() {
                   ))}
                 </div>
 
-                {/* Issue 3: pagination — visible whenever totalPages > 1 */}
+                {/* Pagination */}
                 {totalPages > 1 && (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '16px 0' }}>
                     <button
                       disabled={page <= 1 || loading}
                       onClick={() => runSearch(page - 1)}
-                      style={{
-                        background: (page <= 1 || loading) ? INPUT : BLUE2,
-                        color: (page <= 1 || loading) ? MUTED : '#fff',
-                        border: `1px solid ${BORDER}`, borderRadius: 8,
-                        padding: '8px 20px', cursor: (page <= 1 || loading) ? 'not-allowed' : 'pointer',
-                        fontWeight: 600, fontSize: 14,
-                      }}>
+                      style={{ background: (page <= 1 || loading) ? INPUT : BLUE2, color: (page <= 1 || loading) ? MUTED : '#fff', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '8px 20px', cursor: (page <= 1 || loading) ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 14 }}>
                       ← Previous
                     </button>
-                    <span style={{ color: TEXT, fontSize: 14, fontWeight: 600 }}>
-                      Page {page} of {totalPages}
-                    </span>
+                    <span style={{ color: TEXT, fontSize: 14, fontWeight: 600 }}>Page {page} of {totalPages}</span>
                     <button
                       disabled={page >= totalPages || loading}
                       onClick={() => runSearch(page + 1)}
-                      style={{
-                        background: (page >= totalPages || loading) ? INPUT : BLUE2,
-                        color: (page >= totalPages || loading) ? MUTED : '#fff',
-                        border: `1px solid ${BORDER}`, borderRadius: 8,
-                        padding: '8px 20px', cursor: (page >= totalPages || loading) ? 'not-allowed' : 'pointer',
-                        fontWeight: 600, fontSize: 14,
-                      }}>
+                      style={{ background: (page >= totalPages || loading) ? INPUT : BLUE2, color: (page >= totalPages || loading) ? MUTED : '#fff', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '8px 20px', cursor: (page >= totalPages || loading) ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 14 }}>
                       Next →
                     </button>
                   </div>
@@ -633,7 +655,7 @@ export default function CarSearchPage() {
         {loading && (
           <div style={{ textAlign: 'center', padding: '60px 0', color: MUTED }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>⏳</div>
-            <div style={{ fontSize: 16 }}>Fetching listings from Marketcheck and eBay Motors…</div>
+            <div style={{ fontSize: 16 }}>Searching eBay Motors…</div>
           </div>
         )}
 
@@ -641,8 +663,10 @@ export default function CarSearchPage() {
           <div style={{ textAlign: 'center', padding: '60px 0', color: MUTED }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
             <div style={{ fontSize: 20, marginBottom: 8, color: TEXT }}>Find your next car</div>
-            <div style={{ fontSize: 14 }}>Enter make and model above, apply any filters, then click Search.</div>
-            <div style={{ fontSize: 13, marginTop: 8, color: MUTED }}>Pulls live listings from Marketcheck dealers + eBay Motors.</div>
+            <div style={{ fontSize: 14, marginBottom: 6 }}>Enter make and model, apply filters, then click Search.</div>
+            <div style={{ fontSize: 13 }}>
+              Results from eBay Motors · direct links to CarGurus, AutoTrader, CarMax, Carvana & Cars.com
+            </div>
           </div>
         )}
       </div>
