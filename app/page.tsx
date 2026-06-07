@@ -1,12 +1,21 @@
 import Link from 'next/link'
 
 const MUSTANGS = [
-  { year:'1965', name:'First Generation', url:'https://images.unsplash.com/photo-1567808291548-fc3ee04dbcf0?w=600&q=85', accent:'#CC0000' },
-  { year:'1969', name:'Boss 429',         url:'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=600&q=85', accent:'#1539CC' },
-  { year:'1971', name:'Mach 1',           url:'https://images.unsplash.com/photo-1588258219511-64eb629cb833?w=600&q=85', accent:'#FFD700' },
-  { year:'2003', name:'Cobra SVT',        url:'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?w=600&q=85', accent:'#CC0000' },
-  { year:'2013', name:'Shelby GT500',     url:'https://images.unsplash.com/photo-1547245324-d777c6f05e80?w=600&q=85', accent:'#1539CC' },
-  { year:'2024', name:'Dark Horse',       url:'https://images.unsplash.com/photo-1612825173281-9a193378527e?w=600&q=85', accent:'#C0C0C0' },
+  { year:'1965', name:'First Generation', url:'https://images.unsplash.com/photo-1548800566-9b3b69ef0f23?w=600&q=85', accent:'#CC0000' },
+  { year:'1969', name:'Boss 429',         url:'https://images.unsplash.com/photo-1566933293069-b55c7f326dd4?w=600&q=85', accent:'#1539CC' },
+  { year:'1971', name:'Mach 1',           url:'https://images.unsplash.com/photo-1565043666747-69f6646db940?w=600&q=85', accent:'#FFD700' },
+  { year:'2003', name:'Cobra SVT',        url:'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&q=85', accent:'#CC0000' },
+  { year:'2013', name:'Shelby GT500',     url:'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=600&q=85', accent:'#1539CC' },
+  { year:'2024', name:'Dark Horse',       url:'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=600&q=85', accent:'#C0C0C0' },
+]
+
+const CLASSICS = [
+  { year:'1969', name:'Camaro Z28',         make:'Chevrolet Camaro',  url:'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=600&q=85', accent:'#FFD700' },
+  { year:'1970', name:'Challenger R/T',     make:'Dodge Challenger',  url:'https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=600&q=85', accent:'#CC0000' },
+  { year:'1969', name:'GTO',                make:'Pontiac GTO',       url:'https://images.unsplash.com/photo-1567808291548-fc3ee04dbcf0?w=600&q=85', accent:'#22c55e' },
+  { year:'2024', name:'Camaro ZL1',         make:'Chevrolet Camaro',  url:'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&q=85', accent:'#FFD700' },
+  { year:'2023', name:'Challenger Hellcat', make:'Dodge Challenger',  url:'https://images.unsplash.com/photo-1612825173281-9a193378527e?w=600&q=85', accent:'#CC0000' },
+  { year:'2024', name:'Shelby GT500',       make:'Ford Mustang',      url:'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=600&q=85', accent:'#1539CC' },
 ]
 
 const FEATURES = [
@@ -100,23 +109,24 @@ export default function Home() {
       {/* Chrome + Red + Blue divider */}
       <div style={{ height:'4px', background:'linear-gradient(90deg, #CC0000 0%, #AA0000 20%, #C0C0C0 35%, #FFFFFF 50%, #C0C0C0 65%, #1539CC 80%, #0D28AA 100%)' }} />
 
-      {/* ═══ MUSTANG SHOWCASE ═══ */}
+      {/* ═══ AMERICAN MUSCLE SHOWCASE ═══ */}
       <section style={{ padding:'4rem 2rem', background:'linear-gradient(180deg, #1B2A3E, #20314A)' }}>
         <div style={{ maxWidth:'1300px', margin:'0 auto' }}>
           <div style={{ textAlign:'center', marginBottom:'2.5rem' }}>
-            <div style={{ fontSize:'0.75rem', letterSpacing:'4px', textTransform:'uppercase', color:'#CC0000', fontWeight:700, marginBottom:'0.5rem' }}>American Muscle · 60 Years</div>
+            <div style={{ fontSize:'0.75rem', letterSpacing:'4px', textTransform:'uppercase', color:'#CC0000', fontWeight:700, marginBottom:'0.5rem' }}>Ford · Chevrolet · Dodge · Pontiac</div>
             <h2 style={{ fontSize:'2.25rem', fontWeight:900, letterSpacing:'-1px' }}>
-              <span className="chrome-text">Mustang</span>{' '}
+              <span className="chrome-text">American Muscle</span>{' '}
               <span style={{ color:'#CC0000' }}>Through the Ages</span>
             </h2>
             <p style={{ color:'rgba(255,255,255,0.35)', marginTop:'0.5rem' }}>Track every generation in your Digital Garage</p>
           </div>
 
           <div style={{ display:'grid', gridTemplateColumns:'repeat(6, 1fr)', gap:'0.875rem' }}>
+            {/* Row 1 — Ford Mustangs */}
             {MUSTANGS.map(m => (
-              <div key={m.year} className="card-hover" style={{ borderRadius:'0.875rem', overflow:'hidden', background:'#243547', border:`2px solid ${m.accent}30`, cursor:'pointer', position:'relative' }}>
+              <div key={`mustang-${m.year}`} className="card-hover" style={{ borderRadius:'0.875rem', overflow:'hidden', background:'#243547', border:`2px solid ${m.accent}30`, cursor:'pointer', position:'relative' }}>
                 <div style={{ height:'150px', overflow:'hidden', background:`linear-gradient(135deg, ${m.accent}20, #1B2A3E)`, position:'relative' }}>
-                  <img src={m.url} alt={`${m.year} Mustang ${m.name}`} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+                  <img src={m.url} alt={`${m.year} Ford Mustang ${m.name}`} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
                   <div style={{ position:'absolute', inset:0, background:`linear-gradient(180deg, transparent 30%, #243547 100%)` }} />
                   <div style={{ position:'absolute', top:'0.5rem', left:'0.5rem', background:m.accent, color:'white', padding:'0.15rem 0.5rem', borderRadius:'9999px', fontSize:'0.65rem', fontWeight:800 }}>{m.year}</div>
                 </div>
@@ -127,11 +137,26 @@ export default function Home() {
                 </div>
               </div>
             ))}
+            {/* Row 2 — Other American Muscle */}
+            {CLASSICS.map(m => (
+              <div key={`classic-${m.year}-${m.name}`} className="card-hover" style={{ borderRadius:'0.875rem', overflow:'hidden', background:'#243547', border:`2px solid ${m.accent}30`, cursor:'pointer', position:'relative' }}>
+                <div style={{ height:'150px', overflow:'hidden', background:`linear-gradient(135deg, ${m.accent}20, #1B2A3E)`, position:'relative' }}>
+                  <img src={m.url} alt={`${m.year} ${m.make} ${m.name}`} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+                  <div style={{ position:'absolute', inset:0, background:`linear-gradient(180deg, transparent 30%, #243547 100%)` }} />
+                  <div style={{ position:'absolute', top:'0.5rem', left:'0.5rem', background:m.accent, color:'white', padding:'0.15rem 0.5rem', borderRadius:'9999px', fontSize:'0.65rem', fontWeight:800 }}>{m.year}</div>
+                </div>
+                <div style={{ padding:'0.75rem' }}>
+                  <p style={{ fontWeight:800, fontSize:'0.85rem', color:'white' }}>{m.name}</p>
+                  <p style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.35)' }}>{m.make}</p>
+                  <div style={{ height:'2px', background:`linear-gradient(90deg, ${m.accent}, transparent)`, marginTop:'0.5rem', borderRadius:'9999px' }} />
+                </div>
+              </div>
+            ))}
           </div>
 
           <div style={{ textAlign:'center', marginTop:'2rem' }}>
             <Link href="/garage" style={{ display:'inline-flex', alignItems:'center', gap:'0.5rem', background:'rgba(204,0,0,0.1)', border:'1px solid rgba(204,0,0,0.3)', color:'#FF4444', padding:'0.75rem 1.75rem', borderRadius:'0.75rem', fontWeight:600, fontSize:'0.9rem' }}>
-              Add Your Mustang to the Garage →
+              Add Your Muscle Car to the Garage →
             </Link>
           </div>
         </div>
