@@ -156,7 +156,7 @@ export async function GET(request: Request) {
   const ebayId  = process.env.EBAY_APP_ID  || ''
   const certId  = process.env.EBAY_CERT_ID || ''
 
-  console.log(`[car-search] appId=${ebayId ? 'SET' : 'MISSING'} certId=${certId ? 'SET' : 'MISSING'}`)
+  console.log(`[car-search] appId=${ebayId ? ebayId.slice(0,4)+'...' : 'MISSING'} certId=${certId ? certId.slice(0,4)+'...' : 'MISSING'}`)
 
   const make     = sp.get('make')     || ''
   const model    = sp.get('model')    || ''
