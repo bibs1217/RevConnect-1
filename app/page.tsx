@@ -1,12 +1,12 @@
 import Link from 'next/link'
 
 const MUSTANGS = [
-  { year:'1965', name:'First Generation', url:'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=600&q=85', accent:'#CC0000' },
-  { year:'1969', name:'Boss 429', url:'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&q=85', accent:'#1539CC' },
-  { year:'1971', name:'Mach 1', url:'https://images.unsplash.com/photo-1567808291548-fc3ee04dbcf0?w=600&q=85', accent:'#FFD700' },
-  { year:'2003', name:'Cobra SVT', url:'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=600&q=85', accent:'#CC0000' },
-  { year:'2013', name:'Shelby GT500', url:'https://images.unsplash.com/photo-1580274455152-f4af44f89116?w=600&q=85', accent:'#1539CC' },
-  { year:'2024', name:'Dark Horse', url:'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=600&q=85', accent:'#C0C0C0' },
+  { year:'1965', name:'First Generation', url:'https://images.unsplash.com/photo-1567808291548-fc3ee04dbcf0?w=600&q=85', accent:'#CC0000' },
+  { year:'1969', name:'Boss 429',         url:'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=600&q=85', accent:'#1539CC' },
+  { year:'1971', name:'Mach 1',           url:'https://images.unsplash.com/photo-1588258219511-64eb629cb833?w=600&q=85', accent:'#FFD700' },
+  { year:'2003', name:'Cobra SVT',        url:'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?w=600&q=85', accent:'#CC0000' },
+  { year:'2013', name:'Shelby GT500',     url:'https://images.unsplash.com/photo-1547245324-d777c6f05e80?w=600&q=85', accent:'#1539CC' },
+  { year:'2024', name:'Dark Horse',       url:'https://images.unsplash.com/photo-1612825173281-9a193378527e?w=600&q=85', accent:'#C0C0C0' },
 ]
 
 const FEATURES = [
