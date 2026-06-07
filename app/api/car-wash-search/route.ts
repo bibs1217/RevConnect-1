@@ -2,40 +2,146 @@ import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-/* ── chain locator links ─────────────────────────────────────────────────── */
-function buildChainLinks(city: string, state: string, zip: string) {
+/* ── type-specific search config ────────────────────────────────────────── */
+interface TypeConfig {
+  googleQuery:  (city: string, state: string) => string
+  aiSearchTerms: string
+  aiPromptIntro: string
+  aiOverrides:   string   // forced field values for JSON schema
+  countTarget:   string
+}
+
+const TYPE_CONFIG: Record<string, TypeConfig> = {
+  mobile_detailer: {
+    googleQuery:   (city, state) => `mobile car detailing near ${city} ${state}`,
+    aiSearchTerms: 'mobile car detailer OR mobile detailing OR detail on wheels OR mobile auto detailing',
+    aiPromptIntro: 'List ONLY mobile car detailers and mobile detailing businesses — businesses that come TO the customer\'s location.',
+    aiOverrides:   '"wash_type": "mobile_detailer", "is_ceramic_safe": true, "is_ppf_safe": true, "is_touchless": true',
+    countTarget:   '15-20',
+  },
+  hand_wash: {
+    googleQuery:   (city, state) => `hand car wash near ${city} ${state}`,
+    aiSearchTerms: 'hand wash car wash OR hand car wash OR hand wash detailing',
+    aiPromptIntro: 'List ONLY hand-wash car wash businesses where staff hand-wash vehicles by hand (not tunnel machines).',
+    aiOverrides:   '"wash_type": "hand_wash", "is_ceramic_safe": true, "is_ppf_safe": true, "is_touchless": true',
+    countTarget:   '15-20',
+  },
+  tunnel_touchless: {
+    googleQuery:   (city, state) => `touchless car wash near ${city} ${state}`,
+    aiSearchTerms: 'touchless car wash OR touchless automatic car wash OR no-touch car wash',
+    aiPromptIntro: 'List touchless tunnel car washes — no brushes, water pressure and soap only.',
+    aiOverrides:   '"wash_type": "tunnel_touchless", "is_touchless": true',
+    countTarget:   '15-20',
+  },
+  tunnel_soft: {
+    googleQuery:   (city, state) => `automatic car wash near ${city} ${state}`,
+    aiSearchTerms: 'soft touch car wash OR automatic car wash OR tunnel car wash',
+    aiPromptIntro: 'List soft-touch or brush tunnel car washes (conveyor or drive-through automatic washes).',
+    aiOverrides:   '"wash_type": "tunnel_soft", "is_ceramic_safe": false, "is_ppf_safe": false, "is_touchless": false',
+    countTarget:   '15-20',
+  },
+  tunnel_hybrid: {
+    googleQuery:   (city, state) => `car wash near ${city} ${state}`,
+    aiSearchTerms: 'hybrid car wash OR soft touch touchless car wash',
+    aiPromptIntro: 'List hybrid tunnel car washes that offer both touchless and soft-touch options.',
+    aiOverrides:   '"wash_type": "tunnel_hybrid"',
+    countTarget:   '15-20',
+  },
+  self_service: {
+    googleQuery:   (city, state) => `self serve car wash near ${city} ${state}`,
+    aiSearchTerms: 'self serve car wash OR coin operated car wash OR DIY car wash',
+    aiPromptIntro: 'List ONLY self-serve or coin-operated car wash bays where customers wash their own vehicles.',
+    aiOverrides:   '"wash_type": "self_service", "is_ceramic_safe": true, "is_ppf_safe": true, "has_membership": false',
+    countTarget:   '15-20',
+  },
+  full_detail: {
+    googleQuery:   (city, state) => `auto detailing near ${city} ${state}`,
+    aiSearchTerms: 'auto detailing shop OR full detail car wash OR professional car detailing',
+    aiPromptIntro: 'List full-service auto detailing shops that offer interior and exterior detailing packages.',
+    aiOverrides:   '"wash_type": "full_detail", "is_ceramic_safe": true, "is_ppf_safe": true, "is_touchless": true',
+    countTarget:   '15-20',
+  },
+  waterless: {
+    googleQuery:   (city, state) => `waterless car wash near ${city} ${state}`,
+    aiSearchTerms: 'waterless car wash OR eco car wash OR no water car wash',
+    aiPromptIntro: 'List waterless car wash services and eco-friendly no-water detailing businesses.',
+    aiOverrides:   '"wash_type": "waterless", "is_ceramic_safe": true, "is_ppf_safe": true, "is_touchless": true',
+    countTarget:   '15-20',
+  },
+  rinseless: {
+    googleQuery:   (city, state) => `rinseless car wash near ${city} ${state}`,
+    aiSearchTerms: 'rinseless car wash OR ONR car wash',
+    aiPromptIntro: 'List rinseless car wash services and detailers who specialize in rinseless wash methods.',
+    aiOverrides:   '"wash_type": "rinseless", "is_ceramic_safe": true, "is_ppf_safe": true, "is_touchless": true',
+    countTarget:   '15-20',
+  },
+  all: {
+    googleQuery:   (city, state) => `car wash near ${city} ${state}`,
+    aiSearchTerms: 'car wash OR auto detailing OR mobile detailing',
+    aiPromptIntro: 'List a mix of car washes including tunnel washes, hand washes, mobile detailers, and detail shops.',
+    aiOverrides:   '',
+    countTarget:   '15-20',
+  },
+}
+
+/* ── chain / platform links (type-aware) ────────────────────────────────── */
+function buildChainLinks(city: string, state: string, zip: string, washType: string) {
   const cityEnc  = encodeURIComponent(city)
   const stateEnc = encodeURIComponent(state)
   const z        = zip || ''
 
+  const alwaysLinks = [
+    { name:'Google Maps',     emoji:'📍', desc:'Search near you on Google Maps', safe: null, url: `https://www.google.com/maps/search/${encodeURIComponent((TYPE_CONFIG[washType]?.googleQuery(city, state) ?? 'car wash near ' + city + ' ' + state))}` },
+    { name:'Yelp',            emoji:'⭐', desc:'Read community reviews',          safe: null, url: `https://www.yelp.com/search?find_desc=${encodeURIComponent(washType === 'mobile_detailer' ? 'mobile detailing' : washType === 'full_detail' ? 'auto detailing' : 'car wash')}&find_loc=${cityEnc}+${stateEnc}` },
+  ]
+
+  if (washType === 'mobile_detailer' || washType === 'full_detail') {
+    return [
+      { name:'Thumbtack',       emoji:'🔨', desc:'Find local mobile detailers with reviews and instant quotes', safe: true, url: `https://www.thumbtack.com/k/mobile-car-detailing/near-me/?zip=${z}` },
+      { name:'TaskRabbit',      emoji:'🐰', desc:'Book verified mobile detailers near you',                   safe: true, url: `https://www.taskrabbit.com/services/auto-detailing?zip=${z}` },
+      { name:'Angi',            emoji:'🔧', desc:'Compare quotes from local auto detailers',                  safe: true, url: `https://www.angi.com/companylist/auto-detailing.htm?zip=${z}` },
+      { name:'DetailXPerts',    emoji:'✨', desc:'Eco-friendly detail shops — ceramic & PPF safe',            safe: true, url: `https://www.detailxperts.net/locations/` },
+      ...alwaysLinks,
+    ]
+  }
+
+  if (washType === 'self_service') {
+    return [
+      { name:'WhichCarWash',    emoji:'🪣', desc:'Find self-serve bays near you',                             safe: null, url: `https://www.google.com/maps/search/self+serve+car+wash+near+${cityEnc}+${stateEnc}` },
+      ...alwaysLinks,
+    ]
+  }
+
+  /* default — tunnel/all types */
   return [
-    { name:'Mister Car Wash',  emoji:'🔵', desc:'Largest car wash chain in the US — touchless & soft options',             safe: true,  url: `https://mistercarwash.com/locations/?location=${z || cityEnc}` },
-    { name:"Tommy's Express",  emoji:'🟡', desc:'Conveyor tunnel — unlimited monthly memberships',                         safe: false, url: `https://tommysexpress.com/locations/?zip=${z}` },
-    { name:'Zips Car Wash',    emoji:'⚡', desc:'Drive-through tunnel — monthly unlimited plans',                          safe: false, url: `https://www.zipscarwash.com/locations/?zip=${z}` },
-    { name:'Tidal Wave Auto',  emoji:'🌊', desc:'Touchless & soft-touch tunnels, spot-free rinse',                         safe: true,  url: `https://tidalwaveauto.com/locations/` },
-    { name:'Autobell',         emoji:'🔔', desc:'Soft-touch tunnel with full-service interior options (Southeast US)',     safe: false, url: `https://www.autobell.com/locations/` },
-    { name:'DetailXPerts',     emoji:'✨', desc:'Eco-friendly detail shops — ceramic & PPF safe',                          safe: true,  url: `https://www.detailxperts.net/locations/` },
-    { name:'Google Maps',      emoji:'📍', desc:'Search all car washes near you on Google Maps',                           safe: null,  url: `https://www.google.com/maps/search/car+wash+near+${cityEnc}+${stateEnc}` },
-    { name:'Yelp',             emoji:'⭐', desc:'Read community reviews for local washes and detailers',                   safe: null,  url: `https://www.yelp.com/search?find_desc=car+wash&find_loc=${cityEnc}+${stateEnc}` },
+    { name:'Mister Car Wash',  emoji:'🔵', desc:'Largest US chain — touchless & soft options',              safe: true,  url: `https://mistercarwash.com/locations/?location=${z || cityEnc}` },
+    { name:"Tommy's Express",  emoji:'🟡', desc:'Conveyor tunnel — unlimited monthly memberships',          safe: false, url: `https://tommysexpress.com/locations/?zip=${z}` },
+    { name:'Zips Car Wash',    emoji:'⚡', desc:'Drive-through tunnel — unlimited monthly plans',           safe: false, url: `https://www.zipscarwash.com/locations/?zip=${z}` },
+    { name:'Tidal Wave Auto',  emoji:'🌊', desc:'Touchless & soft-touch tunnels, spot-free rinse',          safe: true,  url: `https://tidalwaveauto.com/locations/` },
+    { name:'Autobell',         emoji:'🔔', desc:'Soft-touch tunnel with full-service interior (SE US)',     safe: false, url: `https://www.autobell.com/locations/` },
+    { name:'DetailXPerts',     emoji:'✨', desc:'Eco-friendly detail shops — ceramic & PPF safe',           safe: true,  url: `https://www.detailxperts.net/locations/` },
+    ...alwaysLinks,
   ]
 }
 
 /* ── google places ───────────────────────────────────────────────────────── */
-async function getGooglePlaces(city: string, state: string, lat?: number, lng?: number) {
+async function getGooglePlaces(city: string, state: string, washType: string, lat?: number, lng?: number) {
   const key = process.env.GOOGLE_API_KEY
   if (!key) return []
 
+  const cfg   = TYPE_CONFIG[washType] ?? TYPE_CONFIG.all
+  const query = cfg.googleQuery(city, state)
+
   try {
-    // Use nearby search if we have coords, text search otherwise
     const url = lat && lng
-      ? `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=24140&type=car_wash&key=${key}`
-      : `https://maps.googleapis.com/maps/api/place/textsearch/json?query=car+wash+near+${encodeURIComponent(city + ' ' + state)}&key=${key}`
+      ? `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=40000&key=${key}`
+      : `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${key}`
 
     const res = await fetch(url, { cache: 'no-store' })
     if (!res.ok) return []
     const data = await res.json()
 
-    return (data.results ?? []).slice(0, 12).map((p: any) => ({
+    return (data.results ?? []).slice(0, 15).map((p: any) => ({
       place_id:    p.place_id,
       name:        p.name,
       address:     p.formatted_address ?? p.vicinity ?? '',
@@ -53,16 +159,23 @@ async function getGooglePlaces(city: string, state: string, lat?: number, lng?: 
   }
 }
 
-/* ── anthropic ai — known car washes ────────────────────────────────────── */
+/* ── anthropic ai ────────────────────────────────────────────────────────── */
 async function getAIWashes(city: string, state: string, washType: string) {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return []
 
-  const typeCtx = washType === 'all' ? 'all car wash types including tunnel washes, hand washes, self-serve bays, mobile detailers, and full detail shops' : washType.replace(/_/g, ' ') + ' locations'
+  const cfg = TYPE_CONFIG[washType] ?? TYPE_CONFIG.all
 
-  const prompt = `List real, known car washes near ${city}, ${state}. Include ${typeCtx}.
+  /* build the forced-overrides string for the JSON schema */
+  const overrideNote = cfg.aiOverrides
+    ? `\nIMPORTANT: For every result in this search, always set these fields: ${cfg.aiOverrides}.`
+    : ''
 
-Include major chain locations (Mister Car Wash, Tommy's Express, Zips, Tidal Wave, Autobell) AND well-known local detail shops or hand wash operations in the area.
+  const prompt = `${cfg.aiPromptIntro}
+
+Search focus: "${cfg.aiSearchTerms}" near ${city}, ${state}.
+
+Include both well-known chains AND independent local businesses in the area.${overrideNote}
 
 Return ONLY a valid JSON array. No markdown, no explanation, no code fences.
 
@@ -70,7 +183,7 @@ Return ONLY a valid JSON array. No markdown, no explanation, no code fences.
   "name": "business name",
   "address": "street address",
   "city": "city",
-  "state": "FL",
+  "state": "${state}",
   "zip": "zip code or empty string",
   "phone": "phone number or null",
   "wash_type": "tunnel_touchless|tunnel_soft|tunnel_hybrid|self_service|hand_wash|mobile_detailer|full_detail|waterless|rinseless",
@@ -79,17 +192,17 @@ Return ONLY a valid JSON array. No markdown, no explanation, no code fences.
   "is_touchless": true or false,
   "has_membership": true or false,
   "price_range": "$|$$|$$$|$$$$",
-  "rating": number or null,
+  "rating": number between 1-5 or null,
   "website": "url or null",
-  "description": "1-2 sentences"
+  "description": "1-2 sentences describing the business"
 }]
 
-Rules:
-- tunnel_soft and tunnel_hybrid are NOT ceramic or PPF safe (is_ceramic_safe: false, is_ppf_safe: false)
-- tunnel_touchless CAN be ceramic safe but not always — use your knowledge
-- hand_wash, mobile_detailer, full_detail, waterless, rinseless are typically safe for ceramic and PPF
-- Only include locations you are confident exist or have existed
-- Return 8-14 results`
+General safety rules (apply unless overridden above):
+- tunnel_soft and tunnel_hybrid: set is_ceramic_safe: false, is_ppf_safe: false, is_touchless: false
+- tunnel_touchless: is_touchless: true, is_ceramic_safe varies by brand
+- hand_wash, mobile_detailer, full_detail, waterless, rinseless: is_ceramic_safe: true, is_ppf_safe: true, is_touchless: true
+- Only include businesses you are confident actually exist in this area
+- Return ${cfg.countTarget} results`
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -101,7 +214,7 @@ Rules:
       },
       body: JSON.stringify({
         model:      'claude-haiku-4-5-20251001',
-        max_tokens: 3000,
+        max_tokens: 4000,
         messages:   [{ role: 'user', content: prompt }],
       }),
     })
@@ -131,7 +244,7 @@ export async function GET(request: Request) {
   }
 
   const [googleResults, aiWashes] = await Promise.all([
-    getGooglePlaces(city, state, lat, lng),
+    getGooglePlaces(city, state, washType, lat, lng),
     getAIWashes(city, state, washType),
   ])
 
@@ -139,7 +252,7 @@ export async function GET(request: Request) {
     city, state, zip, washType,
     aiWashes,
     googleResults,
-    chainLinks:       buildChainLinks(city, state, zip),
+    chainLinks:       buildChainLinks(city, state, zip, washType),
     googleAvailable:  !!process.env.GOOGLE_API_KEY,
     anthropicEnabled: !!process.env.ANTHROPIC_API_KEY,
   })
