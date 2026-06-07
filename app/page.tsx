@@ -1,21 +1,21 @@
 import Link from 'next/link'
 
 const MUSTANGS = [
-  { year:'1965', name:'First Generation', url:'https://images.unsplash.com/photo-1548800566-9b3b69ef0f23?w=600&q=85', accent:'#CC0000' },
-  { year:'1969', name:'Boss 429',         url:'https://images.unsplash.com/photo-1566933293069-b55c7f326dd4?w=600&q=85', accent:'#1539CC' },
-  { year:'1971', name:'Mach 1',           url:'https://images.unsplash.com/photo-1565043666747-69f6646db940?w=600&q=85', accent:'#FFD700' },
-  { year:'2003', name:'Cobra SVT',        url:'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&q=85', accent:'#CC0000' },
-  { year:'2013', name:'Shelby GT500',     url:'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=600&q=85', accent:'#1539CC' },
+  { year:'1965', name:'First Generation', url:'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=600&q=85', accent:'#CC0000' },
+  { year:'1969', name:'Boss 429',         url:'https://images.unsplash.com/photo-1584345604476-8ec5e12e42dd?w=600&q=85', accent:'#1539CC' },
+  { year:'1971', name:'Mach 1',           url:'https://images.unsplash.com/photo-1547744152-14d985cb937f?w=600&q=85', accent:'#FFD700' },
+  { year:'2003', name:'Cobra SVT',        url:'https://images.unsplash.com/photo-1603553329474-99f95f35394f?w=600&q=85', accent:'#CC0000' },
+  { year:'2013', name:'Shelby GT500',     url:'https://images.unsplash.com/photo-1612825173281-9a193378527e?w=600&q=85', accent:'#1539CC' },
   { year:'2024', name:'Dark Horse',       url:'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=600&q=85', accent:'#C0C0C0' },
 ]
 
 const CLASSICS = [
-  { year:'1969', name:'Camaro Z28',         make:'Chevrolet Camaro',  url:'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=600&q=85', accent:'#FFD700' },
-  { year:'1970', name:'Challenger R/T',     make:'Dodge Challenger',  url:'https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=600&q=85', accent:'#CC0000' },
-  { year:'1969', name:'GTO',                make:'Pontiac GTO',       url:'https://images.unsplash.com/photo-1567808291548-fc3ee04dbcf0?w=600&q=85', accent:'#22c55e' },
-  { year:'2024', name:'Camaro ZL1',         make:'Chevrolet Camaro',  url:'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&q=85', accent:'#FFD700' },
-  { year:'2023', name:'Challenger Hellcat', make:'Dodge Challenger',  url:'https://images.unsplash.com/photo-1612825173281-9a193378527e?w=600&q=85', accent:'#CC0000' },
-  { year:'2024', name:'Shelby GT500',       make:'Ford Mustang',      url:'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=600&q=85', accent:'#1539CC' },
+  { year:'1969', name:'Camaro Z28',         make:'Chevrolet Camaro', url:'https://images.unsplash.com/photo-1604940500627-d3f44d1d21c6?w=600&q=85', accent:'#FFD700' },
+  { year:'1970', name:'Challenger R/T',     make:'Dodge Challenger', url:'https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=600&q=85', accent:'#CC0000' },
+  { year:'1969', name:'GTO',                make:'Pontiac GTO',      url:'https://images.unsplash.com/photo-1778096402612-f9e99592ccdc?w=600&q=85', accent:'#22c55e' },
+  { year:'2024', name:'Camaro ZL1',         make:'Chevrolet Camaro', url:'https://images.unsplash.com/photo-1562911791-c7a97b729ec5?w=600&q=85', accent:'#FFD700' },
+  { year:'2023', name:'Challenger Hellcat', make:'Dodge Challenger', url:'https://images.unsplash.com/photo-1680574893873-c7563dc5f81d?w=600&q=85', accent:'#CC0000' },
+  { year:'2024', name:'Shelby GT500',       make:'Ford Mustang',     url:'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&q=85', accent:'#1539CC' },
 ]
 
 const FEATURES = [
