@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 
+// eBay Finding API (svcs.ebay.com) returned HTTP 503 — it has been shut down.
+// This file uses the eBay Browse API (api.ebay.com) with OAuth2 client credentials.
+// Required env vars: EBAY_APP_ID (Client ID) + EBAY_CERT_ID (Client Secret)
+
 interface EbayListing {
   id: string
   itemId: string
@@ -15,103 +19,144 @@ interface EbayListing {
   source: 'eBay'
 }
 
+// Module-level token cache — lives for the lifetime of the serverless instance
+let cachedToken: { value: string; expiresAt: number } | null = null
+
+async function getEbayToken(appId: string, certId: string): Promise<string | null> {
+  const now = Date.now()
+  if (cachedToken && now < cachedToken.expiresAt) return cachedToken.value
+
+  // base64(appId:certId) — btoa is available in Node 16+ and edge runtimes
+  const credentials = btoa(`${appId}:${certId}`)
+  try {
+    const res = await fetch('https://api.ebay.com/identity/v1/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: 'grant_type=client_credentials&scope=https%3A%2F%2Fapi.ebay.com%2Foauth%2Fapi_scope',
+      cache: 'no-store',
+    })
+    const data = await res.json()
+    if (!res.ok || !data.access_token) {
+      console.error('[eBay token] error:', JSON.stringify(data).slice(0, 300))
+      return null
+    }
+    cachedToken = {
+      value:     data.access_token,
+      expiresAt: now + (data.expires_in - 60) * 1000,
+    }
+    console.log('[eBay token] obtained, expires in', data.expires_in, 's')
+    return cachedToken.value
+  } catch (e) {
+    console.error('[eBay token] exception:', e)
+    return null
+  }
+}
+
 async function fetchEbay(params: {
-  appId: string; make: string; model: string
+  appId: string; certId: string; make: string; model: string
   yearMin: string; yearMax: string
   priceMin: string; priceMax: string
   zip: string; radius: string; page: number
 }): Promise<{ listings: EbayListing[]; total: number; totalPages: number }> {
-  const { appId, make, model, yearMin, yearMax, priceMin, priceMax, zip, radius, page } = params
+  const { appId, certId, make, model, yearMin, yearMax, priceMin, priceMax, zip, radius, page } = params
+  const PER_PAGE = 50
   const empty = { listings: [], total: 0, totalPages: 0 }
 
-  if (!appId) { console.warn('[eBay] EBAY_APP_ID not set'); return empty }
-  if (!make)  { console.warn('[eBay] no make');              return empty }
+  if (!appId || !certId) { console.warn('[eBay] EBAY_APP_ID or EBAY_CERT_ID not set'); return empty }
+  if (!make)             { console.warn('[eBay] no make');                              return empty }
 
-  // Build URL manually — URLSearchParams percent-encodes ( ) which breaks
-  // eBay's itemFilter(N).name and outputSelector(N) param name syntax
-  const parts: string[] = [
-    'OPERATION-NAME=findItemsAdvanced',
-    'SERVICE-VERSION=1.0.0',
-    `SECURITY-APPNAME=${encodeURIComponent(appId)}`,
-    'RESPONSE-DATA-FORMAT=JSON',
-    'categoryId=6001',
-    `keywords=${encodeURIComponent(`${make} ${model}`.trim())}`,
-    'paginationInput.entriesPerPage=50',
-    `paginationInput.pageNumber=${page}`,
-    'outputSelector(0)=PictureURLLarge',
-    'outputSelector(1)=SellerInfo',
-  ]
+  const token = await getEbayToken(appId, certId)
+  if (!token) return empty
 
-  let fi = 0
-  if (yearMin) { parts.push(`itemFilter(${fi}).name=MinYear`,  `itemFilter(${fi}).value=${yearMin}`);  fi++ }
-  if (yearMax) { parts.push(`itemFilter(${fi}).name=MaxYear`,  `itemFilter(${fi}).value=${yearMax}`);  fi++ }
-  if (priceMin) {
-    parts.push(
-      `itemFilter(${fi}).name=MinPrice`, `itemFilter(${fi}).value=${priceMin}`,
-      `itemFilter(${fi}).paramName=Currency`, `itemFilter(${fi}).paramValue=USD`,
-    )
-    fi++
-  }
-  if (priceMax) {
-    parts.push(
-      `itemFilter(${fi}).name=MaxPrice`, `itemFilter(${fi}).value=${priceMax}`,
-      `itemFilter(${fi}).paramName=Currency`, `itemFilter(${fi}).paramValue=USD`,
-    )
-    fi++
-  }
-  if (zip) {
-    parts.push(
-      `buyerPostalCode=${zip}`,
-      `itemFilter(${fi}).name=MaxDistance`, `itemFilter(${fi}).value=${radius || '250'}`,
-    )
+  const offset = (page - 1) * PER_PAGE
+  const q = `${make} ${model}`.trim()
+
+  // --- filter parameter (price, location) ---
+  const filterParts: string[] = []
+  if (priceMin && priceMax) filterParts.push(`price:[${priceMin}..${priceMax}],priceCurrency:USD`)
+  else if (priceMin)        filterParts.push(`price:[${priceMin}..],priceCurrency:USD`)
+  else if (priceMax)        filterParts.push(`price:[..${priceMax}],priceCurrency:USD`)
+  if (zip) filterParts.push(`pickupPostalCode:${zip},pickupRadius:${radius || '250'},pickupRadiusUnit:MILE`)
+
+  // --- aspect_filter for year (Motors category-specific) ---
+  // Browse API uses aspect_filter with pipe-separated values for Motors Year aspect
+  let aspectFilter = ''
+  if (yearMin || yearMax) {
+    const minY = parseInt(yearMin) || 1980
+    const maxY = parseInt(yearMax) || new Date().getFullYear() + 1
+    const years: string[] = []
+    for (let y = minY; y <= maxY && years.length < 25; y++) years.push(String(y))
+    if (years.length) aspectFilter = `categoryId:6001,Year:{${years.join('|')}}`
   }
 
-  const url = `https://svcs.ebay.com/services/search/FindingService/v1?${parts.join('&')}`
-  console.log(`[eBay] GET page=${page} kw="${make} ${model}"`)
+  const sp = new URLSearchParams({
+    q,
+    category_ids: '6001',
+    limit:  String(PER_PAGE),
+    offset: String(offset),
+  })
+  if (filterParts.length) sp.set('filter', filterParts.join(','))
+  if (aspectFilter)       sp.set('aspect_filter', aspectFilter)
+
+  const url = `https://api.ebay.com/buy/browse/v1/item_summary/search?${sp}`
+  console.log(`[eBay Browse] GET page=${page} q="${q}" filter="${filterParts.join(',')}"`)
 
   try {
-    const res  = await fetch(url, { headers: { Accept: 'application/json' }, cache: 'no-store' })
+    const res  = await fetch(url, {
+      headers: {
+        'Authorization':           `Bearer ${token}`,
+        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+        'Content-Type':            'application/json',
+      },
+      cache: 'no-store',
+    })
     const text = await res.text()
-    if (!res.ok) { console.error('[eBay] HTTP', res.status, text.slice(0, 300)); return empty }
+    if (!res.ok) { console.error('[eBay Browse] HTTP', res.status, text.slice(0, 400)); return empty }
 
     let data: any
     try { data = JSON.parse(text) }
-    catch { console.error('[eBay] bad JSON:', text.slice(0, 300)); return empty }
+    catch { console.error('[eBay Browse] bad JSON:', text.slice(0, 300)); return empty }
 
-    const resp       = data.findItemsAdvancedResponse?.[0]
-    const ack        = resp?.ack?.[0]
-    const total      = parseInt(resp?.paginationOutput?.[0]?.totalEntries?.[0] ?? '0')
-    const totalPages = parseInt(resp?.paginationOutput?.[0]?.totalPages?.[0]    ?? '1')
-    const items: any[] = resp?.searchResult?.[0]?.item ?? []
-    const errMsg     = resp?.errorMessage?.[0]?.error?.[0]?.message?.[0]
-    console.log(`[eBay] ack=${ack} total=${total} pages=${totalPages} items=${items.length}${errMsg ? ` ERR:${errMsg}` : ''}`)
+    const total      = data.total ?? 0
+    const totalPages = total > 0 ? Math.max(1, Math.ceil(total / PER_PAGE)) : 0
+    const items: any[] = data.itemSummaries ?? []
+    console.log(`[eBay Browse] total=${total} pages=${totalPages} items=${items.length}`)
+
+    if (data.warnings?.length) {
+      console.warn('[eBay Browse] warnings:', JSON.stringify(data.warnings).slice(0, 200))
+    }
 
     const listings: EbayListing[] = items.map((item: any) => ({
-      id:           `ebay_${item.itemId?.[0]}`,
-      itemId:        item.itemId?.[0] ?? '',
-      title:         item.title?.[0] ?? '',
-      price:         parseFloat(item.sellingStatus?.[0]?.currentPrice?.[0]?.['__value__'] ?? '0'),
-      location:      item.location?.[0] ?? '',
-      photo:         item.pictureURLLarge?.[0] ?? item.galleryURL?.[0] ?? null,
-      listing_url:   item.viewItemURL?.[0] ?? '',
-      listing_type:  item.listingInfo?.[0]?.listingType?.[0] ?? 'FixedPrice',
-      condition:     item.condition?.[0]?.conditionDisplayName?.[0] ?? '',
-      seller:        item.sellerInfo?.[0]?.sellerUserName?.[0] ?? '',
+      id:           `ebay_${item.itemId}`,
+      itemId:        item.itemId ?? '',
+      title:         item.title  ?? '',
+      price:         parseFloat(item.price?.value ?? '0'),
+      location:      [item.itemLocation?.city, item.itemLocation?.stateOrProvince]
+                       .filter(Boolean).join(', '),
+      photo:         item.image?.imageUrl ?? null,
+      listing_url:   item.itemWebUrl ?? '',
+      listing_type:  item.buyingOptions?.[0] ?? 'FIXED_PRICE',
+      condition:     item.condition ?? '',
+      seller:        item.seller?.username ?? '',
       source:        'eBay' as const,
     }))
 
-    return { listings, total, totalPages: Math.max(1, totalPages) }
+    return { listings, total, totalPages }
   } catch (e) {
-    console.error('[eBay] exception', e)
+    console.error('[eBay Browse] exception', e)
     return empty
   }
 }
 
 export async function GET(request: Request) {
-  const sp     = new URL(request.url).searchParams
-  const ebayId = process.env.EBAY_APP_ID || ''
+  const sp      = new URL(request.url).searchParams
+  const ebayId  = process.env.EBAY_APP_ID  || ''
+  const certId  = process.env.EBAY_CERT_ID || ''
 
-  console.log(`[car-search] ebayId=${ebayId ? 'SET' : 'MISSING'}`)
+  console.log(`[car-search] appId=${ebayId ? 'SET' : 'MISSING'} certId=${certId ? 'SET' : 'MISSING'}`)
 
   const make     = sp.get('make')     || ''
   const model    = sp.get('model')    || ''
@@ -124,11 +169,10 @@ export async function GET(request: Request) {
   const page     = Math.max(1, parseInt(sp.get('page') || '1'))
 
   const { listings, total, totalPages } = await fetchEbay({
-    appId: ebayId, make, model, yearMin, yearMax,
+    appId: ebayId, certId, make, model, yearMin, yearMax,
     priceMin, priceMax, zip, radius, page,
   })
 
-  // Strip $0 listings (auction items with no bids yet or missing price)
   const filtered = listings.filter(l => l.price > 0)
 
   return NextResponse.json({
@@ -136,6 +180,6 @@ export async function GET(request: Request) {
     total,
     totalPages,
     page,
-    ebayConfigured: !!ebayId,
+    ebayConfigured: !!(ebayId && certId),
   }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } })
 }
