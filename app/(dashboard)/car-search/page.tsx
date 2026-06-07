@@ -532,7 +532,7 @@ export default function CarSearchPage() {
     if (f.priceMax)   p.set('priceMax',   f.priceMax.replace(/\D/g, ''))
     if (f.mileageMax) p.set('mileageMax', f.mileageMax.replace(/\D/g, ''))
     const cleanZip = f.zip.replace(/\D/g, '')
-    if (cleanZip) { p.set('zip', cleanZip); p.set('radius', f.radius) }
+    if (cleanZip && f.radius !== 'nationwide') { p.set('zip', cleanZip); p.set('radius', f.radius) }
     p.set('page', String(pageNum))
 
     try {
@@ -665,6 +665,7 @@ export default function CarSearchPage() {
               <div>
                 <label style={lbl}>Radius</label>
                 <select value={filters.radius} onChange={e => setF('radius', e.target.value)} style={inp as React.CSSProperties}>
+                  <option value="nationwide">Nationwide</option>
                   {['50','100','150','250','500'].map(r => <option key={r} value={r}>{r} mi</option>)}
                 </select>
               </div>
