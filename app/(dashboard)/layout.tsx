@@ -15,6 +15,7 @@ const NAV = [
   { href:'/insurance', icon:'🛡️', label:'Insurance', color:'#3399FF' },
   { href:'/vendors', icon:'🏪', label:'Vendors', color:'#CC0000' },
   { href:'/store', icon:'👕', label:'Store', color:'#FFD700' },
+  { href:'/forums', icon:'🏁', label:'Forums', color:'#CC0000' },
   { href:'/membership', icon:'⚡', label:'Membership', color:'#FFD700' },
   { href:'/admin', icon:'⚙️', label:'Admin', color:'#C0C0C0' },
 ]

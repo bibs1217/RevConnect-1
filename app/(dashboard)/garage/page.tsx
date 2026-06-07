@@ -5,6 +5,32 @@ import { useAuth } from '@/app/providers/auth-provider'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 
+const MAKE_FORUMS: Record<string, { name: string; url: string }[]> = {
+  'Ford':          [{ name:'Mustang Forums', url:'https://www.mustangforums.com' }, { name:'SVT Performance', url:'https://www.svtperformance.com' }, { name:'F150 Forum', url:'https://www.f150forum.com' }, { name:'Bronco6G', url:'https://www.bronco6g.com' }],
+  'Chevrolet':     [{ name:'Camaro5', url:'https://www.camaro5.com' }, { name:'Camaro6', url:'https://www.camaro6.com' }, { name:'Corvette Forum', url:'https://www.corvetteforum.com' }],
+  'Dodge':         [{ name:'Challenger Talk', url:'https://www.challengertalkforum.com' }, { name:'Dodge Charger Forum', url:'https://www.dodgechargerforum.com' }, { name:'Hellcat Forum', url:'https://www.hellcatforum.com' }],
+  'Ram':           [{ name:'Ram Forumz', url:'https://www.ramforumz.com' }],
+  'Toyota':        [{ name:'Supra Forums', url:'https://www.supraforums.com' }, { name:'Tacoma World', url:'https://www.tacomaworld.com' }, { name:'4Runner.org', url:'https://www.4runner.org' }, { name:'IH8MUD', url:'https://www.ih8mud.com' }],
+  'Honda':         [{ name:'Honda Tech', url:'https://www.honda-tech.com' }, { name:'S2Ki', url:'https://www.s2ki.com' }, { name:'NSX Prime', url:'https://www.nsxprime.com' }],
+  'Acura':         [{ name:'NSX Prime', url:'https://www.nsxprime.com' }, { name:'Club RSX', url:'https://www.clubrsx.com' }],
+  'Nissan':        [{ name:'The Z Board', url:'https://www.thezboard.com' }, { name:'GT-R Life', url:'https://www.gtr-life.com' }, { name:'Zilvia', url:'https://www.zilvia.net' }],
+  'Subaru':        [{ name:'NASIOC', url:'https://www.nasioc.com' }, { name:'FT86 Club', url:'https://www.ft86club.com' }],
+  'Mitsubishi':    [{ name:'EvoM', url:'https://www.evom.com' }, { name:'DSM Forums', url:'https://www.dsmforums.com' }],
+  'Mazda':         [{ name:'Miata.net', url:'https://www.miata.net' }, { name:'RX7 Club', url:'https://www.rx7club.com' }, { name:'RX8 Club', url:'https://www.rx8club.com' }],
+  'BMW':           [{ name:'Bimmerforums', url:'https://www.bimmerforums.com' }, { name:'Bimmerpost', url:'https://www.bimmerpost.com' }, { name:'M3 Forum', url:'https://www.m3forum.net' }],
+  'Mercedes-Benz': [{ name:'MB World', url:'https://www.mbworld.org' }, { name:'Benzworld', url:'https://www.benzworld.org' }],
+  'Mercedes':      [{ name:'MB World', url:'https://www.mbworld.org' }, { name:'Benzworld', url:'https://www.benzworld.org' }],
+  'Porsche':       [{ name:'Rennlist', url:'https://rennlist.com' }, { name:'6SpeedOnline', url:'https://www.6speedonline.com' }],
+  'Audi':          [{ name:'AudiWorld', url:'https://www.audiworld.com' }, { name:'Audi TT Forum', url:'https://www.audittforum.co.uk' }],
+  'Volkswagen':    [{ name:'VWVortex', url:'https://www.vwvortex.com' }, { name:'GTI Forums', url:'https://www.gtiforums.com' }],
+  'Jeep':          [{ name:'Jeep Forum', url:'https://www.jeepforum.com' }, { name:'Wrangler Forum', url:'https://www.wranglerforum.com' }],
+}
+
+function getForumsForMake(make: string) {
+  const key = Object.keys(MAKE_FORUMS).find(k => make.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(make.toLowerCase()))
+  return key ? MAKE_FORUMS[key] : []
+}
+
 interface Vehicle {
   id: string; year: number; make: string; model: string; trim: string | null
   nickname: string | null; status: string; hero_image_url: string | null
@@ -274,6 +300,29 @@ export default function GaragePage() {
                   </div>
                 </div>
                 {v.mileage && <p style={{ fontSize:'0.8rem', color:'rgba(255,255,255,0.4)', marginBottom:'0.5rem' }}>📍 {v.mileage.toLocaleString()} mi</p>}
+
+                {/* Forums for this vehicle */}
+                {(() => {
+                  const forums = getForumsForMake(v.make)
+                  if (!forums.length) return null
+                  return (
+                    <div style={{ marginTop:'0.625rem', marginBottom:'0.25rem' }}>
+                      <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.3)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'0.4rem', fontWeight:700 }}>
+                        🏁 Forums for your {v.make}
+                      </p>
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:'0.35rem' }}>
+                        {forums.map((f, i) => (
+                          <a key={i} href={f.url} target="_blank" rel="noopener noreferrer"
+                            style={{ background:'rgba(204,0,0,0.1)', color:'#CC0000', border:'1px solid rgba(204,0,0,0.2)', borderRadius:'9999px', padding:'0.2rem 0.6rem', fontSize:'0.7rem', fontWeight:700, textDecoration:'none', whiteSpace:'nowrap', transition:'all 0.15s' }}
+                            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background='rgba(204,0,0,0.25)'; el.style.borderColor='rgba(204,0,0,0.5)' }}
+                            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background='rgba(204,0,0,0.1)'; el.style.borderColor='rgba(204,0,0,0.2)' }}>
+                            {f.name}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 {/* Upload button — always visible at bottom of card */}
                 <button onClick={() => openUpload(v.id)} style={{ width:'100%', background: v.hero_image_url ? 'rgba(255,255,255,0.04)':'rgba(204,0,0,0.1)', border:`1px solid ${v.hero_image_url ? 'rgba(255,255,255,0.1)':'rgba(204,0,0,0.3)'}`, color: v.hero_image_url ? 'rgba(255,255,255,0.6)':'#CC0000', padding:'0.625rem', borderRadius:'0.75rem', fontWeight:700, cursor:'pointer', fontSize:'0.875rem', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', marginTop:'0.75rem' }}>
