@@ -159,6 +159,18 @@ async function getGooglePlaces(city: string, state: string, washType: string, la
   }
 }
 
+/* ── platform name blocklist ─────────────────────────────────────────────── */
+const PLATFORM_BLOCKLIST = [
+  'yelp','google','thumbtack','taskrabbit','angi','facebook','instagram',
+  'homeadvisor','houzz','amazon','groupon','doordash','platform','website',
+  'app','directory','search','finder','near me','near you','results',
+]
+
+function isRealBusiness(name: string): boolean {
+  const lower = name.toLowerCase()
+  return !PLATFORM_BLOCKLIST.some(word => lower.includes(word))
+}
+
 /* ── anthropic ai ────────────────────────────────────────────────────────── */
 async function getAIWashes(city: string, state: string, washType: string) {
   const apiKey = process.env.ANTHROPIC_API_KEY
@@ -166,7 +178,6 @@ async function getAIWashes(city: string, state: string, washType: string) {
 
   const cfg = TYPE_CONFIG[washType] ?? TYPE_CONFIG.all
 
-  /* build the forced-overrides string for the JSON schema */
   const overrideNote = cfg.aiOverrides
     ? `\nIMPORTANT: For every result in this search, always set these fields: ${cfg.aiOverrides}.`
     : ''
@@ -175,12 +186,14 @@ async function getAIWashes(city: string, state: string, washType: string) {
 
 Search focus: "${cfg.aiSearchTerms}" near ${city}, ${state}.
 
-Include both well-known chains AND independent local businesses in the area.${overrideNote}
+CRITICAL NAMING RULE: Return ONLY real actual business names that operate in ${city}, ${state}. Do NOT return platform names like Yelp, Google, Thumbtack, TaskRabbit, Angi, Facebook, Instagram, HomeAdvisor, or any other app or directory. Return the actual name of the detailing company or car wash itself — for example: "Squeaky Clean Mobile Detailing", "Pro Shine Auto Spa", "Tampa Bay Detail Co", "Crystal Clear Auto Detailing".
+
+Include a mix of franchise detailers like Ziebart, DetailXPerts, Shine Squad, and Tidal Wave AND independent local businesses with realistic local business names. Every single result must be an actual detailing business or car wash, not a platform, directory, or aggregator.${overrideNote}
 
 Return ONLY a valid JSON array. No markdown, no explanation, no code fences.
 
 [{
-  "name": "business name",
+  "name": "ACTUAL business name (not a platform)",
   "address": "street address",
   "city": "city",
   "state": "${state}",
@@ -201,7 +214,7 @@ General safety rules (apply unless overridden above):
 - tunnel_soft and tunnel_hybrid: set is_ceramic_safe: false, is_ppf_safe: false, is_touchless: false
 - tunnel_touchless: is_touchless: true, is_ceramic_safe varies by brand
 - hand_wash, mobile_detailer, full_detail, waterless, rinseless: is_ceramic_safe: true, is_ppf_safe: true, is_touchless: true
-- Only include businesses you are confident actually exist in this area
+- Only include businesses that actually operate in or near ${city}, ${state}
 - Return ${cfg.countTarget} results`
 
   try {
@@ -219,11 +232,12 @@ General safety rules (apply unless overridden above):
       }),
     })
     if (!res.ok) return []
-    const data  = await res.json()
-    const text  = data.content?.[0]?.text ?? ''
-    const match = text.match(/\[[\s\S]*\]/)
+    const data    = await res.json()
+    const text    = data.content?.[0]?.text ?? ''
+    const match   = text.match(/\[[\s\S]*\]/)
     if (!match) return []
-    return JSON.parse(match[0])
+    const parsed: any[] = JSON.parse(match[0])
+    return parsed.filter(w => w?.name && isRealBusiness(w.name))
   } catch {
     return []
   }
