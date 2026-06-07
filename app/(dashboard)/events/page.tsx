@@ -77,28 +77,62 @@ export default function EventsPage() {
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState('')
 
+  const [loadError, setLoadError] = useState('')
+
   useEffect(() => { loadEvents() }, [])
 
   async function loadEvents() {
     setLoading(true)
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .eq('is_published', true)
-      .eq('is_cancelled', false)
-      .order('starts_at', { ascending: true })
-    if (!error && data) setEvents(data as Event[])
+    setLoadError('')
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('is_published', true)
+        .eq('is_cancelled', false)
+        .order('starts_at', { ascending: true })
+      if (error) {
+        console.error('[events] Supabase error:', error.message, error.code)
+        setLoadError(`Could not load events: ${error.message}`)
+      } else {
+        console.log('[events] loaded', data?.length ?? 0, 'events')
+        setEvents((data ?? []) as Event[])
+      }
+    } catch (e) {
+      console.error('[events] exception:', e)
+      setLoadError('Failed to load events. Check your connection.')
+    }
     setLoading(false)
   }
 
   async function handleZipSearch() {
+    setZipError('')
     const clean = zipInput.replace(/\D/g, '').slice(0, 5)
-    if (!clean || clean.length < 5) { setZipError('Enter a valid 5-digit ZIP code'); return }
-    setZipSearching(true); setZipError('')
-    const result = await zipToLatLng(clean)
-    if (result) { setAnchor({ lat: result.lat, lng: result.lng, label: `${result.city} (${clean})` }) }
-    else setZipError('ZIP not found. Try another.')
+
+    // No ZIP entered — clear location filter and show all events
+    if (!clean) {
+      setAnchor(null)
+      return
+    }
+
+    if (clean.length < 5) {
+      setZipError('Enter a full 5-digit ZIP code')
+      return
+    }
+
+    setZipSearching(true)
+    try {
+      const result = await zipToLatLng(clean)
+      if (result) {
+        setAnchor({ lat: result.lat, lng: result.lng, label: `${result.city} (${clean})` })
+      } else {
+        setZipError('ZIP code not found. Try another.')
+      }
+    } catch (e) {
+      console.error('[events] ZIP lookup failed:', e)
+      setZipError('ZIP lookup failed. Try again.')
+    }
     setZipSearching(false)
   }
 
@@ -312,9 +346,9 @@ export default function EventsPage() {
           </div>
 
           <div style={{ display: 'flex', gap: '0.375rem', paddingTop: '1.1rem' }}>
-            <button onClick={handleZipSearch} disabled={zipSearching || zipInput.length < 5}
-              style={{ background: zipInput.length < 5 ? 'rgba(21,57,204,0.3)' : 'linear-gradient(135deg,#1539CC,#0D28AA)', color: zipInput.length < 5 ? 'rgba(255,255,255,0.3)' : 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.625rem', fontWeight: 700, cursor: zipInput.length < 5 ? 'not-allowed' : 'pointer', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-              {zipSearching ? '…' : 'Find Events'}
+            <button onClick={handleZipSearch} disabled={zipSearching}
+              style={{ background: zipSearching ? 'rgba(21,57,204,0.4)' : 'linear-gradient(135deg,#1539CC,#0D28AA)', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.625rem', fontWeight: 700, cursor: zipSearching ? 'not-allowed' : 'pointer', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+              {zipSearching ? 'Searching…' : 'Find Events'}
             </button>
             <button onClick={useMyLocation} disabled={geoLoading} title="Use my location"
               style={{ background: '#0D1E30', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', padding: '0.5rem 0.625rem', borderRadius: '0.625rem', cursor: 'pointer', fontSize: '1rem' }}>
@@ -357,6 +391,17 @@ export default function EventsPage() {
         </div>
       </div>
 
+      {/* Load error */}
+      {loadError && (
+        <div style={{ background: 'rgba(204,0,0,0.1)', border: '1px solid rgba(204,0,0,0.3)', borderRadius: '0.75rem', padding: '0.875rem 1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ fontSize: '1.25rem' }}>⚠️</span>
+          <div>
+            <p style={{ color: '#E63946', fontWeight: 600, fontSize: '0.875rem', margin: 0 }}>{loadError}</p>
+            <button onClick={loadEvents} style={{ background: 'transparent', border: 'none', color: '#3399FF', fontSize: '0.8rem', cursor: 'pointer', padding: 0, marginTop: '0.25rem', textDecoration: 'underline' }}>Retry</button>
+          </div>
+        </div>
+      )}
+
       {/* Result count */}
       <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', marginBottom: '1rem' }}>
         {loading ? 'Loading…' : `${filtered.length} event${filtered.length !== 1 ? 's' : ''}${anchor ? ` within ${radius}mi of ${anchor.label}` : ''}${search ? ` matching "${search}"` : ''}`}
@@ -375,7 +420,9 @@ export default function EventsPage() {
             No events found{anchor ? ` within ${radius} miles of ${anchor.label}` : ''}.
           </p>
           <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            Try expanding your radius, changing the type filter, or clearing location.
+            {anchor
+              ? 'Try expanding your radius, changing the type filter, or clearing location.'
+              : 'No events match your filters — be the first to create one!'}
           </p>
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             {anchor && <button onClick={() => setRadius(500)} style={{ background: 'transparent', border: '1px solid rgba(21,57,204,0.4)', color: '#3399FF', padding: '0.5rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', fontSize: '0.8rem' }}>Expand to 500 miles</button>}
