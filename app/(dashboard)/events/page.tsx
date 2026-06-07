@@ -141,6 +141,10 @@ export default function EventsPage() {
   const filtered = events.filter(ev => {
     if (typeFilter !== 'All' && ev.event_type !== typeFilter) return false
     if (search && !((ev.title ?? '').toLowerCase().includes(search.toLowerCase()) || (ev.city ?? '').toLowerCase().includes(search.toLowerCase()))) return false
+    if (anchor && ev.lat != null && ev.lng != null) {
+      const dist = haversine(anchor.lat, anchor.lng, Number(ev.lat), Number(ev.lng))
+      if (dist > radius) return false
+    }
     return true
   })
 
