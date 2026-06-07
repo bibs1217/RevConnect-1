@@ -10,7 +10,7 @@ const PRODUCTS = [
     description:'Premium 100% cotton tee. Embroidered RevConnect-1 logo on chest. Available Black & White.',
     sizes:['S','M','L','XL','2XL','3XL'],
     colors:['Black','White'],
-    img:'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=85',
+    img:'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400&q=85',
     badge:'NEW',
     badgeColor:'#22c55e',
   },
@@ -96,7 +96,7 @@ const PRODUCTS = [
     description:'Midweight fleece crewneck. Relaxed fit. Embroidered RevConnect-1 logo left chest.',
     sizes:['S','M','L','XL','2XL'],
     colors:['Black','Navy','Heather Grey'],
-    img:'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=85',
+    img:'https://images.unsplash.com/photo-1562157873-818bc0726f68?w=400&q=85',
     badge:'NEW',
     badgeColor:'#22c55e',
   },
@@ -275,6 +275,10 @@ export default function StorePage() {
               {/* Product image with RC-1 branding */}
               <div style={{ height:'220px', position:'relative', overflow:'hidden', background:'#0D1E30' }}>
                 <img src={p.img} alt={p.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                {/* Center brand overlay — simulates logo printed on product */}
+                <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'rgba(0,0,0,0.6)', borderRadius:'4px', padding:'0.3rem 0.75rem', border:'1px solid rgba(255,255,255,0.3)', pointerEvents:'none' }}>
+                  <span style={{ color:'white', fontWeight:700, fontSize:'0.85rem', whiteSpace:'nowrap' }}>RevConnect-1</span>
+                </div>
                 {/* Brand watermark */}
                 <div style={{ position:'absolute', bottom:'0.75rem', left:'0.75rem', background:'rgba(204,0,0,0.88)', borderRadius:'0.375rem', padding:'0.2rem 0.5rem', backdropFilter:'blur(4px)' }}>
                   <span style={{ color:'white', fontWeight:900, fontSize:'0.65rem', letterSpacing:'0.5px' }}>RevConnect-1</span>
