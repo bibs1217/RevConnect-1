@@ -63,7 +63,7 @@ export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
   const [typeFilter, setTypeFilter] = useState('All')
-  const [dateFilter, setDateFilter] = useState('upcoming')
+  const [dateFilter, setDateFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [zipInput, setZipInput] = useState('')
   const [radius, setRadius] = useState(200)
@@ -157,6 +157,12 @@ export default function EventsPage() {
       distance: anchor && ev.lat && ev.lng ? Math.round(haversine(anchor.lat, anchor.lng, ev.lat, ev.lng)) : null,
     })), [events, anchor])
 
+  // Normalize Supabase timestamp to ISO 8601 with T separator so all browsers parse it
+  function parseDate(s: string): Date {
+    if (!s) return new Date(0)
+    return new Date(s.replace(' ', 'T'))
+  }
+
   const filtered = useMemo(() => {
     const now = new Date()
     const endOfWeek = new Date(now); endOfWeek.setDate(now.getDate() + 7)
@@ -167,20 +173,21 @@ export default function EventsPage() {
     if (search.trim()) {
       const q = search.toLowerCase()
       res = res.filter(e =>
-        e.title.toLowerCase().includes(q) ||
-        e.city.toLowerCase().includes(q) ||
-        e.state.toLowerCase().includes(q) ||
-        e.description.toLowerCase().includes(q)
+        (e.title ?? '').toLowerCase().includes(q) ||
+        (e.city ?? '').toLowerCase().includes(q) ||
+        (e.state ?? '').toLowerCase().includes(q) ||
+        (e.description ?? '').toLowerCase().includes(q)
       )
     }
-    if (dateFilter === 'upcoming') res = res.filter(e => new Date(e.starts_at) >= now)
-    else if (dateFilter === 'this_week') res = res.filter(e => { const d = new Date(e.starts_at); return d >= now && d <= endOfWeek })
-    else if (dateFilter === 'this_month') res = res.filter(e => { const d = new Date(e.starts_at); return d >= now && d <= endOfMonth })
+    if (dateFilter === 'upcoming') res = res.filter(e => parseDate(e.starts_at) >= now)
+    else if (dateFilter === 'this_week') res = res.filter(e => { const d = parseDate(e.starts_at); return d >= now && d <= endOfWeek })
+    else if (dateFilter === 'this_month') res = res.filter(e => { const d = parseDate(e.starts_at); return d >= now && d <= endOfMonth })
+    // 'all' → no date filter
     if (anchor) res = res.filter(e => e.distance !== null && e.distance <= radius)
 
     return [...res].sort((a, b) => {
       if (anchor && a.distance !== null && b.distance !== null) return a.distance - b.distance
-      return new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
+      return parseDate(a.starts_at).getTime() - parseDate(b.starts_at).getTime()
     })
   }, [eventsWithDistance, typeFilter, search, dateFilter, anchor, radius])
 
@@ -240,7 +247,7 @@ export default function EventsPage() {
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>📍 Events & Car Meets</h1>
           <p style={{ color: 'rgba(255,255,255,0.35)', marginTop: '0.25rem' }}>
-            {loading ? 'Loading events…' : `${events.length} upcoming events nationwide`}
+            {loading ? 'Loading events…' : events.length === 0 ? 'No events loaded — check console for errors' : `${events.length} events nationwide`}
           </p>
         </div>
         {user && (
@@ -404,7 +411,11 @@ export default function EventsPage() {
 
       {/* Result count */}
       <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', marginBottom: '1rem' }}>
-        {loading ? 'Loading…' : `${filtered.length} event${filtered.length !== 1 ? 's' : ''}${anchor ? ` within ${radius}mi of ${anchor.label}` : ''}${search ? ` matching "${search}"` : ''}`}
+        {loading
+          ? 'Loading…'
+          : events.length === 0
+            ? 'No events returned from database'
+            : `Showing ${filtered.length} of ${events.length} events${anchor ? ` within ${radius}mi of ${anchor.label}` : ''}${search ? ` matching "${search}"` : ''}`}
       </p>
 
       {/* Cards */}
@@ -435,7 +446,7 @@ export default function EventsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.125rem' }}>
           {filtered.map(ev => {
             const typeColor = TYPE_COLORS[ev.event_type] ?? '#CC0000'
-            const date = new Date(ev.starts_at)
+            const date = parseDate(ev.starts_at)
             const isRsvpd = rsvpd.has(ev.id)
             return (
               <div key={ev.id} style={{ background: '#243547', border: `1px solid ${typeColor}25`, borderRadius: '1rem', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
