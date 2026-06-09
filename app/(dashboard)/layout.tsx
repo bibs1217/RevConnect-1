@@ -9,6 +9,7 @@ const NAV = [
   { href:'/events', icon:'📍', label:'Events', color:'#1539CC' },
   { href:'/car-search', icon:'🔍', label:'Buy a Car', color:'#3399FF' },
   { href:'/parts', icon:'🔩', label:'Parts', color:'#CC0000' },
+  { href:'/tires', icon:'🛞', label:'Tires', color:'#3399FF' },
   { href:'/mechanic', icon:'🔧', label:'RevConnect AI', color:'#FFD700' },
   { href:'/car-wash', icon:'🚿', label:'Car Wash', color:'#1539CC' },
   { href:'/auctions', icon:'🏁', label:'Auctions', color:'#FFD700' },

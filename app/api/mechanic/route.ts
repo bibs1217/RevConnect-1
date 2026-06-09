@@ -111,6 +111,19 @@ const TOOLS: any[] = [
     },
   },
   {
+    name: 'tire_search',
+    description: 'Comparison-shop tires across all major sellers (Tire Rack, Discount Tire, SimpleTire, Costco, etc.) by tire size, brand, and type. Also computes size specs (diameter, sidewall). Size format: 245/40R18.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        size: { type: 'string', description: 'Tire size, e.g. 245/40R18' },
+        brand: { type: 'string', description: 'Tire brand, e.g. Michelin' },
+        tire_type: { type: 'string', description: 'all-season, summer, winter, all-terrain, mud-terrain, touring, track' },
+      },
+      required: ['size'],
+    },
+  },
+  {
     name: 'events_lookup',
     description: 'Find upcoming car meets, shows, track days, and enthusiast events near the user.',
     input_schema: {
@@ -432,6 +445,40 @@ async function execTool(name: string, args: any, origin: string): Promise<{ card
           })),
         ]
         return { cards, model: cards.length ? JSON.stringify(cards.map(c => ({ name: c.title, when: c.subtitle, where: c.meta?.[0] }))) + (a.date_range ? ` (user asked for: ${a.date_range} — filter your recommendations accordingly)` : '') : `No events found near ${loc.city}, ${loc.state}.` }
+      }
+      case 'tire_search': {
+        const m = (a.size ?? '').match(/(\d{3})\s*[\/-]\s*(\d{2})\s*[rR]?\s*(\d{2})/)
+        if (!m) return { cards: [], model: `Could not parse tire size "${a.size}". Ask the user for a size like 245/40R18.` }
+        const w = Number(m[1]), asp = Number(m[2]), rim = Number(m[3])
+        const sizeLabel = `${w}/${asp}R${rim}`
+        const brand = a.brand ?? ''
+        const sidewall = (w * asp / 100) / 25.4
+        const diameter = rim + 2 * sidewall
+        const TIRE_SELLERS = [
+          { name: 'Tire Rack', logo: '🏁', rating: 4.8, url: `https://www.tirerack.com/tires/TireSearchResults.jsp?width=${w}%2F&ratio=${asp}&diameter=${rim}` },
+          { name: 'Discount Tire', logo: '🛞', rating: 4.7, url: `https://www.discounttire.com/buy-tires/size/${w}-${asp}-${rim}` },
+          { name: 'SimpleTire', logo: '⚡', rating: 4.5, url: `https://simpletire.com/tires-size-${w}-${asp}r${rim}` },
+          { name: 'Priority Tire', logo: '💰', rating: 4.6, url: `https://www.prioritytire.com/catalogsearch/result/?q=${encodeURIComponent(`${sizeLabel} ${brand}`.trim())}` },
+          { name: 'Amazon Tires', logo: '📦', rating: 4.3, url: `https://www.amazon.com/s?k=${encodeURIComponent(`${sizeLabel} tires ${brand}`.trim())}` },
+          { name: 'Costco Tires', logo: '🏬', rating: 4.7, url: 'https://tires.costco.com/' },
+        ]
+        let base = 62 + (rim - 13) * 16 + Math.max(0, w - 185) * 0.55 + Math.max(0, 45 - asp) * 1.6
+        const tt = (a.tire_type ?? '').toLowerCase()
+        if (tt.includes('summer')) base *= 1.4; else if (tt.includes('track')) base *= 1.9; else if (tt.includes('winter')) base *= 1.18; else if (tt.includes('mud')) base *= 1.55; else if (tt.includes('terrain')) base *= 1.28
+        const lo = Math.round(base * 0.78 / 5) * 5, hi = Math.round(base * 1.45 / 5) * 5
+        const cards: RCCard[] = TIRE_SELLERS.map((sl, i) => ({
+          type: 'part', id: `tire_${i}`,
+          title: `${sizeLabel}${brand ? ' ' + brand : ''} tires — ${sl.name}`,
+          subtitle: `${sl.name} · ★ ${sl.rating}`,
+          icon: sl.logo,
+          priceLabel: `~$${lo}–$${hi}/tire`,
+          source: sl.name,
+          meta: [`${diameter.toFixed(1)}" overall · ${sidewall.toFixed(1)}" sidewall`, a.tire_type ?? 'all types'],
+          url: sl.url,
+          fullPage: { label: 'Open in Tires', href: '/tires' },
+          detail: { Size: sizeLabel, 'Overall diameter': `${diameter.toFixed(1)}"`, Sidewall: `${sidewall.toFixed(1)}"`, 'Est. street price': `$${lo}-$${hi}/tire`, Seller: sl.name, Note: 'Opens a pre-filled size search at this seller. The /tires page also has a side/front size visualizer.' },
+        }))
+        return { cards, model: `Rendered ${sizeLabel} seller cards (est $${lo}-$${hi}/tire, overall diameter ${diameter.toFixed(1)} in). Sellers: ${TIRE_SELLERS.map(s => s.name).join(', ')}. Mention the /tires page has a size comparison visualizer if the user is changing sizes.` }
       }
       default:
         return { cards: [], model: `Unknown tool ${name}` }
