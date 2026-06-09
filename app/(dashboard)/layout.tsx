@@ -9,7 +9,7 @@ const NAV = [
   { href:'/events', icon:'📍', label:'Events', color:'#1539CC' },
   { href:'/car-search', icon:'🔍', label:'Buy a Car', color:'#3399FF' },
   { href:'/parts', icon:'🔩', label:'Parts', color:'#CC0000' },
-  { href:'/mechanic', icon:'🔧', label:'AI Mechanic', color:'#FFD700' },
+  { href:'/mechanic', icon:'🔧', label:'RevConnect AI', color:'#FFD700' },
   { href:'/car-wash', icon:'🚿', label:'Car Wash', color:'#1539CC' },
   { href:'/auctions', icon:'🏁', label:'Auctions', color:'#FFD700' },
   { href:'/insurance', icon:'🛡️', label:'Insurance', color:'#3399FF' },
@@ -30,13 +30,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push('/')
   }
 
+  function guardNav(e: React.MouseEvent, href: string) {
+    if (
+      pathname.startsWith('/mechanic') &&
+      !href.startsWith('/mechanic') &&
+      typeof window !== 'undefined' &&
+      (window as any).__rcChatActive &&
+      !window.confirm('Leave your RevConnect AI conversation? Your chat will be cleared.')
+    ) {
+      e.preventDefault()
+    }
+  }
+
   return (
     <div style={{ minHeight:'100vh', background:'#1B2A3E', display:'flex', flexDirection:'column' }}>
 
       {/* Nav — bold chrome/red/blue bar */}
       <header style={{ background:'#0D1E30', borderBottom:'3px solid transparent', borderImage:'linear-gradient(90deg, #CC0000 0%, #888 30%, #FFFFFF 50%, #888 70%, #1539CC 100%) 1', padding:'0 1.5rem', height:'4rem', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:50, boxShadow:'0 4px 24px rgba(0,0,0,0.4)' }}>
 
-        <Link href="/" style={{ fontSize:'1.25rem', fontWeight:900, letterSpacing:'-0.5px', display:'flex', alignItems:'center' }}>
+        <Link href="/" onClick={e => guardNav(e, '/')} style={{ fontSize:'1.25rem', fontWeight:900, letterSpacing:'-0.5px', display:'flex', alignItems:'center' }}>
           <span style={{ color:'white' }}>Rev</span>
           <span className="chrome-text" style={{ fontSize:'1.25rem' }}>Connect</span>
           <span style={{ color:'#FFD700', textShadow:'0 0 10px rgba(255,215,0,0.5)' }}>-1</span>
@@ -80,7 +92,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {NAV.map(n => {
               const active = pathname === n.href || pathname.startsWith(n.href + '/')
               return (
-                <Link key={n.href} href={n.href} style={{ display:'flex', alignItems:'center', gap:'0.75rem', padding:'0.625rem 0.875rem', borderRadius:'0.625rem', fontSize:'0.875rem', fontWeight: active ? 700 : 400, background: active ? `${n.color}18` : 'transparent', color: active ? n.color : 'rgba(255,255,255,0.45)', borderLeft: `3px solid ${active ? n.color : 'transparent'}`, paddingLeft: '0.625rem', transition:'all 0.15s' }}>
+                <Link key={n.href} href={n.href} onClick={e => guardNav(e, n.href)} style={{ display:'flex', alignItems:'center', gap:'0.75rem', padding:'0.625rem 0.875rem', borderRadius:'0.625rem', fontSize:'0.875rem', fontWeight: active ? 700 : 400, background: active ? `${n.color}18` : 'transparent', color: active ? n.color : 'rgba(255,255,255,0.45)', borderLeft: `3px solid ${active ? n.color : 'transparent'}`, paddingLeft: '0.625rem', transition:'all 0.15s' }}>
                   <span style={{ fontSize:'1rem' }}>{n.icon}</span>{n.label}
                 </Link>
               )
