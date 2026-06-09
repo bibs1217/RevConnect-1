@@ -34,6 +34,12 @@ interface Seller {
 const enc = encodeURIComponent
 
 const SELLERS: Seller[] = [
+  { id:'firestone', name:'Firestone', logo:'🔥', color:'#E61A1A', rating:4.6, reviews:'600K+', perks:['1,700+ stores', 'Installed pricing', 'Lifetime alignment plans'],
+    url:(t) => `https://www.firestonecompleteautocare.com/tires/tire-size/${t.w}-${t.a}r${t.r}/` },
+  { id:'tiresplus', name:'Tires Plus', logo:'➕', color:'#22c55e', rating:4.5, reviews:'350K+', perks:['Same-day install', 'Frequent rebates', 'Price match'],
+    url:(t) => `https://www.tiresplus.com/tires/tire-size/${t.w}-${t.a}r${t.r}/` },
+  { id:'bridgestone', name:'Bridgestone.com', logo:'🅱️', color:'#CC0000', rating:4.7, reviews:'400K+', perks:['Direct from manufacturer', 'DriveGuard & Potenza lines', 'Dealer locator'], brandOnly:'Bridgestone',
+    url:(t) => `https://www.bridgestonetire.com/catalog/?tireSize=${t.w}%2F${t.a}R${t.r}` },
   { id:'tirerack', name:'Tire Rack', logo:'🏁', color:'#CC0000', rating:4.8, reviews:'1.2M+', perks:['Free road hazard', 'Test data & reviews', 'Mobile install network'],
     url:(t,b) => `https://www.tirerack.com/tires/TireSearchResults.jsp?width=${t.w}%2F&ratio=${t.a}&diameter=${t.r}${b !== 'All Brands' ? `&make=${enc(b)}` : ''}` },
   { id:'discount', name:'Discount Tire', logo:'🛞', color:'#E61A1A', rating:4.7, reviews:'900K+', perks:['1,100+ stores', 'Free rotation & balance', 'Price match'],

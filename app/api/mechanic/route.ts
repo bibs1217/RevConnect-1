@@ -455,6 +455,9 @@ async function execTool(name: string, args: any, origin: string): Promise<{ card
         const sidewall = (w * asp / 100) / 25.4
         const diameter = rim + 2 * sidewall
         const TIRE_SELLERS = [
+          { name: 'Firestone', logo: '🔥', rating: 4.6, url: `https://www.firestonecompleteautocare.com/tires/tire-size/${w}-${asp}r${rim}/` },
+          { name: 'Tires Plus', logo: '➕', rating: 4.5, url: `https://www.tiresplus.com/tires/tire-size/${w}-${asp}r${rim}/` },
+          { name: 'Bridgestone', logo: '🅱️', rating: 4.7, url: `https://www.bridgestonetire.com/catalog/?tireSize=${w}%2F${asp}R${rim}` },
           { name: 'Tire Rack', logo: '🏁', rating: 4.8, url: `https://www.tirerack.com/tires/TireSearchResults.jsp?width=${w}%2F&ratio=${asp}&diameter=${rim}` },
           { name: 'Discount Tire', logo: '🛞', rating: 4.7, url: `https://www.discounttire.com/buy-tires/size/${w}-${asp}-${rim}` },
           { name: 'SimpleTire', logo: '⚡', rating: 4.5, url: `https://simpletire.com/tires-size-${w}-${asp}r${rim}` },
