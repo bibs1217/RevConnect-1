@@ -24,14 +24,14 @@ interface Vehicle {
 }
 
 const QUICK_PROMPTS = [
-  '🔩 Find brake pads for my car',
-  '🏁 Show me Supra auctions ending soon',
-  '🚗 Find a manual WRX under $30k',
-  '🔧 Walk me through a coilover installation',
-  '🛡️ What would insurance cost on my car?',
-  '📍 Find car meets near Orlando, FL',
-  '🏪 Which vendors have member discounts?',
-  '🚿 Find a coating-safe car wash near me',
+  'Find brake pads for my 2019 Mustang GT with prices',
+  'What clean Fox Bodies are selling for at auction right now',
+  'Find a turbo shop near me and parts for a turbo kit',
+  'Show me upcoming car meets this weekend',
+  'Get me insurance quotes for a 2003 Cobra SVT',
+  'Find a touchless car wash near Palm Harbor FL',
+  'Diagnose a check engine light on a 2015 Mustang',
+  'Search live listings for a Shelby GT500 under $60k',
 ]
 
 function buildVehicleContext(v: Vehicle): string {
@@ -254,6 +254,12 @@ export default function MechanicPage() {
         <p style={{ color:'rgba(255,255,255,0.45)', fontSize:'0.85rem', marginTop:'0.2rem', fontWeight:600 }}>
           Your entire platform. One conversation.
         </p>
+        <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'0.72rem', marginTop:'0.2rem' }}>
+          AI-Powered · ASE Master Tech · Live Platform Search
+        </p>
+        <p style={{ color:'rgba(255,215,0,0.55)', fontSize:'0.7rem', marginTop:'0.1rem' }}>
+          Ask anything — I search the whole platform in real time
+        </p>
       </div>
 
       {/* Persistent search bar — fires a chat message, never navigates */}
@@ -303,7 +309,7 @@ export default function MechanicPage() {
 
       {!hasKey && (
         <div style={{ background:'rgba(255,215,0,0.08)', border:'1px solid rgba(255,215,0,0.2)', borderRadius:'0.75rem', padding:'0.875rem 1rem', marginBottom:'0.75rem', fontSize:'0.875rem', color:'#FFD700' }}>
-          ⚠️ Add <code style={{ background:'rgba(0,0,0,0.3)', padding:'0.1rem 0.4rem', borderRadius:'0.25rem' }}>OPENAI_API_KEY</code> to Vercel environment variables to enable RevConnect-1 AI.
+          ⚠️ Add <code style={{ background:'rgba(0,0,0,0.3)', padding:'0.1rem 0.4rem', borderRadius:'0.25rem' }}>ANTHROPIC_API_KEY</code> to Vercel environment variables to enable RevConnect-1 AI.
         </div>
       )}
 
@@ -325,7 +331,7 @@ export default function MechanicPage() {
             <p style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.3)', marginBottom:'0.75rem' }}>Try one:</p>
             <div style={{ display:'flex', flexWrap:'wrap', gap:'0.5rem' }}>
               {QUICK_PROMPTS.map(p => (
-                <button key={p} onClick={() => sendMessage(p.replace(/^\S+\s/, ''))} style={{ background:'rgba(26,26,46,0.8)', border:'1px solid rgba(255,255,255,0.08)', color:'rgba(255,255,255,0.6)', padding:'0.5rem 0.875rem', borderRadius:'9999px', fontSize:'0.8rem', cursor:'pointer' }}>{p}</button>
+                <button key={p} onClick={() => sendMessage(p)} style={{ background:'rgba(26,26,46,0.8)', border:'1px solid rgba(255,255,255,0.08)', color:'rgba(255,255,255,0.6)', padding:'0.5rem 0.875rem', borderRadius:'9999px', fontSize:'0.8rem', cursor:'pointer' }}>{p}</button>
               ))}
             </div>
           </div>
