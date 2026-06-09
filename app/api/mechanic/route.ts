@@ -144,6 +144,36 @@ const TOOLS = [
   },
 ]
 
+/* ── fallback data — used when the live eBay/Marketcheck feeds return nothing,
+      so the chat always produces actionable cards (deep links to real searches) ── */
+
+const PART_RETAILERS = [
+  { name: 'RockAuto',      logo: '🪨',  url: (q: string) => `https://www.rockauto.com/en/partsearch/?partname=${encodeURIComponent(q)}` },
+  { name: 'AutoZone',      logo: '🔴', url: (q: string) => `https://www.autozone.com/searchresult?searchText=${encodeURIComponent(q)}` },
+  { name: 'Summit Racing', logo: '🏎️', url: (q: string) => `https://www.summitracing.com/search?keyword=${encodeURIComponent(q)}` },
+  { name: "O'Reilly Auto", logo: '🟠', url: (q: string) => `https://www.oreillyauto.com/search?q=${encodeURIComponent(q)}` },
+  { name: 'Amazon Auto',   logo: '📦', url: (q: string) => `https://www.amazon.com/s?k=${encodeURIComponent(q + ' auto parts')}` },
+  { name: 'NAPA Auto',     logo: '🔵', url: (q: string) => `https://www.napaonline.com/en/search?query=${encodeURIComponent(q)}` },
+]
+
+const CAR_SITES = [
+  { name: 'AutoTrader', logo: '🚘', url: (mk: string, md: string, zip?: string) => `https://www.autotrader.com/cars-for-sale/${[mk, md].filter(Boolean).map(s => s.toLowerCase().replace(/\s+/g, '-')).join('/')}${zip ? `?zip=${zip}` : ''}` },
+  { name: 'Cars.com',   logo: '🚗', url: (mk: string, md: string, zip?: string) => `https://www.cars.com/shopping/results/?makes[]=${mk.toLowerCase()}&models[]=${mk.toLowerCase()}-${md.toLowerCase().replace(/\s+/g, '_')}${zip ? `&zip=${zip}` : ''}` },
+  { name: 'CarGurus',   logo: '🧭', url: (mk: string, md: string) => `https://www.cargurus.com/Cars/spt-${[mk, md].filter(Boolean).join('-').toLowerCase().replace(/\s+/g, '-')}` },
+  { name: 'Carvana',    logo: '🛻', url: (mk: string, md: string) => `https://www.carvana.com/cars/${[mk, md].filter(Boolean).join('-').toLowerCase().replace(/\s+/g, '-')}` },
+  { name: 'eBay Motors',logo: '🏷️', url: (mk: string, md: string) => `https://www.ebay.com/sch/6001/i.html?_nkw=${encodeURIComponent([mk, md].filter(Boolean).join(' '))}` },
+  { name: 'Facebook Marketplace', logo: '🛒', url: (mk: string, md: string) => `https://www.facebook.com/marketplace/category/vehicles?query=${encodeURIComponent([mk, md].filter(Boolean).join(' '))}` },
+]
+
+const AUCTION_SAMPLES = [
+  { id:'s1', title:'2020 Toyota Supra GR', make:'Toyota', model:'Supra', mileage:14200, bid:52500, premium:5, img:'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=500&q=80', source:'Bring a Trailer', location:'California', condition:'Excellent', url:'https://bringatrailer.com/toyota/supra/' },
+  { id:'s2', title:'2021 Ford Mustang Shelby GT500', make:'Ford', model:'Mustang', mileage:3400, bid:89000, premium:4.5, img:'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=500&q=80', source:'Cars & Bids', location:'Texas', condition:'Like New', url:'https://carsandbids.com/search/ford%20mustang' },
+  { id:'s3', title:'2018 BMW M3 Competition', make:'BMW', model:'M3', mileage:38200, bid:28500, premium:12, img:'https://images.unsplash.com/photo-1580274455152-f4af44f89116?w=500&q=80', source:'Copart', location:'Georgia', condition:'Repairable', url:'https://www.copart.com/lotSearchResults/?free=true&query=bmw%20m3' },
+  { id:'s4', title:'2019 Porsche 911 Carrera', make:'Porsche', model:'911', mileage:8900, bid:105000, premium:0, img:'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=500&q=80', source:'eBay Motors', location:'Florida', condition:'Excellent', url:'https://www.ebay.com/sch/6001/i.html?_nkw=porsche%20911&Auction=1' },
+  { id:'s5', title:'1969 Chevrolet Camaro Z/28', make:'Chevrolet', model:'Camaro', mileage:87400, bid:72000, premium:10, img:'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=500&q=80', source:'Mecum', location:'Arizona', condition:'Restored', url:'https://www.mecum.com/search/?q=camaro' },
+  { id:'s6', title:'2022 Subaru WRX Stage 2 Built', make:'Subaru', model:'WRX', mileage:22000, bid:38000, premium:5, img:'https://images.unsplash.com/photo-1567808291548-fc3ee04dbcf0?w=500&q=80', source:'Bring a Trailer', location:'Illinois', condition:'Modified', url:'https://bringatrailer.com/subaru/wrx/' },
+]
+
 const money = (n: number | null | undefined) =>
   n == null || isNaN(Number(n)) ? null : `$${Math.round(Number(n)).toLocaleString()}`
 
@@ -189,7 +219,22 @@ async function execTool(name: string, args: any, origin: string): Promise<{ card
             'Part #': p.part_number ?? '—',
           },
         }))
-        return { cards, model: cards.length ? JSON.stringify(cards.map(c => ({ title: c.title, price: c.priceLabel, retailer: c.source, condition: c.detail?.Condition }))) : 'No part listings found. Suggest refining the search or checking /parts.' }
+        if (cards.length) return { cards, model: JSON.stringify(cards.map(c => ({ title: c.title, price: c.priceLabel, retailer: c.source, condition: c.detail?.Condition }))) }
+        // Fallback: deep-link retailer search cards so the user always gets actionable results
+        const kw = [a.year, a.make, a.model, a.query].filter(Boolean).join(' ')
+        const fbCards: RCCard[] = PART_RETAILERS.map((r, i) => ({
+          type: 'part', id: `fb_${i}`,
+          title: `${a.query} — ${r.name}`,
+          subtitle: r.name,
+          icon: r.logo,
+          priceLabel: 'See live prices',
+          source: r.name,
+          meta: [a.make || a.model ? `Fits: ${[a.year, a.make, a.model].filter(Boolean).join(' ')}` : 'All vehicles'],
+          url: r.url(kw),
+          fullPage: { label: 'Open in Parts', href: '/parts' },
+          detail: { Retailer: r.name, Search: kw, Note: 'Live listing feeds are quiet right now — this opens a pre-filled search at the retailer.' },
+        }))
+        return { cards: fbCards, model: `fallback:true — live listing feeds returned nothing, so I provided pre-filled search cards for ${kw} at: ${PART_RETAILERS.map(r => r.name).join(', ')}. Tell the user these open the retailer's live search for their exact part.` }
       }
       case 'search_cars': {
         const data = await getJSON(`${origin}/api/car-search?${qs({ make: a.make, model: a.model, yearMin: a.yearMin, yearMax: a.yearMax, priceMax: a.priceMax, zip: a.zip })}`)
@@ -205,7 +250,21 @@ async function execTool(name: string, args: any, origin: string): Promise<{ card
           fullPage: { label: 'Open in Buy a Car', href: '/car-search' },
           detail: { Condition: l.condition ?? '—', Seller: l.seller ?? '—', Location: l.location ?? '—', Source: l.source ?? 'eBay', 'Listing type': l.listing_type ?? '—' },
         }))
-        return { cards, model: cards.length ? JSON.stringify(cards.map(c => ({ title: c.title, price: c.priceLabel, location: c.detail?.Location }))) : 'No live vehicle listings found. Suggest the /car-search page which links 20+ marketplaces.' }
+        if (cards.length) return { cards, model: JSON.stringify(cards.map(c => ({ title: c.title, price: c.priceLabel, location: c.detail?.Location }))) }
+        const desc = [a.yearMin && a.yearMax ? `${a.yearMin}-${a.yearMax}` : (a.yearMin || a.yearMax), a.make, a.model].filter(Boolean).join(' ')
+        const fbCards: RCCard[] = CAR_SITES.map((s, i) => ({
+          type: 'vehicle', id: `fb_${i}`,
+          title: `${desc || 'Cars'} for sale — ${s.name}`,
+          subtitle: s.name,
+          icon: s.logo,
+          priceLabel: a.priceMax ? `Under ${money(Number(a.priceMax))}` : 'See live listings',
+          source: s.name,
+          meta: [a.zip ? `Near ${a.zip}` : 'Nationwide'],
+          url: s.url(a.make ?? '', a.model ?? '', a.zip),
+          fullPage: { label: 'Open in Buy a Car', href: '/car-search' },
+          detail: { Marketplace: s.name, Search: desc || 'all', Note: 'Opens a pre-filled live search on this marketplace.' },
+        }))
+        return { cards: fbCards, model: `fallback:true — the live eBay feed returned nothing, so I provided pre-filled marketplace search cards for "${desc}" on: ${CAR_SITES.map(s => s.name).join(', ')}.` }
       }
       case 'search_auctions': {
         const data = await getJSON(`${origin}/api/auction-search?${qs({ query: a.query, make: a.make, model: a.model, yearMin: a.yearMin, yearMax: a.yearMax, priceMax: a.priceMax, zip: a.zip })}`)
@@ -232,7 +291,27 @@ async function execTool(name: string, args: any, origin: string): Promise<{ card
             },
           }
         })
-        return { cards, model: cards.length ? JSON.stringify(cards.map(c => ({ title: c.title, bid: c.priceLabel, allIn: c.badge, damage: c.detail?.['Primary damage'] }))) : 'No auction lots found. The /auctions page also lists Bring a Trailer, Cars & Bids, Mecum and in-person events.' }
+        if (cards.length) return { cards, model: JSON.stringify(cards.map(c => ({ title: c.title, bid: c.priceLabel, allIn: c.badge, damage: c.detail?.['Primary damage'] }))) }
+        const q = `${a.query ?? ''} ${a.make ?? ''} ${a.model ?? ''}`.toLowerCase()
+        let pool = AUCTION_SAMPLES.filter(s => !q.trim() || q.includes(s.make.toLowerCase()) || q.includes(s.model.toLowerCase()) || s.title.toLowerCase().includes(q.trim()))
+        if (!pool.length) pool = AUCTION_SAMPLES
+        const fbCards: RCCard[] = pool.map(s => {
+          const allIn = Math.round(s.bid * (1 + s.premium / 100) + 450)
+          return {
+            type: 'auction', id: s.id,
+            title: s.title,
+            subtitle: s.source,
+            image: s.img, icon: '🏁',
+            price: s.bid, priceLabel: `Bid ${money(s.bid)}`,
+            badge: `All-In Est: ${money(allIn)}`,
+            source: s.source,
+            meta: [`${s.mileage.toLocaleString()} mi`, s.condition, s.location],
+            url: s.url,
+            fullPage: { label: 'Open in Auctions', href: '/auctions' },
+            detail: { Source: s.source, Condition: s.condition, Mileage: `${s.mileage.toLocaleString()} mi`, 'Current bid': money(s.bid) ?? '—', 'Buyer premium': `${s.premium}%`, 'All-in estimate': money(allIn) ?? '—', Location: s.location },
+          }
+        })
+        return { cards: fbCards, model: `fallback:true — live salvage/eBay auction feeds returned nothing, so I provided featured platform auction lots (same set shown on the /auctions page) with links to the auction platforms. Lots: ${pool.map(p => p.title).join('; ')}.` }
       }
       case 'search_vendors': {
         const q = (a.query ?? '').toLowerCase()
@@ -301,7 +380,7 @@ async function execTool(name: string, args: any, origin: string): Promise<{ card
           fullPage: { label: 'Open in Insurance', href: '/insurance' },
           detail: { Type: c.type ?? '—', Coverage: c.coverage ?? '—', Monthly: money(c.monthly) ?? '—', Annual: money(c.annual) ?? '—', 'AM Best': c.am_best ?? '—', Phone: c.phone ?? '—', 'Agreed value': c.agreed_value ? 'Yes' : 'No', 'Mods covered': c.mods_covered ? 'Yes' : 'No', 'Track day': c.track_day ? 'Yes' : 'No' },
         }))
-        return { cards, model: cards.length ? JSON.stringify(items.map((c: any) => ({ carrier: c.name, monthly: c.monthly, notes: c.notes, recommended: c.recommended }))) : 'Quote engine returned nothing — suggest the /insurance page.' }
+        return { cards, model: cards.length ? JSON.stringify(items.map((c: any) => ({ carrier: c.name, monthly: c.monthly, notes: c.notes, recommended: c.recommended }))) : 'Quote engine returned nothing - suggest the /insurance page.' }
       }
       case 'search_car_washes': {
         const data = await getJSON(`${origin}/api/car-wash-search?${qs({ city: a.city, state: a.state, wash_type: a.wash_type ?? 'any' })}`, 35000)
@@ -317,7 +396,7 @@ async function execTool(name: string, args: any, origin: string): Promise<{ card
           url: w.website || null,
           mapsUrl: mapsSearch([w.name, w.address, w.city, w.state].filter(Boolean).join(' ')),
           fullPage: { label: 'Open in Car Wash', href: '/car-wash' },
-          detail: { Address: [w.address, w.city, w.state].filter(Boolean).join(', '), Phone: w.phone ?? '—', Rating: w.rating ? `${w.rating} / 5` : '—', Price: w.price_range ?? '—' },
+          detail: { Address: [w.address, w.city, w.state].filter(Boolean).join(', '), Phone: w.phone ?? '-', Rating: w.rating ? `${w.rating} / 5` : '-', Price: w.price_range ?? '-' },
         }))
         return { cards, model: cards.length ? JSON.stringify(items.map((w: any) => ({ name: w.name, rating: w.rating, price: w.price_range }))) : `No washes found near ${a.city}, ${a.state}.` }
       }
@@ -340,25 +419,25 @@ export async function POST(req: NextRequest) {
 
   const origin = new URL(req.url).origin
 
-  const systemPrompt = `You are RevConnect-1 AI — the single conversational interface to the entire RevConnect-1 automotive platform, AND a master ASE-certified technician with 30+ years of experience.
+  const systemPrompt = `You are RevConnect-1 AI - the single conversational interface to the entire RevConnect-1 automotive platform, AND a master ASE-certified technician with 30+ years of experience.
 
-${vehicleContext ? `The user's current vehicle: ${vehicleContext}` : 'No vehicle selected yet — ask what they\'re working on when relevant.'}
+${vehicleContext ? `The user's current vehicle: ${vehicleContext}` : "No vehicle selected yet - ask what they're working on when relevant."}
 
 You have live search tools covering every platform feature: parts listings, cars for sale, auctions, verified vendors, local events, insurance quotes, and car washes. USE THEM proactively:
-- If the user mentions buying/pricing a part → call search_parts.
-- Shopping for a car → search_cars. Auction hunting / salvage → search_auctions.
-- Brands, shops, discounts → search_vendors. Meets/shows → search_events (need city+state — ask if unknown).
-- Insurance costs → get_insurance_quotes. Wash/detail spots → search_car_washes (need city+state).
+- If the user mentions buying/pricing a part: call search_parts.
+- Shopping for a car: search_cars. Auction hunting / salvage: search_auctions.
+- Brands, shops, discounts: search_vendors. Meets/shows: search_events (need city+state - ask if unknown).
+- Insurance costs: get_insurance_quotes. Wash/detail spots: search_car_washes (need city+state).
 - Combine tools when useful (e.g. a brake job: explain the repair AND search_parts for pads/rotors).
 
-Tool results render as visual cards in the chat automatically — do NOT repeat listing details, prices, or URLs in your text. After results arrive, write a SHORT expert take (2-4 sentences): which option you'd pick and why, what to watch out for. Never paste raw links.
+Tool results render as visual cards in the chat automatically - do NOT repeat listing details, prices, or URLs in your text. After results arrive, write a SHORT expert take (2-4 sentences): which option you'd pick and why, what to watch out for. If a tool result says "fallback:true", the cards are pre-filled live searches or featured platform lots - present them naturally as the best places to look, never apologize or mention feeds being down. Never paste raw links.
 
 As a mechanic:
 - Confirm the specific vehicle before giving repair advice
 - Step-by-step numbered instructions with torque specs where relevant
 - Rate job difficulty 1-10, list required tools upfront, warn about safety hazards
 - Know when to recommend a professional shop
-- Be conversational but precise — like a knowledgeable friend in the garage
+- Be conversational but precise - like a knowledgeable friend in the garage
 
 Format installation guides with: Difficulty rating, Tools needed, Safety notes, numbered steps, and a verification checklist.`
 
@@ -391,7 +470,7 @@ Format installation guides with: Difficulty rating, Tools needed, Safety notes, 
 
           if (!res.ok || !res.body) {
             const err = await res.text().catch(() => '')
-            sendText(`\n⚠️ AI service error (${res.status}). ${err.slice(0, 120)}`)
+            sendText(`\n[!] AI service error (${res.status}). ${err.slice(0, 120)}`)
             break
           }
 
@@ -429,7 +508,6 @@ Format installation guides with: Difficulty rating, Tools needed, Safety notes, 
 
           if (finish !== 'tool_calls' || toolCalls.length === 0) break
 
-          // Tell the client which searches are running (renders a status line)
           send({ rc_status: toolCalls.map(t => t.function.name) })
 
           convo.push({ role: 'assistant', content: null, tool_calls: toolCalls })
@@ -447,7 +525,7 @@ Format installation guides with: Difficulty rating, Tools needed, Safety notes, 
           }
         }
       } catch {
-        sendText('\n⚠️ Connection issue — please try again.')
+        sendText('\n[!] Connection issue - please try again.')
       }
 
       send('[DONE]')
