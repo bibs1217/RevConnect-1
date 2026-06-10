@@ -120,6 +120,7 @@ export default function Home() {
             </div>
             <div className="gt-rig" style={{ position:'absolute', left:'50%', marginLeft:'-180px', bottom:'14px', width:'360px' }}>
               <img src={MUSTANG_GT} alt="Blue 2014 Ford Mustang GT doing a burnout" className="gt-shake" style={{ width:'100%', height:'auto', display:'block', filter:'drop-shadow(0 10px 12px rgba(0,0,0,0.55))' }} />
+              <div className="gt-wheelspin" style={{ position:'absolute', left:'7%', top:'45%', width:'16%', aspectRatio:'1', borderRadius:'50%', background:'repeating-conic-gradient(rgba(255,255,255,0.3) 0deg 9deg, rgba(255,255,255,0) 9deg 30deg)', opacity:0.45, filter:'blur(1px)', pointerEvents:'none' }} />
             </div>
           </div>
 
