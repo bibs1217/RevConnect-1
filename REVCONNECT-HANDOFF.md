@@ -1,4 +1,4 @@
-# RevConnect-1 — Developer Handoff Document
+# VictoryRevConnect-1 — Developer Handoff Document
 
 **Date:** June 3, 2026  
 **Supabase Project:** `revconnectone` (ID: `likxahlegjguyowcfvzr`)  
@@ -94,7 +94,7 @@ All migrations applied to `likxahlegjguyowcfvzr`. Tables created:
 # In the revconnect-1 folder
 git init
 git add .
-git commit -m "feat: initial RevConnect-1 scaffold"
+git commit -m "feat: initial VictoryRevConnect-1 scaffold"
 git branch -M main
 git remote add origin https://github.com/YOUR_USERNAME/revconnect-1.git
 git push -u origin main
@@ -118,7 +118,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=<your Stripe publishable key>
 STRIPE_SECRET_KEY=<your Stripe secret key>
 STRIPE_WEBHOOK_SECRET=<set after registering webhook in Step 5>
 NEXT_PUBLIC_APP_URL=https://your-domain.vercel.app
-NEXT_PUBLIC_APP_NAME=RevConnect-1
+NEXT_PUBLIC_APP_NAME=VictoryRevConnect-1
 ```
 
 ### Step 4: Deploy
@@ -235,4 +235,4 @@ supabase db push
 
 ---
 
-*Built by RevConnect-1 AI Development System — June 2026*
+*Built by VictoryRevConnect-1 AI Development System — June 2026*
