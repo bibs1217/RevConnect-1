@@ -47,9 +47,9 @@ export default function Home() {
         {/* Nav */}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'1.25rem 2.5rem', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ fontSize:'1.5rem', fontWeight:900, letterSpacing:'-0.5px' }}>
-            <span style={{ color:'#CC0000' }}>Victory</span>
-            <span style={{ color:'white' }}>Rev</span>
-            <span style={{ color:'#3B82F6' }}>Connect</span>
+            <span className="rwb1">Victory</span>
+            <span className="rwb2">Rev</span>
+            <span className="rwb3">Connect</span>
             <span style={{ color:'#FFD700', textShadow:'0 0 15px rgba(255,215,0,0.4)' }}>1</span>
           </div>
           <div style={{ display:'flex', gap:'1rem' }}>
@@ -71,9 +71,9 @@ export default function Home() {
           <div style={{ marginBottom:'1.5rem' }}>
             <div style={{ fontSize:'clamp(1rem,3vw,1.25rem)', color:'rgba(255,255,255,0.4)', letterSpacing:'6px', textTransform:'uppercase', fontWeight:600, marginBottom:'0.5rem' }}>The Ultimate Platform For</div>
             <h1 style={{ fontSize:'clamp(4.5rem,12vw,9rem)', fontWeight:900, letterSpacing:'-5px', lineHeight:0.85, margin:0 }}>
-              <span style={{ color:'#CC0000', textShadow:'0 0 40px rgba(204,0,0,0.5)' }}>Victory</span>
-              <span style={{ color:'white', textShadow:'0 0 40px rgba(255,255,255,0.25)' }}>Rev</span>
-              <span style={{ color:'#3B82F6', textShadow:'0 0 40px rgba(59,130,246,0.5)' }}>Connect</span>
+              <span className="rwb1" style={{ textShadow:'0 0 40px rgba(255,255,255,0.2)' }}>Victory</span>
+              <span className="rwb2" style={{ textShadow:'0 0 40px rgba(255,255,255,0.2)' }}>Rev</span>
+              <span className="rwb3" style={{ textShadow:'0 0 40px rgba(255,255,255,0.2)' }}>Connect</span>
             </h1>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'1rem', marginTop:'0.25rem' }}>
               <div style={{ height:'4px', flex:1, maxWidth:'120px', background:'linear-gradient(90deg, transparent, #CC0000)' }} />
