@@ -143,7 +143,7 @@ export default function MechanicPage() {
       source_url: card.url ?? null,
       cost: card.price ?? null,
       is_diy: true,
-      notes: 'Saved from VictoryRevConnect-1 AI chat',
+      notes: 'Saved from VictoryRevConnect1 AI chat',
     })
     if (error) { alert(`Could not save: ${error.message}`); return }
     setSavedIds(prev => new Set(prev).add(card.id))
@@ -229,13 +229,13 @@ export default function MechanicPage() {
   return (
     <div style={{ maxWidth:'900px', margin:'0 auto', height:'calc(100vh - 8rem)', display:'flex', flexDirection:'column' }}>
 
-      {/* Header — VictoryRevConnect-1 AI */}
+      {/* Header — VictoryRevConnect1 AI */}
       <div style={{ textAlign:'center', padding:'0.75rem 0' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'1rem' }}>
           <h1 style={{ fontSize:'1.6rem', fontWeight:900, letterSpacing:'-0.5px' }}>
             <span style={{ color:'white' }}>VictoryRev</span>
             <span className="chrome-text">Connect</span>
-            <span style={{ color:'#FFD700' }}>-1</span>
+            <span style={{ color:'#FFD700' }}>1</span>
             <span style={{ color:'#CC0000', marginLeft:'0.5rem' }}>AI</span>
           </h1>
           {hasSpeech && (
@@ -309,7 +309,7 @@ export default function MechanicPage() {
 
       {!hasKey && (
         <div style={{ background:'rgba(255,215,0,0.08)', border:'1px solid rgba(255,215,0,0.2)', borderRadius:'0.75rem', padding:'0.875rem 1rem', marginBottom:'0.75rem', fontSize:'0.875rem', color:'#FFD700' }}>
-          ⚠️ Add <code style={{ background:'rgba(0,0,0,0.3)', padding:'0.1rem 0.4rem', borderRadius:'0.25rem' }}>ANTHROPIC_API_KEY</code> to Vercel environment variables to enable VictoryRevConnect-1 AI.
+          ⚠️ Add <code style={{ background:'rgba(0,0,0,0.3)', padding:'0.1rem 0.4rem', borderRadius:'0.25rem' }}>ANTHROPIC_API_KEY</code> to Vercel environment variables to enable VictoryRevConnect1 AI.
         </div>
       )}
 
@@ -320,7 +320,7 @@ export default function MechanicPage() {
             <div style={{ display:'flex', gap:'0.75rem', marginBottom:'1.5rem' }}>
               <div style={{ width:'36px', height:'36px', background:'rgba(204,0,0,0.15)', border:'1px solid rgba(204,0,0,0.2)', borderRadius:'0.75rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.25rem', flexShrink:0 }}>⚡</div>
               <div style={{ background:'#1B2A3E', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'0.75rem', borderTopLeftRadius:'0.25rem', padding:'1rem', maxWidth:'80%' }}>
-                <p style={{ fontWeight:600, marginBottom:'0.5rem', color:'#CC0000' }}>VictoryRevConnect-1 AI</p>
+                <p style={{ fontWeight:600, marginBottom:'0.5rem', color:'#CC0000' }}>VictoryRevConnect1 AI</p>
                 {vehicleContext
                   ? <p style={{ color:'#ccc', lineHeight:1.6, marginBottom:'0.5rem' }}>Hey! I see you're working on your <strong style={{ color:'white' }}>{vehicleContext.split(' — ')[0]}</strong>. Ask me anything — repairs, parts, cars for sale, auctions, events, insurance, vendors. Results show up right here in the chat.</p>
                   : <p style={{ color:'#ccc', lineHeight:1.6, marginBottom:'0.5rem' }}>Hey! I'm your one conversation for the entire platform — repairs and diagnostics, live parts and car searches, auctions, local events, insurance quotes, vendors, and car washes. What do you need?</p>
