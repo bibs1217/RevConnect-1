@@ -3,7 +3,7 @@
 import { useState } from 'react'
 
 /* ────────────────────────────────────────────────────────────────────────
-   VictoryRevConnect-1 — Tires
+   VictoryRevConnect1 — Tires
    1) Comparison shopping: search + filter bar, all matching sellers
    2) Size visualizer: side + front view rendered to scale, with the
       numbers that actually matter (diameter, sidewall, speedo error)
