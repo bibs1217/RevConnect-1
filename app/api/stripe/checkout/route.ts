@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   const Stripe = (await import('stripe')).default
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-09-30.acacia' as any })
 
-  const origin = req.headers.get('origin') ?? 'https://rev-connect-1.vercel.app'
+  const origin = req.headers.get('origin') ?? 'https://victoryrevconnect1.vercel.app'
 
   const session = await stripe.checkout.sessions.create({
     mode: mode ?? 'subscription',
