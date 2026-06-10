@@ -3,7 +3,7 @@ import { AuthProvider } from './providers/auth-provider'
 import MusicPlayer from './providers/music-player'
 
 export const metadata: Metadata = {
-  title: { default: 'RevConnect-1', template: '%s | RevConnect-1' },
+  title: { default: 'VictoryRevConnect1', template: '%s | VictoryRevConnect1' },
   description: 'The ultimate all-in-one platform for car enthusiasts.',
 }
 
@@ -26,6 +26,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           .card-hover{transition:transform 0.2s,box-shadow 0.2s}
           .card-hover:hover{transform:translateY(-4px)}
           .chrome-pill{background:linear-gradient(135deg,rgba(192,192,192,0.15),rgba(255,255,255,0.08));border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(4px)}
+          @keyframes rwb-cycle{0%,29%{color:#E62020}33%,62%{color:#3B82F6}66%,95%{color:#FFFFFF}100%{color:#E62020}}
+          .rwb1{animation:rwb-cycle 6s linear infinite}
+          .rwb2{animation:rwb-cycle 6s linear infinite;animation-delay:-4s}
+          .rwb3{animation:rwb-cycle 6s linear infinite;animation-delay:-2s}
+          @keyframes gt-launch{0%,55%{transform:translateX(0) rotate(0deg)}57%{transform:translateX(-16px) rotate(1.2deg)}60%{transform:translateX(12vw) rotate(-2.5deg)}63%{transform:translateX(48vw) rotate(-1.5deg)}66%,100%{transform:translateX(140vw) rotate(0deg)}}
+          .gt-rig{animation:gt-launch 7s linear infinite}
+          @keyframes gt-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+          .gt-wheelspin{animation:gt-spin 0.22s linear infinite}
+          @keyframes gt-shake{0%,100%{transform:translateY(0)}30%{transform:translateY(-1.5px)}60%{transform:translateY(0.8px)}}
+          .gt-shake{animation:gt-shake 0.16s linear infinite}
+          @keyframes mustang-smoke-fade{0%,57%{opacity:1}70%,90%{opacity:0}100%{opacity:1}}
+          .mustang-smoke{animation:mustang-smoke-fade 7s linear infinite}
         `}</style>
       </head>
       <body>

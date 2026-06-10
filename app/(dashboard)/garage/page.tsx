@@ -167,7 +167,7 @@ export default function GaragePage() {
                       </div>
                     </div>
                     <input ref={fileRef} type="file" accept="image/*,image/heic" style={{ display:'none' }} onChange={handleFile} />
-                    <p style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.25)', textAlign:'center' }}>Your photo is stored securely in your RevConnect-1 garage</p>
+                    <p style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.25)', textAlign:'center' }}>Your photo is stored securely in your VictoryRevConnect1 garage</p>
                   </div>
                 ) : (
                   <div>

@@ -5,9 +5,9 @@ import { useAuth } from '@/app/providers/auth-provider'
 
 const PRODUCTS = [
   {
-    id:'1', name:'RevConnect-1 Logo Tee', category:'Apparel',
+    id:'1', name:'VictoryRevConnect1 Logo Tee', category:'Apparel',
     price:34.99, compareAt:null, isNew:true, isLimited:false, revPoints:35,
-    description:'Premium 100% cotton tee. Embroidered RevConnect-1 logo on chest. Available Black & White.',
+    description:'Premium 100% cotton tee. Embroidered VictoryRevConnect1 logo on chest. Available Black & White.',
     sizes:['S','M','L','XL','2XL','3XL'],
     colors:['Black','White'],
     img:'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400&q=85',
@@ -15,9 +15,9 @@ const PRODUCTS = [
     badgeColor:'#22c55e',
   },
   {
-    id:'2', name:'RevConnect-1 Snapback Hat', category:'Headwear',
+    id:'2', name:'VictoryRevConnect1 Snapback Hat', category:'Headwear',
     price:29.99, compareAt:null, isNew:true, isLimited:false, revPoints:30,
-    description:'Structured snapback with flat brim. Embroidered RevConnect-1 logo. One size fits most.',
+    description:'Structured snapback with flat brim. Embroidered VictoryRevConnect1 logo. One size fits most.',
     sizes:['One Size'],
     colors:['Black/Red','Navy/Gold','All Black'],
     img:'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400&q=85',
@@ -25,9 +25,9 @@ const PRODUCTS = [
     badgeColor:'#22c55e',
   },
   {
-    id:'3', name:'RevConnect-1 Garage Hoodie', category:'Apparel',
+    id:'3', name:'VictoryRevConnect1 Garage Hoodie', category:'Apparel',
     price:64.99, compareAt:79.99, isNew:false, isLimited:false, revPoints:65,
-    description:'Heavyweight 400gsm fleece hoodie. Front pocket, embroidered RevConnect-1 chest logo. Built for the shop.',
+    description:'Heavyweight 400gsm fleece hoodie. Front pocket, embroidered VictoryRevConnect1 chest logo. Built for the shop.',
     sizes:['S','M','L','XL','2XL','3XL'],
     colors:['Black','Charcoal','Navy'],
     img:'https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=400&q=85',
@@ -35,16 +35,16 @@ const PRODUCTS = [
     badgeColor:'#CC0000',
   },
   {
-    id:'4', name:'RevConnect-1 Dad Hat', category:'Headwear',
+    id:'4', name:'VictoryRevConnect1 Dad Hat', category:'Headwear',
     price:24.99, compareAt:null, isNew:false, isLimited:false, revPoints:25,
-    description:'Unstructured canvas dad hat with curved brim. Adjustable strap. Embroidered RevConnect-1 logo.',
+    description:'Unstructured canvas dad hat with curved brim. Adjustable strap. Embroidered VictoryRevConnect1 logo.',
     sizes:['One Size'],
     colors:['Khaki','Black','White'],
     img:'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400&q=85',
     badge:null, badgeColor:'',
   },
   {
-    id:'5', name:'RevConnect-1 Legend Box — #/500', category:'Collectibles',
+    id:'5', name:'VictoryRevConnect1 Legend Box — #/500', category:'Collectibles',
     price:149.99, compareAt:null, isNew:false, isLimited:true, revPoints:300,
     description:'Limited collectors box #/500. Includes exclusive tee, hat, sticker sheet, enamel pin & numbered certificate.',
     sizes:['One Size'],
@@ -54,18 +54,18 @@ const PRODUCTS = [
     badgeColor:'#FFD700',
   },
   {
-    id:'6', name:'RevConnect-1 Tumbler 30oz', category:'Drinkware',
+    id:'6', name:'VictoryRevConnect1 Tumbler 30oz', category:'Drinkware',
     price:39.99, compareAt:null, isNew:false, isLimited:false, revPoints:40,
-    description:'Double-wall insulated tumbler. Keeps drinks cold 24hrs, hot 12hrs. Laser-engraved RevConnect-1 logo.',
+    description:'Double-wall insulated tumbler. Keeps drinks cold 24hrs, hot 12hrs. Laser-engraved VictoryRevConnect1 logo.',
     sizes:['30oz'],
     colors:['Black','Silver','Red'],
     img:'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&q=85',
     badge:null, badgeColor:'',
   },
   {
-    id:'7', name:'RevConnect-1 Keychain', category:'Accessories',
+    id:'7', name:'VictoryRevConnect1 Keychain', category:'Accessories',
     price:14.99, compareAt:null, isNew:true, isLimited:false, revPoints:15,
-    description:'Heavy-duty metal keychain with enamel RevConnect-1 logo. Double-ring construction with carbon fiber texture.',
+    description:'Heavy-duty metal keychain with enamel VictoryRevConnect1 logo. Double-ring construction with carbon fiber texture.',
     sizes:['One Size'],
     colors:['Black/Red','Chrome/Red'],
     img:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=85',
@@ -73,27 +73,27 @@ const PRODUCTS = [
     badgeColor:'#22c55e',
   },
   {
-    id:'8', name:'RevConnect-1 Phone Case', category:'Accessories',
+    id:'8', name:'VictoryRevConnect1 Phone Case', category:'Accessories',
     price:24.99, compareAt:null, isNew:false, isLimited:false, revPoints:25,
-    description:'Slim hard-shell case with full RevConnect-1 graphic wrap. Available for iPhone and Samsung models.',
+    description:'Slim hard-shell case with full VictoryRevConnect1 graphic wrap. Available for iPhone and Samsung models.',
     sizes:['iPhone 15','iPhone 15 Pro','Galaxy S24','Galaxy S24+'],
     colors:['Black','Clear'],
     img:'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=400&q=85',
     badge:null, badgeColor:'',
   },
   {
-    id:'9', name:'RevConnect-1 Sticker Pack (10pc)', category:'Stickers',
+    id:'9', name:'VictoryRevConnect1 Sticker Pack (10pc)', category:'Stickers',
     price:12.99, compareAt:null, isNew:false, isLimited:false, revPoints:13,
-    description:'10-piece vinyl sticker pack. Logo, wordmarks, racing stripes, and limited holo RevConnect-1 sticker.',
+    description:'10-piece vinyl sticker pack. Logo, wordmarks, racing stripes, and limited holo VictoryRevConnect1 sticker.',
     sizes:['One Size'],
     colors:['Assorted'],
     img:'https://images.unsplash.com/photo-1572375992501-4b0892d50c69?w=400&q=85',
     badge:null, badgeColor:'',
   },
   {
-    id:'10', name:'RevConnect-1 Crewneck Sweatshirt', category:'Apparel',
+    id:'10', name:'VictoryRevConnect1 Crewneck Sweatshirt', category:'Apparel',
     price:54.99, compareAt:null, isNew:true, isLimited:false, revPoints:55,
-    description:'Midweight fleece crewneck. Relaxed fit. Embroidered RevConnect-1 logo left chest.',
+    description:'Midweight fleece crewneck. Relaxed fit. Embroidered VictoryRevConnect1 logo left chest.',
     sizes:['S','M','L','XL','2XL'],
     colors:['Black','Navy','Heather Grey'],
     img:'https://images.unsplash.com/photo-1562157873-818bc0726f68?w=400&q=85',
@@ -101,18 +101,18 @@ const PRODUCTS = [
     badgeColor:'#22c55e',
   },
   {
-    id:'11', name:'RevConnect-1 Coffee Mug 15oz', category:'Drinkware',
+    id:'11', name:'VictoryRevConnect1 Coffee Mug 15oz', category:'Drinkware',
     price:22.99, compareAt:null, isNew:false, isLimited:false, revPoints:23,
-    description:'Ceramic mug with wrap-around RevConnect-1 design. Dishwasher safe. Perfect for early morning wrenching.',
+    description:'Ceramic mug with wrap-around VictoryRevConnect1 design. Dishwasher safe. Perfect for early morning wrenching.',
     sizes:['15oz'],
     colors:['Black','White'],
     img:'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=400&q=85',
     badge:null, badgeColor:'',
   },
   {
-    id:'12', name:'RevConnect-1 Racing Jacket', category:'Outerwear',
+    id:'12', name:'VictoryRevConnect1 Racing Jacket', category:'Outerwear',
     price:94.99, compareAt:119.99, isNew:false, isLimited:true, revPoints:150,
-    description:'Lightweight bomber-style racing jacket. Embroidered RevConnect-1 patches, mesh lining. Show-ready.',
+    description:'Lightweight bomber-style racing jacket. Embroidered VictoryRevConnect1 patches, mesh lining. Show-ready.',
     sizes:['S','M','L','XL','2XL'],
     colors:['Black/Red','Navy/Gold'],
     img:'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400&q=85',
@@ -181,7 +181,7 @@ export default function StorePage() {
               {/* RC-1 Brand overlay */}
               <div style={{ position:'absolute', bottom:0, left:0, right:0, background:'linear-gradient(transparent, rgba(13,30,48,0.9))', padding:'1.5rem 1rem 1rem' }}>
                 <div style={{ display:'inline-flex', alignItems:'center', gap:'0.375rem', background:'rgba(204,0,0,0.85)', borderRadius:'0.375rem', padding:'0.25rem 0.625rem' }}>
-                  <span style={{ color:'white', fontWeight:900, fontSize:'0.75rem', letterSpacing:'0.5px' }}>RevConnect-1</span>
+                  <span style={{ color:'white', fontWeight:900, fontSize:'0.75rem', letterSpacing:'0.5px' }}>VictoryRevConnect1</span>
                 </div>
               </div>
               {selected.badge && <div style={{ position:'absolute', top:'0.875rem', left:'0.875rem', background:selected.badgeColor, color:'white', padding:'0.25rem 0.625rem', borderRadius:'9999px', fontSize:'0.7rem', fontWeight:800 }}>{selected.badge}</div>}
@@ -242,7 +242,7 @@ export default function StorePage() {
       <div style={{ background:'linear-gradient(135deg, rgba(204,0,0,0.1), rgba(21,57,204,0.06))', border:'1px solid rgba(204,0,0,0.15)', borderRadius:'1rem', padding:'1.5rem', marginBottom:'1.5rem', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'1rem' }}>
         <div>
           <h1 style={{ fontSize:'1.75rem', fontWeight:900 }}>👕 Official Merch Store</h1>
-          <p style={{ color:'rgba(255,255,255,0.4)', marginTop:'0.25rem' }}>Rep RevConnect-1 · Earn {Math.round(tierData.mult*100)}% Rev Points on every purchase</p>
+          <p style={{ color:'rgba(255,255,255,0.4)', marginTop:'0.25rem' }}>Rep VictoryRevConnect1 · Earn {Math.round(tierData.mult*100)}% Rev Points on every purchase</p>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:'1rem' }}>
           <div style={{ textAlign:'center' }}>
@@ -277,11 +277,11 @@ export default function StorePage() {
                 <img src={p.img} alt={p.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                 {/* Center brand overlay — simulates logo printed on product */}
                 <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'rgba(0,0,0,0.6)', borderRadius:'4px', padding:'0.3rem 0.75rem', border:'1px solid rgba(255,255,255,0.3)', pointerEvents:'none' }}>
-                  <span style={{ color:'white', fontWeight:700, fontSize:'0.85rem', whiteSpace:'nowrap' }}>RevConnect-1</span>
+                  <span style={{ fontWeight:700, fontSize:'0.85rem', whiteSpace:'nowrap' }}><span className="rwb1">Victory</span><span className="rwb2">Rev</span><span className="rwb3">Connect</span><span style={{ color:'#FFD700' }}>1</span></span>
                 </div>
                 {/* Brand watermark */}
                 <div style={{ position:'absolute', bottom:'0.75rem', left:'0.75rem', background:'rgba(204,0,0,0.88)', borderRadius:'0.375rem', padding:'0.2rem 0.5rem', backdropFilter:'blur(4px)' }}>
-                  <span style={{ color:'white', fontWeight:900, fontSize:'0.65rem', letterSpacing:'0.5px' }}>RevConnect-1</span>
+                  <span style={{ color:'white', fontWeight:900, fontSize:'0.65rem', letterSpacing:'0.5px' }}>VictoryRevConnect1</span>
                 </div>
                 {/* Badges */}
                 {p.badge && (
@@ -314,7 +314,7 @@ export default function StorePage() {
       {/* Footer note */}
       <div style={{ textAlign:'center', marginTop:'2.5rem', padding:'1.5rem', border:'1px solid rgba(255,255,255,0.06)', borderRadius:'0.875rem' }}>
         <p style={{ color:'rgba(255,255,255,0.3)', fontSize:'0.8rem' }}>
-          🎽 All items feature the official RevConnect-1 logo · Free shipping on orders over $75 · Legend members always ship free
+          🎽 All items feature the official VictoryRevConnect1 logo · Free shipping on orders over $75 · Legend members always ship free
         </p>
       </div>
     </div>

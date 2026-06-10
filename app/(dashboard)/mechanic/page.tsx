@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useAuth } from '@/app/providers/auth-provider'
 import { createClient } from '@/lib/supabase/client'
+import { ResultCards, SlideOverPanel, TOOL_LABELS, type RCCard } from './cards'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type AnyItem = Record<string, unknown>
@@ -197,7 +198,7 @@ function formatMessage(text: string) {
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function MechanicPage() {
-  const { user, profile } = useAuth()
+  const { user } = useAuth()
   const supabase = createClient()
 
   const [messages, setMessages] = useState<Message[]>([])
@@ -250,6 +251,24 @@ export default function MechanicPage() {
 
   const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId) ?? null
   const vehicleContext = selectedVehicle ? buildVehicleContext(selectedVehicle) : null
+
+  async function addToGarage(card: RCCard) {
+    if (!user) { alert('Sign in to save parts to your garage.'); return }
+    if (!selectedVehicleId) { alert('Add a vehicle to your garage first, then select it above.'); return }
+    const { error } = await supabase.from('vehicle_modifications').insert({
+      vehicle_id: selectedVehicleId,
+      category: 'Planned',
+      part_name: card.title.slice(0, 200),
+      brand: card.brand ?? null,
+      source: card.source ?? 'VictoryRevConnect AI',
+      source_url: card.url ?? null,
+      cost: card.price ?? null,
+      is_diy: true,
+      notes: 'Saved from VictoryRevConnect1 AI chat',
+    })
+    if (error) { alert(`Could not save: ${error.message}`); return }
+    setSavedIds(prev => new Set(prev).add(card.id))
+  }
 
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return
@@ -362,6 +381,33 @@ export default function MechanicPage() {
         <p style={{ color:'rgba(255,255,255,0.28)', fontSize:'0.72rem', marginTop:'0.1rem' }}>
           Ask anything — I search the whole platform in real time
         </p>
+        <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'0.72rem', marginTop:'0.2rem' }}>
+          AI-Powered · ASE Master Tech · Live Platform Search
+        </p>
+        <p style={{ color:'rgba(255,215,0,0.55)', fontSize:'0.7rem', marginTop:'0.1rem' }}>
+          Ask anything — I search the whole platform in real time
+        </p>
+      </div>
+
+      {/* Persistent search bar — fires a chat message, never navigates */}
+      <div style={{ display:'flex', gap:'0.5rem', marginBottom:'0.75rem' }}>
+        <div style={{ flex:1, display:'flex', alignItems:'center', gap:'0.625rem', background:'#0F1C2E', border:'1px solid rgba(255,215,0,0.18)', borderRadius:'0.75rem', padding:'0.55rem 0.875rem' }}>
+          <span style={{ color:'rgba(255,255,255,0.35)' }}>🔍</span>
+          <input
+            value={topSearch}
+            onChange={e => setTopSearch(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && topSearch.trim() && sendMessage(topSearch)}
+            placeholder="Search parts, cars, vendors, events, auctions, insurance…"
+            style={{ flex:1, background:'transparent', border:'none', color:'white', fontSize:'0.85rem', outline:'none' }}
+            disabled={loading}
+          />
+        </div>
+        <button
+          onClick={() => topSearch.trim() && sendMessage(topSearch)}
+          disabled={loading || !topSearch.trim()}
+          style={{ background: loading || !topSearch.trim() ? '#1E3A5F' : 'rgba(255,215,0,0.9)', color:'#0D1E30', border:'none', padding:'0 1.25rem', borderRadius:'0.75rem', fontSize:'0.85rem', fontWeight:800, cursor: loading || !topSearch.trim() ? 'default':'pointer' }}>
+          Search
+        </button>
       </div>
 
       {/* Vehicle selector */}

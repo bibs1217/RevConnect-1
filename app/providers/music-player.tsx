@@ -79,7 +79,7 @@ export default function MusicPlayer() {
       {/* Info + progress */}
       <div style={{ minWidth: '120px' }}>
         <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'white', marginBottom: '0.25rem', whiteSpace: 'nowrap' }}>
-          {playing ? '♪ Now Playing' : '🎵 RevConnect-1'}
+          {playing ? '♪ Now Playing' : '🎵 VictoryRevConnect1'}
         </p>
         {/* Progress bar */}
         <div style={{ height: '3px', background: 'rgba(255,255,255,0.1)', borderRadius: '9999px', overflow: 'hidden' }}>

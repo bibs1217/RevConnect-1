@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { MUSTANG_GT } from './mustang-gt'
 
 const MUSTANGS = [
   { year:'1965', name:'First Generation', url:'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=600&q=85', accent:'#CC0000' },
@@ -47,9 +48,10 @@ export default function Home() {
         {/* Nav */}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'1.25rem 2.5rem', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ fontSize:'1.5rem', fontWeight:900, letterSpacing:'-0.5px' }}>
-            <span style={{ color:'white' }}>Rev</span>
-            <span className="chrome-text" style={{ fontSize:'1.5rem' }}>Connect</span>
-            <span style={{ color:'#FFD700', textShadow:'0 0 15px rgba(255,215,0,0.4)' }}>-1</span>
+            <span className="rwb1">Victory</span>
+            <span className="rwb2">Rev</span>
+            <span className="rwb3">Connect</span>
+            <span style={{ color:'#FFD700', textShadow:'0 0 15px rgba(255,215,0,0.4)' }}>1</span>
           </div>
           <div style={{ display:'flex', gap:'1rem' }}>
             <Link href="/login" style={{ color:'rgba(255,255,255,0.6)', fontSize:'0.9rem', padding:'0.5rem 1rem' }}>Sign In</Link>
@@ -70,13 +72,55 @@ export default function Home() {
           <div style={{ marginBottom:'1.5rem' }}>
             <div style={{ fontSize:'clamp(1rem,3vw,1.25rem)', color:'rgba(255,255,255,0.4)', letterSpacing:'6px', textTransform:'uppercase', fontWeight:600, marginBottom:'0.5rem' }}>The Ultimate Platform For</div>
             <h1 style={{ fontSize:'clamp(4.5rem,12vw,9rem)', fontWeight:900, letterSpacing:'-5px', lineHeight:0.85, margin:0 }}>
-              <span style={{ color:'white' }}>Rev</span>
-              <span className="chrome-text">Connect</span>
+              <span className="rwb1" style={{ textShadow:'0 0 40px rgba(255,255,255,0.2)' }}>Victory</span>
+              <span className="rwb2" style={{ textShadow:'0 0 40px rgba(255,255,255,0.2)' }}>Rev</span>
+              <span className="rwb3" style={{ textShadow:'0 0 40px rgba(255,255,255,0.2)' }}>Connect</span>
             </h1>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'1rem', marginTop:'0.25rem' }}>
               <div style={{ height:'4px', flex:1, maxWidth:'120px', background:'linear-gradient(90deg, transparent, #CC0000)' }} />
-              <span style={{ fontSize:'clamp(3.5rem,10vw,7rem)', fontWeight:900, color:'#FFD700', letterSpacing:'-2px', textShadow:'0 0 40px rgba(255,215,0,0.5), 0 0 80px rgba(255,215,0,0.2)' }}>-1</span>
+              <span style={{ fontSize:'clamp(3.5rem,10vw,7rem)', fontWeight:900, color:'#FFD700', letterSpacing:'-2px', textShadow:'0 0 40px rgba(255,215,0,0.5), 0 0 80px rgba(255,215,0,0.2)' }}>1</span>
               <div style={{ height:'4px', flex:1, maxWidth:'120px', background:'linear-gradient(90deg, #1539CC, transparent)' }} />
+            </div>
+          </div>
+
+          {/* 2014 Mustang GT burnout */}
+          <div style={{ position:'relative', width:'100%', height:'170px', overflow:'hidden', marginTop:'1.25rem', marginBottom:'1.5rem' }}>
+            <div style={{ position:'absolute', left:'10%', right:'10%', bottom:'16px', height:'3px', borderRadius:'2px', background:'rgba(255,255,255,0.12)' }} />
+            <div className="mustang-smoke" style={{ position:'absolute', left:'50%', marginLeft:'-290px', bottom:0, width:'260px', height:'170px' }}>
+              <svg width="260" height="170" viewBox="0 0 260 170" fill="none">
+                <defs>
+                  <radialGradient id="gtSmoke" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="rgba(255,255,255,0.6)" />
+                    <stop offset="65%" stopColor="rgba(220,225,235,0.22)" />
+                    <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                  </radialGradient>
+                </defs>
+                <circle cx="170" cy="125" r="30" fill="url(#gtSmoke)">
+                  <animate attributeName="r" values="20;40;20" dur="2.6s" repeatCount="indefinite" />
+                  <animate attributeName="cy" values="135;95;135" dur="2.6s" repeatCount="indefinite" />
+                  <animate attributeName="cx" values="175;140;175" dur="2.6s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.95;0.3;0.95" dur="2.6s" repeatCount="indefinite" />
+                </circle>
+                <circle cx="110" cy="115" r="26" fill="url(#gtSmoke)">
+                  <animate attributeName="r" values="16;36;16" dur="3.2s" repeatCount="indefinite" />
+                  <animate attributeName="cy" values="130;85;130" dur="3.2s" repeatCount="indefinite" />
+                  <animate attributeName="cx" values="120;75;120" dur="3.2s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.8;0.15;0.8" dur="3.2s" repeatCount="indefinite" />
+                </circle>
+                <circle cx="55" cy="140" r="22" fill="url(#gtSmoke)">
+                  <animate attributeName="r" values="12;28;12" dur="2.2s" repeatCount="indefinite" />
+                  <animate attributeName="cy" values="150;108;150" dur="2.2s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.7;0.1;0.7" dur="2.2s" repeatCount="indefinite" />
+                </circle>
+                <ellipse cx="150" cy="152" rx="70" ry="13" fill="url(#gtSmoke)">
+                  <animate attributeName="rx" values="55;85;55" dur="1.9s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.9;0.5;0.9" dur="1.9s" repeatCount="indefinite" />
+                </ellipse>
+              </svg>
+            </div>
+            <div className="gt-rig" style={{ position:'absolute', left:'50%', marginLeft:'-180px', bottom:'14px', width:'360px' }}>
+              <img src={MUSTANG_GT} alt="Blue 2014 Ford Mustang GT doing a burnout" className="gt-shake" style={{ width:'100%', height:'auto', display:'block', filter:'drop-shadow(0 10px 12px rgba(0,0,0,0.55))' }} />
+              <div className="gt-wheelspin" style={{ position:'absolute', left:'7%', top:'45%', width:'16%', aspectRatio:'1', borderRadius:'50%', background:'repeating-conic-gradient(rgba(255,255,255,0.3) 0deg 9deg, rgba(255,255,255,0) 9deg 30deg)', opacity:0.45, filter:'blur(1px)', pointerEvents:'none' }} />
             </div>
           </div>
 
@@ -192,7 +236,7 @@ export default function Home() {
           <h2 style={{ fontSize:'2.75rem', fontWeight:900, marginBottom:'1rem', letterSpacing:'-1.5px' }}>Ready to Rev Up?</h2>
           <p style={{ color:'rgba(255,255,255,0.4)', marginBottom:'2rem', fontSize:'1.0625rem' }}>Join thousands of enthusiasts on the only platform built for the culture.</p>
           <Link href="/register" style={{ background:'linear-gradient(135deg, #CC0000, #AA0000)', color:'white', padding:'1.25rem 3rem', borderRadius:'0.875rem', fontWeight:800, fontSize:'1.2rem', boxShadow:'0 6px 40px rgba(204,0,0,0.5)', display:'inline-block', letterSpacing:'0.25px' }}>
-            Join RevConnect-1 Free →
+            Join VictoryRevConnect1 Free →
           </Link>
         </div>
       </section>

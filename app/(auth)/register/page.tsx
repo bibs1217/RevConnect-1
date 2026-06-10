@@ -63,7 +63,7 @@ export default function RegisterPage() {
       <div style={{ width:'100%', maxWidth:'420px' }}>
         <div style={{ textAlign:'center', marginBottom:'2rem' }}>
           <Link href="/" style={{ fontSize:'2rem', fontWeight:900 }}>
-            <span style={{ color:'white' }}>Rev</span><span style={{ color:'#CC0000' }}>Connect</span><span style={{ color:'#FFD700' }}>-1</span>
+            <span className="rwb1">Victory</span><span className="rwb2">Rev</span><span className="rwb3">Connect</span><span style={{ color:'#FFD700' }}>1</span>
           </Link>
           <p style={{ color:'#777', marginTop:'0.5rem' }}>Create your free account</p>
         </div>
@@ -84,7 +84,7 @@ export default function RegisterPage() {
             </div>
             {error && <div style={{ background:'rgba(204,0,0,0.1)', border:'1px solid rgba(204,0,0,0.3)', borderRadius:'0.5rem', padding:'0.75rem', fontSize:'0.875rem', color:'#CC0000' }}>{error}</div>}
             <button type="submit" disabled={loading} style={{ background:'#CC0000', color:'white', border:'none', padding:'0.875rem', borderRadius:'0.75rem', fontWeight:700, fontSize:'1rem', opacity: loading ? 0.6 : 1 }}>
-              {loading ? 'Creating account…' : 'Join RevConnect-1'}
+              {loading ? 'Creating account…' : 'Join VictoryRevConnect1'}
             </button>
             <p style={{ fontSize:'0.7rem', color:'#555', textAlign:'center' }}>
               By joining you agree to our <Link href="/terms" style={{ color:'#CC0000' }}>Terms</Link> and <Link href="/privacy" style={{ color:'#CC0000' }}>Privacy Policy</Link>

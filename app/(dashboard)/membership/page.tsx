@@ -125,7 +125,7 @@ export default function MembershipPage() {
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
       <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem' }}>RevConnect-1 Membership</h1>
+        <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem' }}>VictoryRevConnect1 Membership</h1>
         <p style={{ color: '#666', marginBottom: '1.5rem' }}>Unlock the full platform. Earn more Rev Points. Rep harder.</p>
 
         {/* Billing toggle */}
