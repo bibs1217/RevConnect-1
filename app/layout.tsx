@@ -30,12 +30,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           .rwb1{animation:rwb-cycle 6s linear infinite}
           .rwb2{animation:rwb-cycle 6s linear infinite;animation-delay:-4s}
           .rwb3{animation:rwb-cycle 6s linear infinite;animation-delay:-2s}
-          @keyframes gt-launch{0%,54%{transform:translateX(0) rotate(0deg)}57%{transform:translateX(-14px) rotate(1deg)}63%{transform:translateX(10vw) rotate(-2deg)}68%{transform:translateX(40vw) rotate(-1deg)}74%,100%{transform:translateX(130vw) rotate(0deg)}}
-          .gt-rig{animation:gt-launch 8s linear infinite}
+          @keyframes gt-launch{0%,55%{transform:translateX(0) rotate(0deg)}57%{transform:translateX(-16px) rotate(1.2deg)}60%{transform:translateX(12vw) rotate(-2.5deg)}63%{transform:translateX(48vw) rotate(-1.5deg)}66%,100%{transform:translateX(140vw) rotate(0deg)}}
+          .gt-rig{animation:gt-launch 7s linear infinite}
+          @keyframes gt-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+          .gt-wheelspin{animation:gt-spin 0.22s linear infinite}
           @keyframes gt-shake{0%,100%{transform:translateY(0)}30%{transform:translateY(-1.5px)}60%{transform:translateY(0.8px)}}
           .gt-shake{animation:gt-shake 0.16s linear infinite}
-          @keyframes mustang-smoke-fade{0%,58%{opacity:1}76%,92%{opacity:0}100%{opacity:1}}
-          .mustang-smoke{animation:mustang-smoke-fade 8s linear infinite}
+          @keyframes mustang-smoke-fade{0%,57%{opacity:1}70%,90%{opacity:0}100%{opacity:1}}
+          .mustang-smoke{animation:mustang-smoke-fade 7s linear infinite}
         `}</style>
       </head>
       <body>
