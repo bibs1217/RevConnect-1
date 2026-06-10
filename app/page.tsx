@@ -100,6 +100,7 @@ export default function Home() {
               {/* ground */}
               <rect x="30" y="180" width="500" height="3" rx="1.5" fill="rgba(255,255,255,0.12)" />
               {/* smoke behind car */}
+              <g className="mustang-smoke">
               <circle cx="430" cy="150" r="30" fill="url(#mSmoke)">
                 <animate attributeName="r" values="22;42;22" dur="2.8s" repeatCount="indefinite" />
                 <animate attributeName="cy" values="158;118;158" dur="2.8s" repeatCount="indefinite" />
@@ -125,6 +126,9 @@ export default function Home() {
               <ellipse cx="380" cy="180" rx="34" ry="5" fill="rgba(255,90,40,0.3)">
                 <animate attributeName="opacity" values="0.5;0.15;0.5" dur="0.5s" repeatCount="indefinite" />
               </ellipse>
+              </g>
+              {/* car (launches off-screen) */}
+              <g className="mustang-car">
               {/* body */}
               <path d="M118 148 L118 136 Q119 129 128 128 L150 124 Q160 122 178 121 L235 118 L272 96 L330 96 Q345 96 360 101 L430 118 L432 142 L425 150 L408 150 A28 28 0 0 0 352 150 L224 150 A28 28 0 0 0 168 150 L130 150 Q118 150 118 148 Z" fill="url(#mBody)" stroke="#0A1B4D" strokeWidth="2" />
               {/* greenhouse */}
@@ -157,11 +161,14 @@ export default function Home() {
                 <line x1="374" y1="150" x2="386" y2="162" />
                 <line x1="386" y1="150" x2="374" y2="162" />
               </g>
+              </g>
               {/* smoke wisp in front of rear wheel */}
+              <g className="mustang-smoke">
               <circle cx="398" cy="148" r="20" fill="url(#mSmoke)" opacity="0.5">
                 <animate attributeName="r" values="14;26;14" dur="1.8s" repeatCount="indefinite" />
                 <animate attributeName="opacity" values="0.6;0.2;0.6" dur="1.8s" repeatCount="indefinite" />
               </circle>
+              </g>
             </svg>
           </div>
 
