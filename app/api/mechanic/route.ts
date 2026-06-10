@@ -1,56 +1,7 @@
 import { NextRequest } from 'next/server'
 export const dynamic = 'force-dynamic'
 
-const SYSTEM_PROMPT = `You are the RevConnect-1 AI — a 30-year ASE master technician and car culture expert with live access to the entire RevConnect-1 platform. You can search for parts with real-time pricing from 15+ retailers, find vendors and performance shops, search live vehicle listings and auctions, locate car washes, pull insurance quotes from 30+ carriers, and surface upcoming car meets and events. You also have live web search for anything else. When a user asks a question, proactively search for live results across whatever platform features are relevant and include specific recommendations, prices, and links in your response. You can run multiple searches in a single response. Never tell the user you cannot look something up. Always be direct, knowledgeable, and enthusiast-friendly.`
-
-const TOOLS = [
-  { name:'web_search',      description:'Search the web for current automotive news, prices, TSBs, recalls, and general information.',           input_schema:{ type:'object', properties:{ query:{ type:'string', description:'Search query' } }, required:['query'] } },
-  { name:'parts_search',    description:'Search for car parts with real-time pricing from 15+ retailers including Summit Racing and RockAuto.', input_schema:{ type:'object', properties:{ query:{ type:'string' }, make:{ type:'string' }, model:{ type:'string' }, year:{ type:'string' } }, required:['query'] } },
-  { name:'vendor_lookup',   description:'Find performance shops, dealers, tuners, and service centers near a location.',                        input_schema:{ type:'object', properties:{ location:{ type:'string' }, specialty:{ type:'string', description:'e.g. turbo, body shop, transmission, dyno' } }, required:['location'] } },
-  { name:'car_search',      description:'Search live vehicle listings for sale on eBay Motors and other platforms.',                            input_schema:{ type:'object', properties:{ make:{ type:'string' }, model:{ type:'string' }, year_min:{ type:'string' }, year_max:{ type:'string' }, price_max:{ type:'string' }, condition:{ type:'string' } } } },
-  { name:'auction_search',  description:'Search live vehicle auctions at Barrett-Jackson, Mecum, BringaTrailer, and eBay.',                    input_schema:{ type:'object', properties:{ query:{ type:'string' }, price_max:{ type:'string' } }, required:['query'] } },
-  { name:'car_wash_lookup', description:'Find car washes near a location — touchless, hand wash, detailing, full service.',                    input_schema:{ type:'object', properties:{ location:{ type:'string' }, type:{ type:'string', description:'touchless, hand wash, detailing, full service' } }, required:['location'] } },
-  { name:'insurance_lookup',description:'Get insurance quotes for a vehicle from 30+ carriers including Hagerty, Progressive, and State Farm.', input_schema:{ type:'object', properties:{ make:{ type:'string' }, model:{ type:'string' }, year:{ type:'string' }, zip:{ type:'string' } } } },
-  { name:'events_lookup',   description:'Find upcoming car meets, shows, cruise nights, and track days near a location.',                       input_schema:{ type:'object', properties:{ location:{ type:'string' }, event_type:{ type:'string', description:'car meet, car show, track day, cruise, drag race' } }, required:['location'] } },
-]
-
-type ToolInput = Record<string, string>
-
-async function executeTool(name: string, input: ToolInput, apiKey: string): Promise<unknown[]> {
-  const prompts: Record<string, string> = {
-    web_search:      `Find 5 current web results for automotive query: "${input.query}". Return JSON array, each: { title, snippet, url, source }. Use real automotive site domains (motortrend.com, caranddriver.com, reddit.com, etc). Return ONLY the JSON array.`,
-    parts_search:    `Find 6 car parts for: "${input.query}" ${input.year ?? ''} ${input.make ?? ''} ${input.model ?? ''}. Return JSON array, each: { name, brand, price, part_number, description, compatibility, url }. Price as range like "$45-$65". URLs from summitractng.com, rockauto.com, autozone.com, jegs.com, amazon.com. Return ONLY the JSON array.`,
-    vendor_lookup:   `Find 5 ${input.specialty ?? 'auto'} shops near ${input.location}. Return JSON array, each: { name, address, phone, rating, specialty, description, url }. Rating 1-5. Return ONLY the JSON array.`,
-    car_search:      `Find 6 ${input.year_min ?? ''}${input.year_max ? '-'+input.year_max : ''} ${input.make ?? ''} ${input.model ?? ''} vehicles for sale${input.price_max ? ' under $'+input.price_max : ''}. Return JSON array, each: { title, price, mileage, condition, location, url, image }. Use realistic prices and ebay.com/motors or cargurus.com URLs. Return ONLY the JSON array.`,
-    auction_search:  `Find 5 auction listings for "${input.query}"${input.price_max ? ' under $'+input.price_max : ''}. Auction sources: Barrett-Jackson, Mecum, BringaTrailer, eBay Motors. Return JSON array, each: { title, current_bid, auction_house, end_date, location, url, image }. Return ONLY the JSON array.`,
-    car_wash_lookup: `Find 5 ${input.type ?? ''} car washes near ${input.location}. Return JSON array, each: { name, address, rating, services, price_range, url }. Services as string array like ["Touchless Wash","Foam Cannon"]. Return ONLY the JSON array.`,
-    insurance_lookup:`Generate 6 realistic insurance quotes for a ${input.year ?? ''} ${input.make ?? ''} ${input.model ?? ''}${input.zip ? ' in ZIP '+input.zip : ''}. Carriers: Hagerty, Progressive, Geico, State Farm, Allstate, Nationwide. Return JSON array, each: { carrier, monthly_rate, annual_rate, coverage_type, deductible, highlights, url }. Highlights as string array. Return ONLY the JSON array.`,
-    events_lookup:   `Find 5 upcoming ${input.event_type ?? 'car'} events near ${input.location}. Return JSON array, each: { name, date, location, type, description, url, attendees }. Return ONLY the JSON array.`,
-  }
-
-  const prompt = prompts[name]
-  if (!prompt) return []
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:2048, messages:[{ role:'user', content:prompt }] }),
-    })
-    const d = await res.json()
-    const text: string = d?.content?.[0]?.text ?? '[]'
-    const match = text.match(/\[[\s\S]*\]/)
-    return match ? JSON.parse(match[0]) : []
-  } catch { return [] }
-}
-
-/* ────────────────────────────────────────────────────────────────────────
-   VictoryRevConnect1 AI — Anthropic tool-use upgrade.
-   Claude with 8 tools (7 platform tools + built-in web search).
-   Tool results stream to the client both as model context AND as
-   structured "rc_cards" SSE events rendered as inline chat cards.
-   Client protocol unchanged: OpenAI-style text deltas + rc_cards/rc_status.
-   ──────────────────────────────────────────────────────────────────────── */
+import { VENDORS } from '@/lib/platform-data'
 
 export interface RCCard {
   type: 'part' | 'vehicle' | 'auction' | 'vendor' | 'event' | 'insurance' | 'carwash'
@@ -72,6 +23,8 @@ export interface RCCard {
   detail?: Record<string, string>
 }
 
+const SYSTEM_PROMPT = `You are the RevConnect-1 AI — a 30-year ASE master technician and car culture expert with live access to the entire RevConnect-1 platform. You can search for parts with real-time pricing from 15+ retailers, find vendors and performance shops, search live vehicle listings and auctions, locate car washes, pull insurance quotes from 30+ carriers, and surface upcoming car meets and events. You also have live web search for anything else. When a user asks a question, proactively search for live results across whatever platform features are relevant and include specific recommendations, prices, and links in your response. You can run multiple searches in a single response. Never tell the user you cannot look something up. Always be direct, knowledgeable, and enthusiast-friendly.`
+
 const TOOLS: any[] = [
   {
     type: 'web_search_20250305',
@@ -91,18 +44,6 @@ const TOOLS: any[] = [
     },
   },
   {
-    name: 'vendor_lookup',
-    description: "Find vendors, performance shops, or service providers relevant to the user's repair or modification need.",
-    input_schema: {
-      type: 'object',
-      properties: {
-        service_type: { type: 'string', description: 'Type of service or specialty, e.g. turbo install, brake service, detailing' },
-        location: { type: 'string', description: 'User location if provided' },
-      },
-      required: ['service_type'],
-    },
-  },
-  {
     name: 'car_search',
     description: 'Search live vehicle listings from dealers and eBay Motors by make, model, year, price range, or keyword.',
     input_schema: {
@@ -111,18 +52,6 @@ const TOOLS: any[] = [
         query: { type: 'string', description: 'Make, model, year, trim, or keyword' },
         max_price: { type: 'number', description: 'Maximum price in USD' },
         location: { type: 'string', description: 'City or zip code' },
-      },
-      required: ['query'],
-    },
-  },
-  {
-    name: 'auction_search',
-    description: 'Search current and upcoming vehicle auctions. Includes all-in cost calculator with buyer fees, transport, and taxes.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        query: { type: 'string', description: 'Make, model, year, or keyword' },
-        budget: { type: 'number', description: 'Total all-in budget in USD' },
       },
       required: ['query'],
     },
@@ -152,19 +81,6 @@ const TOOLS: any[] = [
     },
   },
   {
-    name: 'tire_search',
-    description: 'Comparison-shop tires across all major sellers (Tire Rack, Discount Tire, SimpleTire, Costco, etc.) by tire size, brand, and type. Also computes size specs (diameter, sidewall). Size format: 245/40R18.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        size: { type: 'string', description: 'Tire size, e.g. 245/40R18' },
-        brand: { type: 'string', description: 'Tire brand, e.g. Michelin' },
-        tire_type: { type: 'string', description: 'all-season, summer, winter, all-terrain, mud-terrain, touring, track' },
-      },
-      required: ['size'],
-    },
-  },
-  {
     name: 'events_lookup',
     description: 'Find upcoming car meets, shows, track days, and enthusiast events near the user.',
     input_schema: {
@@ -177,9 +93,33 @@ const TOOLS: any[] = [
       required: ['location'],
     },
   },
+  {
+    name: 'vendor_lookup',
+    description: "Find vendors, performance shops, or service providers relevant to the user's repair or modification need.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        service_type: { type: 'string', description: 'Type of service or specialty, e.g. turbo install, brake service, detailing' },
+        location: { type: 'string', description: 'User location if provided' },
+      },
+      required: ['service_type'],
+    },
+  },
+  {
+    name: 'auction_search',
+    description: 'Search current and upcoming vehicle auctions. Includes all-in cost calculator with buyer fees, transport, and taxes.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Make, model, year, or keyword' },
+        budget: { type: 'number', description: 'Total all-in budget in USD' },
+      },
+      required: ['query'],
+    },
+  },
 ]
 
-/* ── fallback data — used when live eBay/Marketcheck feeds return nothing ── */
+/* ── fallback data ── */
 
 const PART_RETAILERS = [
   { name: 'RockAuto',      logo: '🪨',  url: (q: string) => `https://www.rockauto.com/en/partsearch/?partname=${encodeURIComponent(q)}` },
@@ -191,12 +131,12 @@ const PART_RETAILERS = [
 ]
 
 const CAR_SITES = [
-  { name: 'AutoTrader', logo: '🚘', url: (mk: string, md: string, zip?: string) => `https://www.autotrader.com/cars-for-sale/${[mk, md].filter(Boolean).map(s => s.toLowerCase().replace(/\s+/g, '-')).join('/')}${zip ? `?zip=${zip}` : ''}` },
-  { name: 'Cars.com',   logo: '🚗', url: (mk: string, md: string, zip?: string) => `https://www.cars.com/shopping/results/?makes[]=${mk.toLowerCase()}&models[]=${mk.toLowerCase()}-${md.toLowerCase().replace(/\s+/g, '_')}${zip ? `&zip=${zip}` : ''}` },
-  { name: 'CarGurus',   logo: '🧭', url: (mk: string, md: string) => `https://www.cargurus.com/Cars/spt-${[mk, md].filter(Boolean).join('-').toLowerCase().replace(/\s+/g, '-')}` },
-  { name: 'Carvana',    logo: '🛻', url: (mk: string, md: string) => `https://www.carvana.com/cars/${[mk, md].filter(Boolean).join('-').toLowerCase().replace(/\s+/g, '-')}` },
-  { name: 'eBay Motors',logo: '🏷️', url: (mk: string, md: string) => `https://www.ebay.com/sch/6001/i.html?_nkw=${encodeURIComponent([mk, md].filter(Boolean).join(' '))}` },
-  { name: 'Facebook Marketplace', logo: '🛒', url: (mk: string, md: string) => `https://www.facebook.com/marketplace/category/vehicles?query=${encodeURIComponent([mk, md].filter(Boolean).join(' '))}` },
+  { name: 'AutoTrader',         logo: '🚘', url: (mk: string, md: string, zip?: string) => `https://www.autotrader.com/cars-for-sale/${[mk, md].filter(Boolean).map(s => s.toLowerCase().replace(/\s+/g, '-')).join('/')}${zip ? `?zip=${zip}` : ''}` },
+  { name: 'Cars.com',           logo: '🚗', url: (mk: string, md: string, zip?: string) => `https://www.cars.com/shopping/results/?makes[]=${mk.toLowerCase()}&models[]=${mk.toLowerCase()}-${md.toLowerCase().replace(/\s+/g, '_')}${zip ? `&zip=${zip}` : ''}` },
+  { name: 'CarGurus',           logo: '🧭', url: (mk: string, md: string) => `https://www.cargurus.com/Cars/spt-${[mk, md].filter(Boolean).join('-').toLowerCase().replace(/\s+/g, '-')}` },
+  { name: 'Carvana',            logo: '🛻', url: (mk: string, md: string) => `https://www.carvana.com/cars/${[mk, md].filter(Boolean).join('-').toLowerCase().replace(/\s+/g, '-')}` },
+  { name: 'eBay Motors',        logo: '🏷️', url: (mk: string, md: string) => `https://www.ebay.com/sch/6001/i.html?_nkw=${encodeURIComponent([mk, md].filter(Boolean).join(' '))}` },
+  { name: 'Facebook Marketplace',logo: '🛒', url: (mk: string, md: string) => `https://www.facebook.com/marketplace/category/vehicles?query=${encodeURIComponent([mk, md].filter(Boolean).join(' '))}` },
 ]
 
 const AUCTION_SAMPLES = [
@@ -207,6 +147,8 @@ const AUCTION_SAMPLES = [
   { id:'s5', title:'1969 Chevrolet Camaro Z/28', make:'Chevrolet', model:'Camaro', mileage:87400, bid:72000, premium:10, img:'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=500&q=80', source:'Mecum', location:'Arizona', condition:'Restored', url:'https://www.mecum.com/search/?q=camaro' },
   { id:'s6', title:'1989 Ford Mustang GT Fox Body', make:'Ford', model:'Mustang', mileage:98000, bid:21500, premium:5, img:'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=500&q=80', source:'Bring a Trailer', location:'Florida', condition:'Driver', url:'https://bringatrailer.com/ford/fox-body-mustang/' },
 ]
+
+/* ── helpers ── */
 
 const money = (n: number | null | undefined) =>
   n == null || isNaN(Number(n)) ? null : `$${Math.round(Number(n)).toLocaleString()}`
@@ -227,19 +169,19 @@ async function getJSON(url: string, timeoutMs = 25000): Promise<any> {
 
 const mapsSearch = (q: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
 
-/* ── free-text parsers for tool args ── */
+/* ── vehicle / location parsers ── */
 
 const KNOWN_MAKES = ['acura','audi','bmw','chevrolet','chevy','dodge','ford','honda','hyundai','infiniti','jeep','kia','lexus','mazda','mercedes','mercedes-benz','mitsubishi','nissan','porsche','subaru','tesla','toyota','volkswagen','vw','shelby','pontiac','plymouth','buick','cadillac','gmc','ram','mini','volvo','jaguar','ferrari','lamborghini','corvette']
 const MAKE_ALIASES: Record<string, string> = { chevy: 'Chevrolet', vw: 'Volkswagen', 'mercedes-benz': 'Mercedes-Benz', shelby: 'Ford', corvette: 'Chevrolet' }
 const MODEL_HINTS: Record<string, { make: string; model: string }> = {
   'fox body': { make: 'Ford', model: 'Mustang' },
-  'foxbody': { make: 'Ford', model: 'Mustang' },
-  'cobra': { make: 'Ford', model: 'Mustang' },
-  'gt500': { make: 'Ford', model: 'Mustang' },
-  'gt350': { make: 'Ford', model: 'Mustang' },
+  'foxbody':  { make: 'Ford', model: 'Mustang' },
+  'cobra':    { make: 'Ford', model: 'Mustang' },
+  'gt500':    { make: 'Ford', model: 'Mustang' },
+  'gt350':    { make: 'Ford', model: 'Mustang' },
   'corvette': { make: 'Chevrolet', model: 'Corvette' },
-  'supra': { make: 'Toyota', model: 'Supra' },
-  'wrx': { make: 'Subaru', model: 'WRX' },
+  'supra':    { make: 'Toyota', model: 'Supra' },
+  'wrx':      { make: 'Subaru', model: 'WRX' },
 }
 
 function parseVehicle(s: string): { year: string; make: string; model: string; raw: string } {
@@ -271,7 +213,7 @@ function parseLocation(s: string): { city: string; state: string; zip: string; r
   return { city: raw, state: '', zip: '', raw }
 }
 
-/* ── tool execution: each tool wired to the same data source as its page ── */
+/* ── tool execution ── */
 
 async function execTool(name: string, args: any, origin: string): Promise<{ cards: RCCard[]; model: string }> {
   const a = args ?? {}
@@ -299,17 +241,16 @@ async function execTool(name: string, args: any, origin: string): Promise<{ card
         const fbCards: RCCard[] = PART_RETAILERS.map((r, i) => ({
           type: 'part', id: `fb_${i}`,
           title: `${a.query} — ${r.name}`,
-          subtitle: r.name,
-          icon: r.logo,
-          priceLabel: 'See live prices',
-          source: r.name,
+          subtitle: r.name, icon: r.logo,
+          priceLabel: 'See live prices', source: r.name,
           meta: [pv.raw ? `Fits: ${pv.raw}` : 'All vehicles'],
           url: r.url(kw),
           fullPage: { label: 'Open in Parts', href: '/parts' },
           detail: { Retailer: r.name, Search: kw, Note: 'Opens a pre-filled live search at the retailer.' },
         }))
-        return { cards: fbCards, model: `fallback:true — live listing feeds returned nothing, so pre-filled retailer search cards for "${kw}" were rendered (${PART_RETAILERS.map(r => r.name).join(', ')}). Present these as the best places to buy with live prices.` }
+        return { cards: fbCards, model: `fallback — retailer search cards for "${kw}" (${PART_RETAILERS.map(r => r.name).join(', ')})` }
       }
+
       case 'vendor_lookup': {
         const q = (a.service_type ?? '').toLowerCase()
         const tokens = q.split(/[\s,/]+/).filter((t: string) => t.length > 2)
@@ -332,6 +273,7 @@ async function execTool(name: string, args: any, origin: string): Promise<{ card
         }))
         return { cards, model: JSON.stringify(items.map(v => ({ name: v.name, specialty: v.sub, discount: v.discount, location: v.city ?? 'online' }))) }
       }
+
       case 'car_search': {
         const pv = parseVehicle(a.query ?? '')
         const loc = parseLocation(a.location ?? '')
@@ -354,8 +296,7 @@ async function execTool(name: string, args: any, origin: string): Promise<{ card
         const fbCards: RCCard[] = CAR_SITES.map((s, i) => ({
           type: 'vehicle', id: `fb_${i}`,
           title: `${desc} for sale — ${s.name}`,
-          subtitle: s.name,
-          icon: s.logo,
+          subtitle: s.name, icon: s.logo,
           priceLabel: priceMax ? `Under ${money(Number(priceMax))}` : 'See live listings',
           source: s.name,
           meta: [loc.raw ? `Near ${loc.raw}` : 'Nationwide'],
@@ -363,8 +304,9 @@ async function execTool(name: string, args: any, origin: string): Promise<{ card
           fullPage: { label: 'Open in Buy a Car', href: '/car-search' },
           detail: { Marketplace: s.name, Search: desc, Note: 'Opens a pre-filled live search on this marketplace.' },
         }))
-        return { cards: fbCards, model: `fallback:true — live feed returned nothing; pre-filled marketplace search cards for "${desc}" were rendered (${CAR_SITES.map(s => s.name).join(', ')}).` }
+        return { cards: fbCards, model: `fallback — marketplace search cards for "${desc}"` }
       }
+
       case 'auction_search': {
         const pv = parseVehicle(a.query ?? '')
         const priceMax = a.budget ? String(Math.round(Number(a.budget))) : ''
@@ -375,8 +317,7 @@ async function execTool(name: string, args: any, origin: string): Promise<{ card
           const allIn = bid ? Math.round(Number(bid) * 1.12 + 450) : null
           return {
             type: 'auction', id: String(l.id ?? i),
-            title: l.title ?? 'Auction lot',
-            subtitle: l.source ?? '',
+            title: l.title ?? 'Auction lot', subtitle: l.source ?? '',
             image: (l.images && l.images[0]) || l.image || null, icon: '🏁',
             price: bid, priceLabel: bid ? `Bid ${money(bid)}` : 'No bid yet',
             badge: allIn ? `All-In Est: ${money(allIn)}` : undefined,
@@ -395,9 +336,7 @@ async function execTool(name: string, args: any, origin: string): Promise<{ card
         const fbCards: RCCard[] = pool.map(s => {
           const allIn = Math.round(s.bid * (1 + s.premium / 100) + 450)
           return {
-            type: 'auction', id: s.id,
-            title: s.title,
-            subtitle: s.source,
+            type: 'auction', id: s.id, title: s.title, subtitle: s.source,
             image: s.img, icon: '🏁',
             price: s.bid, priceLabel: `Bid ${money(s.bid)}`,
             badge: `All-In Est: ${money(allIn)}`,
@@ -408,8 +347,9 @@ async function execTool(name: string, args: any, origin: string): Promise<{ card
             detail: { Source: s.source, Condition: s.condition, Mileage: `${s.mileage.toLocaleString()} mi`, 'Current bid': money(s.bid) ?? '-', 'Buyer premium': `${s.premium}%`, 'All-in estimate': money(allIn) ?? '-', Location: s.location },
           }
         })
-        return { cards: fbCards, model: `fallback:true — live salvage/eBay auction feeds returned nothing; featured platform lots were rendered with all-in estimates (bid + buyer premium + ~$450 transport): ${pool.map(p => `${p.title} all-in ~${money(Math.round(p.bid * (1 + p.premium / 100) + 450))}`).join('; ')}.` }
+        return { cards: fbCards, model: `fallback — platform auction lots with all-in estimates: ${pool.map(p => `${p.title} ~${money(Math.round(p.bid * (1 + p.premium / 100) + 450))}`).join('; ')}` }
       }
+
       case 'car_wash_lookup': {
         const loc = parseLocation(a.location ?? '')
         const wt = (a.wash_type ?? 'any').toLowerCase()
@@ -418,8 +358,7 @@ async function execTool(name: string, args: any, origin: string): Promise<{ card
         const items: any[] = (data?.businesses ?? []).slice(0, 6)
         const cards: RCCard[] = items.map((w: any, i: number) => ({
           type: 'carwash', id: String(i),
-          title: w.name ?? 'Car wash',
-          subtitle: w.price_range ?? '',
+          title: w.name ?? 'Car wash', subtitle: w.price_range ?? '',
           icon: '🚿',
           priceLabel: w.rating ? `★ ${w.rating}` : undefined,
           meta: [[w.address, w.city, w.state].filter(Boolean).join(', '), w.phone].filter(Boolean) as string[],
@@ -431,6 +370,7 @@ async function execTool(name: string, args: any, origin: string): Promise<{ card
         }))
         return { cards, model: cards.length ? JSON.stringify(items.map((w: any) => ({ name: w.name, rating: w.rating, price: w.price_range }))) : `No washes found near ${loc.raw}. Ask the user for a nearby city and 2-letter state.` }
       }
+
       case 'insurance_lookup': {
         const pv = parseVehicle(a.vehicle ?? '')
         const ct = (a.coverage_type ?? '').toLowerCase()
@@ -450,8 +390,9 @@ async function execTool(name: string, args: any, origin: string): Promise<{ card
           fullPage: { label: 'Open in Insurance', href: '/insurance' },
           detail: { Type: c.type ?? '-', Coverage: c.coverage ?? '-', Monthly: money(c.monthly) ?? '-', Annual: money(c.annual) ?? '-', 'AM Best': c.am_best ?? '-', Phone: c.phone ?? '-', 'Agreed value': c.agreed_value ? 'Yes' : 'No' },
         }))
-        return { cards, model: cards.length ? JSON.stringify(items.map((c: any) => ({ carrier: c.name, monthly: c.monthly, recommended: c.recommended, notes: c.notes }))) : 'Quote engine returned nothing - suggest the /insurance page.' }
+        return { cards, model: cards.length ? JSON.stringify(items.map((c: any) => ({ carrier: c.name, monthly: c.monthly, recommended: c.recommended, notes: c.notes }))) : 'Quote engine returned nothing — suggest the /insurance page.' }
       }
+
       case 'events_lookup': {
         const loc = parseLocation(a.location ?? '')
         if (!loc.city || !loc.state) return { cards: [], model: `Could not resolve "${loc.raw}" into a city + 2-letter state. Ask the user for their city and state (e.g. "Tampa, FL"), then call events_lookup again.` }
@@ -463,8 +404,7 @@ async function execTool(name: string, args: any, origin: string): Promise<{ card
         const cards: RCCard[] = [
           ...ai.slice(0, 5).map((e: any, i: number): RCCard => ({
             type: 'event', id: `ai_${i}`,
-            title: e.name ?? 'Event',
-            subtitle: e.schedule ?? '',
+            title: e.name ?? 'Event', subtitle: e.schedule ?? '',
             icon: '📍',
             meta: [[e.location, e.city, e.state].filter(Boolean).join(', ')].filter(Boolean) as string[],
             description: e.description ?? '',
@@ -485,66 +425,25 @@ async function execTool(name: string, args: any, origin: string): Promise<{ card
             detail: { Date: e.date ?? '-', Venue: e.venue ?? '-', City: `${e.city ?? loc.city}, ${e.state ?? loc.state}`, Source: 'Eventbrite' },
           })),
         ]
-        return { cards, model: cards.length ? JSON.stringify(cards.map(c => ({ name: c.title, when: c.subtitle, where: c.meta?.[0] }))) + (a.date_range ? ` (user asked for: ${a.date_range} — filter your recommendations accordingly)` : '') : `No events found near ${loc.city}, ${loc.state}.` }
+        return { cards, model: cards.length ? JSON.stringify(cards.map(c => ({ name: c.title, when: c.subtitle, where: c.meta?.[0] }))) + (a.date_range ? ` (user asked for: ${a.date_range})` : '') : `No events found near ${loc.city}, ${loc.state}.` }
       }
-      case 'tire_search': {
-        const m = (a.size ?? '').match(/(\d{3})\s*[\/-]\s*(\d{2})\s*[rR]?\s*(\d{2})/)
-        if (!m) return { cards: [], model: `Could not parse tire size "${a.size}". Ask the user for a size like 245/40R18.` }
-        const w = Number(m[1]), asp = Number(m[2]), rim = Number(m[3])
-        const sizeLabel = `${w}/${asp}R${rim}`
-        const brand = a.brand ?? ''
-        const sidewall = (w * asp / 100) / 25.4
-        const diameter = rim + 2 * sidewall
-        const TIRE_SELLERS = [
-          { name: 'Firestone', logo: '🔥', rating: 4.6, url: `https://www.firestonecompleteautocare.com/tires/tire-size/${w}-${asp}r${rim}/` },
-          { name: 'Tires Plus', logo: '➕', rating: 4.5, url: `https://www.tiresplus.com/tires/tire-size/${w}-${asp}r${rim}/` },
-          { name: 'Bridgestone', logo: '🅱️', rating: 4.7, url: `https://www.bridgestonetire.com/catalog/?tireSize=${w}%2F${asp}R${rim}` },
-          { name: 'Tire Rack', logo: '🏁', rating: 4.8, url: `https://www.tirerack.com/tires/TireSearchResults.jsp?width=${w}%2F&ratio=${asp}&diameter=${rim}` },
-          { name: 'Discount Tire', logo: '🛞', rating: 4.7, url: `https://www.discounttire.com/buy-tires/size/${w}-${asp}-${rim}` },
-          { name: 'SimpleTire', logo: '⚡', rating: 4.5, url: `https://simpletire.com/tires-size-${w}-${asp}r${rim}` },
-          { name: 'Priority Tire', logo: '💰', rating: 4.6, url: `https://www.prioritytire.com/catalogsearch/result/?q=${encodeURIComponent(`${sizeLabel} ${brand}`.trim())}` },
-          { name: 'Amazon Tires', logo: '📦', rating: 4.3, url: `https://www.amazon.com/s?k=${encodeURIComponent(`${sizeLabel} tires ${brand}`.trim())}` },
-          { name: 'Costco Tires', logo: '🏬', rating: 4.7, url: 'https://tires.costco.com/' },
-        ]
-        let base = 62 + (rim - 13) * 16 + Math.max(0, w - 185) * 0.55 + Math.max(0, 45 - asp) * 1.6
-        const tt = (a.tire_type ?? '').toLowerCase()
-        if (tt.includes('summer')) base *= 1.4; else if (tt.includes('track')) base *= 1.9; else if (tt.includes('winter')) base *= 1.18; else if (tt.includes('mud')) base *= 1.55; else if (tt.includes('terrain')) base *= 1.28
-        const lo = Math.round(base * 0.78 / 5) * 5, hi = Math.round(base * 1.45 / 5) * 5
-        const cards: RCCard[] = TIRE_SELLERS.map((sl, i) => ({
-          type: 'part', id: `tire_${i}`,
-          title: `${sizeLabel}${brand ? ' ' + brand : ''} tires — ${sl.name}`,
-          subtitle: `${sl.name} · ★ ${sl.rating}`,
-          icon: sl.logo,
-          priceLabel: `~$${lo}–$${hi}/tire`,
-          source: sl.name,
-          meta: [`${diameter.toFixed(1)}" overall · ${sidewall.toFixed(1)}" sidewall`, a.tire_type ?? 'all types'],
-          url: sl.url,
-          fullPage: { label: 'Open in Tires', href: '/tires' },
-          detail: { Size: sizeLabel, 'Overall diameter': `${diameter.toFixed(1)}"`, Sidewall: `${sidewall.toFixed(1)}"`, 'Est. street price': `$${lo}-$${hi}/tire`, Seller: sl.name, Note: 'Opens a pre-filled size search at this seller. The /tires page also has a side/front size visualizer.' },
-        }))
-        return { cards, model: `Rendered ${sizeLabel} seller cards (est $${lo}-$${hi}/tire, overall diameter ${diameter.toFixed(1)} in). Sellers: ${TIRE_SELLERS.map(s => s.name).join(', ')}. Mention the /tires page has a size comparison visualizer if the user is changing sizes.` }
-      }
+
       default:
-        return { cards: [], model: `Unknown tool ${name}` }
+        return { cards: [], model: `Unknown tool: ${name}` }
     }
   } catch (e: any) {
     return { cards: [], model: `Tool ${name} failed: ${e?.message ?? 'error'}` }
   }
 }
 
-/* ── POST: Anthropic Messages API with streaming tool-use loop ── */
-
-const RC_STATUS_NAMES: Record<string, string> = {
-  parts_search: 'search_parts', vendor_lookup: 'search_vendors', car_search: 'search_cars',
-  auction_search: 'search_auctions', car_wash_lookup: 'search_car_washes',
-  insurance_lookup: 'get_insurance_quotes', events_lookup: 'search_events', web_search: 'web_search',
-}
+/* ── POST: streaming tool-use loop ── */
 
 export async function POST(req: NextRequest) {
   const { messages, vehicleContext } = await req.json()
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return new Response(JSON.stringify({ error: 'Missing ANTHROPIC_API_KEY' }), { status: 500, headers: { 'Content-Type': 'application/json' } })
 
+  const origin = new URL(req.url).origin
   const sys = SYSTEM_PROMPT + (vehicleContext ? `\n\nUser's current vehicle: ${vehicleContext}` : '')
   const anthropicMsgs = messages.map((m: { role: string; content: string }) => ({ role: m.role as 'user' | 'assistant', content: m.content }))
 
@@ -563,37 +462,37 @@ export async function POST(req: NextRequest) {
           const resp = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-            body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:4096, system:sys, tools:TOOLS, messages:loopMsgs }),
+            body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 4096, system: sys, tools: TOOLS, messages: loopMsgs }),
           })
           const data = await resp.json()
 
-          if (!resp.ok) { emit({ type:'error', message: data.error?.message ?? 'API error' }); break }
+          if (!resp.ok) { emit({ type: 'error', message: data.error?.message ?? 'API error' }); break }
 
-          type ContentBlock = { type: string; id?: string; name?: string; input?: ToolInput; text?: string }
+          type ContentBlock = { type: string; id?: string; name?: string; input?: Record<string, unknown>; text?: string }
 
           if (data.stop_reason === 'tool_use') {
-            loopMsgs = [...loopMsgs, { role:'assistant', content:data.content }]
+            loopMsgs = [...loopMsgs, { role: 'assistant', content: data.content }]
             const toolBlocks: ContentBlock[] = (data.content as ContentBlock[]).filter(b => b.type === 'tool_use')
 
             const resultBlocks = await Promise.all(toolBlocks.map(async block => {
-              emit({ type:'tool_use_start', tool: block.name })
-              const result = await executeTool(block.name!, block.input ?? {}, apiKey)
-              emit({ type:'tool_result', tool: block.name, data: result })
-              return { type:'tool_result', tool_use_id: block.id, content: JSON.stringify(result) }
+              emit({ type: 'tool_use_start', tool: block.name })
+              const { cards, model } = await execTool(block.name!, block.input ?? {}, origin)
+              emit({ type: 'rc_cards', tool: block.name, cards })
+              return { type: 'tool_result', tool_use_id: block.id, content: model }
             }))
 
-            loopMsgs = [...loopMsgs, { role:'user', content: resultBlocks }]
+            loopMsgs = [...loopMsgs, { role: 'user', content: resultBlocks }]
           } else {
             const finalText = (data.content as ContentBlock[]).filter(b => b.type === 'text').map(b => b.text ?? '').join('')
             const words = finalText.split(' ')
             for (let i = 0; i < words.length; i += 5) {
-              emit({ type:'text_delta', delta: words.slice(i, i + 5).join(' ') + (i + 5 < words.length ? ' ' : '') })
+              emit({ type: 'text_delta', delta: words.slice(i, i + 5).join(' ') + (i + 5 < words.length ? ' ' : '') })
             }
             break
           }
         }
       } catch (e) {
-        emit({ type:'error', message: String(e) })
+        emit({ type: 'error', message: String(e) })
       }
 
       controller.enqueue(enc.encode('data: [DONE]\n\n'))
@@ -602,6 +501,6 @@ export async function POST(req: NextRequest) {
   })
 
   return new Response(stream, {
-    headers: { 'Content-Type':'text/event-stream', 'Cache-Control':'no-cache', 'Connection':'keep-alive' }
+    headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' }
   })
 }

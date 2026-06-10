@@ -3,16 +3,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useAuth } from '@/app/providers/auth-provider'
 import { createClient } from '@/lib/supabase/client'
-import { ResultCards, SlideOverPanel, TOOL_LABELS, type RCCard } from './cards'
+import { ResultCards, SlideOverPanel, type RCCard } from './cards'
 
-// ── Types ──────────────────────────────────────────────────────────────────────
-type AnyItem = Record<string, unknown>
-interface ToolResultItem { tool: string; data: AnyItem[] }
-interface Message { role: 'user' | 'assistant'; content: string; toolResults?: ToolResultItem[] }
+interface Message { role: 'user' | 'assistant'; content: string; cards?: RCCard[] }
 interface Vehicle { id: string; year: number; make: string; model: string; trim: string | null; nickname: string | null; mileage: number | null; status: string }
-interface PanelState { open: boolean; type: string; item: AnyItem }
 
-// ── Constants ──────────────────────────────────────────────────────────────────
 const QUICK_PROMPTS = [
   'Find brake pads for my 2019 Mustang GT with prices',
   'What clean Fox Bodies are selling for at auction right now',
@@ -24,160 +19,17 @@ const QUICK_PROMPTS = [
   'Search live listings for a Shelby GT500 under $60k',
 ]
 
-const TOOL_LABELS: Record<string, string> = {
-  parts_search:    '🔩 Parts',
-  vendor_lookup:   '🏪 Vendors',
-  car_search:      '🚗 Listings',
-  auction_search:  '🏷️ Auctions',
-  car_wash_lookup: '🚿 Car Washes',
-  insurance_lookup:'🛡️ Insurance',
-  events_lookup:   '📍 Events',
-  web_search:      '🌐 Web Results',
+const TOOL_STATUS: Record<string, string> = {
+  parts_search:    '🔩 Searching parts…',
+  vendor_lookup:   '🏪 Finding vendors…',
+  car_search:      '🚗 Searching listings…',
+  auction_search:  '🏷️ Searching auctions…',
+  car_wash_lookup: '🚿 Finding car washes…',
+  insurance_lookup:'🛡️ Getting quotes…',
+  events_lookup:   '📍 Finding events…',
+  web_search:      '🌐 Searching the web…',
 }
 
-// ── Slide-Over Panel ───────────────────────────────────────────────────────────
-function SlideOverPanel({ state, onClose }: { state: PanelState; onClose: () => void }) {
-  if (!state.open) return null
-  const item = state.item
-  const s = (key: string) => (item[key] as string) ?? ''
-  const a = (key: string): string[] => (Array.isArray(item[key]) ? (item[key] as string[]) : [])
-
-  return (
-    <>
-      <style>{`@keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}`}</style>
-      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.72)', zIndex:200, backdropFilter:'blur(3px)' }} />
-      <div style={{ position:'fixed', right:0, top:0, bottom:0, width:'min(440px,100vw)', background:'#0D1F35', borderLeft:'1px solid rgba(255,255,255,0.1)', zIndex:201, overflowY:'auto', padding:'1.5rem', display:'flex', flexDirection:'column', gap:'1rem', animation:'slideInRight 0.22s ease-out' }}>
-
-        {/* Header */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.25rem' }}>
-          <span style={{ fontWeight:800, fontSize:'1rem' }}>{TOOL_LABELS[state.type] ?? state.type}</span>
-          <button onClick={onClose} style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', color:'white', width:'32px', height:'32px', borderRadius:'50%', cursor:'pointer', fontSize:'1rem', lineHeight:1 }}>✕</button>
-        </div>
-
-        {/* Parts */}
-        {state.type === 'parts_search' && <>
-          <h2 style={{ fontWeight:800, fontSize:'1.1rem', color:'#FFD700', lineHeight:1.3 }}>{s('name')}</h2>
-          <div style={{ display:'flex', gap:'0.75rem', flexWrap:'wrap' }}>
-            <span style={{ background:'rgba(204,0,0,0.15)', color:'#FF4444', border:'1px solid rgba(204,0,0,0.3)', borderRadius:'9999px', padding:'0.25rem 0.75rem', fontWeight:800, fontSize:'1rem' }}>{s('price')}</span>
-            <span style={{ background:'rgba(255,255,255,0.06)', color:'rgba(255,255,255,0.6)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'9999px', padding:'0.25rem 0.75rem', fontSize:'0.85rem' }}>{s('brand')}</span>
-          </div>
-          {s('part_number') && <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.8rem' }}>Part #: {s('part_number')}</p>}
-          {s('description') && <p style={{ color:'rgba(255,255,255,0.65)', lineHeight:1.6, fontSize:'0.9rem' }}>{s('description')}</p>}
-          {s('compatibility') && <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.8rem' }}>Fits: {s('compatibility')}</p>}
-          {s('url') && <a href={s('url')} target="_blank" rel="noopener noreferrer" style={{ display:'block', background:'linear-gradient(135deg,#CC0000,#AA0000)', color:'white', padding:'0.75rem', borderRadius:'0.75rem', textAlign:'center', fontWeight:700, textDecoration:'none', boxShadow:'0 4px 16px rgba(204,0,0,0.4)' }}>Buy Now →</a>}
-        </>}
-
-        {/* Vendors */}
-        {state.type === 'vendor_lookup' && <>
-          <h2 style={{ fontWeight:800, fontSize:'1.1rem' }}>{s('name')}</h2>
-          {s('rating') && <div style={{ color:'#FFD700' }}>{'⭐'.repeat(Math.round(Number(s('rating'))))}<span style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.8rem', marginLeft:'0.4rem' }}>{s('rating')}/5</span></div>}
-          {s('specialty') && <span style={{ background:'rgba(204,0,0,0.12)', color:'#FF4444', border:'1px solid rgba(204,0,0,0.2)', borderRadius:'9999px', padding:'0.2rem 0.625rem', fontSize:'0.8rem', fontWeight:700, display:'inline-block' }}>{s('specialty')}</span>}
-          {s('address') && <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.85rem' }}>📍 {s('address')}</p>}
-          {s('phone') && <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.85rem' }}>📞 {s('phone')}</p>}
-          {s('description') && <p style={{ color:'rgba(255,255,255,0.65)', lineHeight:1.6, fontSize:'0.9rem' }}>{s('description')}</p>}
-          {s('url') && <a href={s('url')} target="_blank" rel="noopener noreferrer" style={{ display:'block', background:'linear-gradient(135deg,#CC0000,#AA0000)', color:'white', padding:'0.75rem', borderRadius:'0.75rem', textAlign:'center', fontWeight:700, textDecoration:'none' }}>Visit Website →</a>}
-        </>}
-
-        {/* Car listings */}
-        {state.type === 'car_search' && <>
-          {s('image') && <img src={s('image')} alt={s('title')} style={{ width:'100%', height:'200px', objectFit:'cover', borderRadius:'0.75rem' }} onError={e => { (e.target as HTMLImageElement).style.display='none' }} />}
-          <h2 style={{ fontWeight:800, fontSize:'1.1rem' }}>{s('title')}</h2>
-          <span style={{ background:'rgba(204,0,0,0.15)', color:'#FF4444', borderRadius:'9999px', padding:'0.25rem 0.875rem', fontWeight:800, fontSize:'1.1rem', display:'inline-block' }}>{s('price')}</span>
-          <div style={{ display:'flex', gap:'1rem', flexWrap:'wrap' }}>
-            {s('mileage') && <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.85rem' }}>🛣️ {s('mileage')}</p>}
-            {s('condition') && <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.85rem' }}>✅ {s('condition')}</p>}
-            {s('location') && <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.85rem' }}>📍 {s('location')}</p>}
-          </div>
-          {s('url') && <a href={s('url')} target="_blank" rel="noopener noreferrer" style={{ display:'block', background:'linear-gradient(135deg,#CC0000,#AA0000)', color:'white', padding:'0.75rem', borderRadius:'0.75rem', textAlign:'center', fontWeight:700, textDecoration:'none' }}>View Listing →</a>}
-        </>}
-
-        {/* Auctions */}
-        {state.type === 'auction_search' && <>
-          {s('image') && <img src={s('image')} alt={s('title')} style={{ width:'100%', height:'200px', objectFit:'cover', borderRadius:'0.75rem' }} onError={e => { (e.target as HTMLImageElement).style.display='none' }} />}
-          <h2 style={{ fontWeight:800, fontSize:'1.1rem' }}>{s('title')}</h2>
-          <div style={{ display:'flex', gap:'0.75rem', flexWrap:'wrap' }}>
-            <span style={{ background:'rgba(255,215,0,0.12)', color:'#FFD700', border:'1px solid rgba(255,215,0,0.25)', borderRadius:'9999px', padding:'0.25rem 0.875rem', fontWeight:800 }}>Bid: {s('current_bid')}</span>
-            <span style={{ background:'rgba(255,255,255,0.06)', color:'rgba(255,255,255,0.5)', borderRadius:'9999px', padding:'0.25rem 0.75rem', fontSize:'0.8rem' }}>{s('auction_house')}</span>
-          </div>
-          {s('end_date') && <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.85rem' }}>⏰ Ends: {s('end_date')}</p>}
-          {s('location') && <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.85rem' }}>📍 {s('location')}</p>}
-          {s('url') && <a href={s('url')} target="_blank" rel="noopener noreferrer" style={{ display:'block', background:'linear-gradient(135deg,#CC0000,#AA0000)', color:'white', padding:'0.75rem', borderRadius:'0.75rem', textAlign:'center', fontWeight:700, textDecoration:'none' }}>Bid Now →</a>}
-        </>}
-
-        {/* Car washes */}
-        {state.type === 'car_wash_lookup' && <>
-          <h2 style={{ fontWeight:800, fontSize:'1.1rem' }}>{s('name')}</h2>
-          {s('rating') && <div style={{ color:'#FFD700' }}>{'⭐'.repeat(Math.round(Number(s('rating'))))}<span style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.8rem', marginLeft:'0.4rem' }}>{s('rating')}/5</span></div>}
-          {s('address') && <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.85rem' }}>📍 {s('address')}</p>}
-          {s('price_range') && <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.85rem' }}>💵 {s('price_range')}</p>}
-          {a('services').length > 0 && <div style={{ display:'flex', flexWrap:'wrap', gap:'0.4rem' }}>{a('services').map((sv, i) => <span key={i} style={{ background:'rgba(255,255,255,0.06)', color:'rgba(255,255,255,0.55)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'9999px', padding:'0.2rem 0.6rem', fontSize:'0.75rem' }}>{sv}</span>)}</div>}
-          {s('url') && <a href={s('url')} target="_blank" rel="noopener noreferrer" style={{ display:'block', background:'linear-gradient(135deg,#CC0000,#AA0000)', color:'white', padding:'0.75rem', borderRadius:'0.75rem', textAlign:'center', fontWeight:700, textDecoration:'none' }}>Get Directions →</a>}
-        </>}
-
-        {/* Insurance */}
-        {state.type === 'insurance_lookup' && <>
-          <h2 style={{ fontWeight:800, fontSize:'1.1rem' }}>{s('carrier')}</h2>
-          <div style={{ display:'flex', gap:'0.75rem' }}>
-            <div style={{ background:'rgba(204,0,0,0.12)', border:'1px solid rgba(204,0,0,0.25)', borderRadius:'0.75rem', padding:'0.75rem 1rem', flex:1, textAlign:'center' }}>
-              <p style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.4)', marginBottom:'0.2rem' }}>MONTHLY</p>
-              <p style={{ fontWeight:900, fontSize:'1.25rem', color:'#FF4444' }}>{s('monthly_rate')}</p>
-            </div>
-            <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'0.75rem', padding:'0.75rem 1rem', flex:1, textAlign:'center' }}>
-              <p style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.4)', marginBottom:'0.2rem' }}>ANNUAL</p>
-              <p style={{ fontWeight:800, fontSize:'1.1rem' }}>{s('annual_rate')}</p>
-            </div>
-          </div>
-          {s('coverage_type') && <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.85rem' }}>Coverage: {s('coverage_type')}</p>}
-          {s('deductible') && <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.85rem' }}>Deductible: {s('deductible')}</p>}
-          {a('highlights').length > 0 && <ul style={{ paddingLeft:'1.25rem', color:'rgba(255,255,255,0.55)', fontSize:'0.85rem', lineHeight:2 }}>{a('highlights').map((h, i) => <li key={i}>{h}</li>)}</ul>}
-          {s('url') && <a href={s('url')} target="_blank" rel="noopener noreferrer" style={{ display:'block', background:'linear-gradient(135deg,#CC0000,#AA0000)', color:'white', padding:'0.75rem', borderRadius:'0.75rem', textAlign:'center', fontWeight:700, textDecoration:'none' }}>Get Quote →</a>}
-        </>}
-
-        {/* Events */}
-        {state.type === 'events_lookup' && <>
-          <h2 style={{ fontWeight:800, fontSize:'1.1rem' }}>{s('name')}</h2>
-          <span style={{ background:'rgba(204,0,0,0.12)', color:'#FF4444', border:'1px solid rgba(204,0,0,0.2)', borderRadius:'9999px', padding:'0.2rem 0.625rem', fontSize:'0.8rem', fontWeight:700, display:'inline-block' }}>{s('type')}</span>
-          {s('date') && <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.85rem' }}>📅 {s('date')}</p>}
-          {s('location') && <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.85rem' }}>📍 {s('location')}</p>}
-          {s('attendees') && <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.85rem' }}>👥 {s('attendees')}</p>}
-          {s('description') && <p style={{ color:'rgba(255,255,255,0.65)', lineHeight:1.6, fontSize:'0.9rem' }}>{s('description')}</p>}
-          {s('url') && <a href={s('url')} target="_blank" rel="noopener noreferrer" style={{ display:'block', background:'linear-gradient(135deg,#CC0000,#AA0000)', color:'white', padding:'0.75rem', borderRadius:'0.75rem', textAlign:'center', fontWeight:700, textDecoration:'none' }}>View Event →</a>}
-        </>}
-
-        {/* Web search */}
-        {state.type === 'web_search' && <>
-          <h2 style={{ fontWeight:800, fontSize:'1.1rem', lineHeight:1.3 }}>{s('title')}</h2>
-          {s('source') && <span style={{ background:'rgba(255,255,255,0.06)', color:'rgba(255,255,255,0.45)', borderRadius:'9999px', padding:'0.2rem 0.625rem', fontSize:'0.75rem', display:'inline-block' }}>{s('source')}</span>}
-          {s('snippet') && <p style={{ color:'rgba(255,255,255,0.65)', lineHeight:1.6, fontSize:'0.9rem' }}>{s('snippet')}</p>}
-          {s('url') && <a href={s('url')} target="_blank" rel="noopener noreferrer" style={{ display:'block', background:'linear-gradient(135deg,#CC0000,#AA0000)', color:'white', padding:'0.75rem', borderRadius:'0.75rem', textAlign:'center', fontWeight:700, textDecoration:'none' }}>Open Page →</a>}
-        </>}
-
-      </div>
-    </>
-  )
-}
-
-// ── Inline Result Cards ────────────────────────────────────────────────────────
-function ResultCard({ tool, item, onView }: { tool: string; item: AnyItem; onView: () => void }) {
-  const s = (k: string) => (item[k] as string) ?? ''
-  const base: React.CSSProperties = { background:'#162236', border:'1px solid rgba(204,0,0,0.15)', borderRadius:'0.75rem', padding:'0.875rem', minWidth:'180px', maxWidth:'200px', flexShrink:0, display:'flex', flexDirection:'column', gap:'0.4rem' }
-  const viewBtn: React.CSSProperties = { marginTop:'auto', background:'linear-gradient(135deg,#CC0000,#AA0000)', color:'white', border:'none', borderRadius:'0.5rem', padding:'0.4rem 0.625rem', fontSize:'0.75rem', fontWeight:700, cursor:'pointer', textAlign:'center' }
-  const tag: React.CSSProperties = { background:'rgba(204,0,0,0.12)', color:'#FF4444', borderRadius:'9999px', padding:'0.15rem 0.5rem', fontSize:'0.7rem', fontWeight:700, display:'inline-block' }
-
-  switch (tool) {
-    case 'parts_search': return <div style={base}><p style={{ fontWeight:700, fontSize:'0.85rem', lineHeight:1.3 }}>{s('name')}</p><span style={tag}>{s('price')}</span><p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.72rem' }}>{s('brand')}</p><button style={viewBtn} onClick={onView}>View →</button></div>
-    case 'vendor_lookup': return <div style={base}><p style={{ fontWeight:700, fontSize:'0.85rem', lineHeight:1.3 }}>{s('name')}</p><p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.72rem' }}>📍 {s('address')}</p>{s('rating') && <span style={{ color:'#FFD700', fontSize:'0.75rem' }}>{'⭐'.repeat(Math.round(Number(s('rating'))))}</span>}<button style={viewBtn} onClick={onView}>View →</button></div>
-    case 'car_search': return <div style={base}>{s('image') && <img src={s('image')} alt={s('title')} style={{ width:'100%', height:'80px', objectFit:'cover', borderRadius:'0.5rem' }} onError={e => { (e.target as HTMLImageElement).style.display='none' }} />}<p style={{ fontWeight:700, fontSize:'0.82rem', lineHeight:1.3 }}>{s('title')}</p><span style={tag}>{s('price')}</span><p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.72rem' }}>{s('mileage')}</p><button style={viewBtn} onClick={onView}>View →</button></div>
-    case 'auction_search': return <div style={base}>{s('image') && <img src={s('image')} alt={s('title')} style={{ width:'100%', height:'80px', objectFit:'cover', borderRadius:'0.5rem' }} onError={e => { (e.target as HTMLImageElement).style.display='none' }} />}<p style={{ fontWeight:700, fontSize:'0.82rem', lineHeight:1.3 }}>{s('title')}</p><span style={{ ...tag, background:'rgba(255,215,0,0.12)', color:'#FFD700' }}>Bid: {s('current_bid')}</span><p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.72rem' }}>{s('auction_house')}</p><button style={viewBtn} onClick={onView}>View →</button></div>
-    case 'car_wash_lookup': return <div style={base}><p style={{ fontWeight:700, fontSize:'0.85rem', lineHeight:1.3 }}>{s('name')}</p><p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.72rem' }}>📍 {s('address')}</p>{s('price_range') && <span style={tag}>{s('price_range')}</span>}<button style={viewBtn} onClick={onView}>View →</button></div>
-    case 'insurance_lookup': return <div style={base}><p style={{ fontWeight:700, fontSize:'0.85rem' }}>{s('carrier')}</p><span style={tag}>{s('monthly_rate')}/mo</span><p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.72rem' }}>{s('coverage_type')}</p><button style={viewBtn} onClick={onView}>View →</button></div>
-    case 'events_lookup': return <div style={base}><p style={{ fontWeight:700, fontSize:'0.85rem', lineHeight:1.3 }}>{s('name')}</p><p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.72rem' }}>📅 {s('date')}</p><p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.72rem' }}>📍 {s('location')}</p><button style={viewBtn} onClick={onView}>View →</button></div>
-    case 'web_search': return <div style={{ ...base, maxWidth:'240px' }}><p style={{ fontWeight:700, fontSize:'0.82rem', lineHeight:1.3 }}>{s('title')}</p><p style={{ color:'rgba(255,255,255,0.38)', fontSize:'0.72rem', lineHeight:1.4, overflow:'hidden', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>{s('snippet')}</p><span style={{ color:'rgba(255,255,255,0.3)', fontSize:'0.68rem' }}>{s('source')}</span><button style={viewBtn} onClick={onView}>View →</button></div>
-    default: return null
-  }
-}
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
 function buildVehicleContext(v: Vehicle): string {
   const parts = [`${v.year} ${v.make} ${v.model}`]
   if (v.trim) parts.push(v.trim)
@@ -196,20 +48,19 @@ function formatMessage(text: string) {
   })
 }
 
-// ── Main Page ──────────────────────────────────────────────────────────────────
 export default function MechanicPage() {
   const { user } = useAuth()
   const supabase = createClient()
 
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
-  const [topSearch, setTopSearch] = useState('')
   const [loading, setLoading] = useState(false)
   const [searchingTool, setSearchingTool] = useState<string | null>(null)
   const [hasKey, setHasKey] = useState(true)
   const [autoSpeak, setAutoSpeak] = useState(false)
   const [speaking, setSpeaking] = useState(false)
-  const [panel, setPanel] = useState<PanelState>({ open:false, type:'', item:{} })
+  const [activeCard, setActiveCard] = useState<RCCard | null>(null)
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null)
@@ -260,11 +111,11 @@ export default function MechanicPage() {
       category: 'Planned',
       part_name: card.title.slice(0, 200),
       brand: card.brand ?? null,
-      source: card.source ?? 'VictoryRevConnect AI',
+      source: card.source ?? 'RevConnect AI',
       source_url: card.url ?? null,
       cost: card.price ?? null,
       is_diy: true,
-      notes: 'Saved from VictoryRevConnect1 AI chat',
+      notes: 'Saved from RevConnect-1 AI chat',
     })
     if (error) { alert(`Could not save: ${error.message}`); return }
     setSavedIds(prev => new Set(prev).add(card.id))
@@ -274,9 +125,9 @@ export default function MechanicPage() {
     if (!text.trim() || loading) return
     const userMsg: Message = { role:'user', content:text }
     setMessages(prev => [...prev, userMsg])
-    setInput(''); setTopSearch('')
+    setInput('')
     setLoading(true)
-    setMessages(prev => [...prev, { role:'assistant', content:'', toolResults:[] }])
+    setMessages(prev => [...prev, { role:'assistant', content:'', cards:[] }])
 
     try {
       const res = await fetch('/api/mechanic', {
@@ -294,7 +145,7 @@ export default function MechanicPage() {
       const reader = res.body!.getReader()
       const decoder = new TextDecoder()
       let full = ''
-      const pendingToolResults: ToolResultItem[] = []
+      let allCards: RCCard[] = []
 
       while (true) {
         const { done, value } = await reader.read()
@@ -307,16 +158,16 @@ export default function MechanicPage() {
             const parsed = JSON.parse(raw)
             if (parsed.type === 'tool_use_start') {
               setSearchingTool(parsed.tool)
-            } else if (parsed.type === 'tool_result') {
+            } else if (parsed.type === 'rc_cards') {
               setSearchingTool(null)
-              pendingToolResults.push({ tool: parsed.tool, data: parsed.data ?? [] })
-              setMessages(prev => { const n=[...prev]; n[n.length-1]={ ...n[n.length-1], toolResults:[...pendingToolResults] }; return n })
+              allCards = [...allCards, ...(parsed.cards ?? [])]
+              setMessages(prev => { const n=[...prev]; n[n.length-1]={ ...n[n.length-1], cards: allCards }; return n })
             } else if (parsed.type === 'text_delta') {
               full += parsed.delta
-              setMessages(prev => { const n=[...prev]; n[n.length-1]={ role:'assistant', content:full, toolResults:[...pendingToolResults] }; return n })
+              setMessages(prev => { const n=[...prev]; n[n.length-1]={ role:'assistant', content:full, cards:allCards }; return n })
             } else if (parsed.type === 'error') {
               full += `\n\n⚠️ ${parsed.message}`
-              setMessages(prev => { const n=[...prev]; n[n.length-1]={ role:'assistant', content:full, toolResults:[...pendingToolResults] }; return n })
+              setMessages(prev => { const n=[...prev]; n[n.length-1]={ role:'assistant', content:full, cards:allCards }; return n })
             }
           } catch {}
         }
@@ -334,23 +185,23 @@ export default function MechanicPage() {
   return (
     <div style={{ maxWidth:'960px', margin:'0 auto', height:'calc(100vh - 8rem)', display:'flex', flexDirection:'column' }}>
 
-      <SlideOverPanel state={panel} onClose={() => setPanel(p => ({ ...p, open:false }))} />
+      <SlideOverPanel card={activeCard} onClose={() => setActiveCard(null)} />
 
       {/* Persistent top search bar */}
       <div style={{ background:'#1B2A3E', border:'1px solid rgba(204,0,0,0.2)', borderRadius:'0.875rem', padding:'0.625rem 1rem', marginBottom:'0.875rem', display:'flex', gap:'0.625rem', alignItems:'center' }}>
         <span style={{ fontSize:'1.1rem' }}>🔍</span>
         <input
-          value={topSearch}
-          onChange={e => setTopSearch(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage(topSearch))}
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage(input))}
           placeholder="Ask the AI mechanic anything — parts, listings, vendors, events, insurance…"
           style={{ flex:1, background:'transparent', border:'none', color:'white', fontSize:'0.9rem', outline:'none' }}
           disabled={loading}
         />
         <button
-          onClick={() => sendMessage(topSearch)}
-          disabled={loading || !topSearch.trim()}
-          style={{ background: loading || !topSearch.trim() ? 'rgba(204,0,0,0.3)':'linear-gradient(135deg,#CC0000,#AA0000)', color:'white', border:'none', borderRadius:'0.5rem', padding:'0.45rem 1rem', fontWeight:700, fontSize:'0.85rem', cursor: loading || !topSearch.trim() ? 'default':'pointer', whiteSpace:'nowrap' }}>
+          onClick={() => sendMessage(input)}
+          disabled={loading || !input.trim()}
+          style={{ background: loading || !input.trim() ? 'rgba(204,0,0,0.3)':'linear-gradient(135deg,#CC0000,#AA0000)', color:'white', border:'none', borderRadius:'0.5rem', padding:'0.45rem 1rem', fontWeight:700, fontSize:'0.85rem', cursor: loading || !input.trim() ? 'default':'pointer', whiteSpace:'nowrap' }}>
           {loading ? '…' : 'Search →'}
         </button>
       </div>
@@ -381,33 +232,6 @@ export default function MechanicPage() {
         <p style={{ color:'rgba(255,255,255,0.28)', fontSize:'0.72rem', marginTop:'0.1rem' }}>
           Ask anything — I search the whole platform in real time
         </p>
-        <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'0.72rem', marginTop:'0.2rem' }}>
-          AI-Powered · ASE Master Tech · Live Platform Search
-        </p>
-        <p style={{ color:'rgba(255,215,0,0.55)', fontSize:'0.7rem', marginTop:'0.1rem' }}>
-          Ask anything — I search the whole platform in real time
-        </p>
-      </div>
-
-      {/* Persistent search bar — fires a chat message, never navigates */}
-      <div style={{ display:'flex', gap:'0.5rem', marginBottom:'0.75rem' }}>
-        <div style={{ flex:1, display:'flex', alignItems:'center', gap:'0.625rem', background:'#0F1C2E', border:'1px solid rgba(255,215,0,0.18)', borderRadius:'0.75rem', padding:'0.55rem 0.875rem' }}>
-          <span style={{ color:'rgba(255,255,255,0.35)' }}>🔍</span>
-          <input
-            value={topSearch}
-            onChange={e => setTopSearch(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && topSearch.trim() && sendMessage(topSearch)}
-            placeholder="Search parts, cars, vendors, events, auctions, insurance…"
-            style={{ flex:1, background:'transparent', border:'none', color:'white', fontSize:'0.85rem', outline:'none' }}
-            disabled={loading}
-          />
-        </div>
-        <button
-          onClick={() => topSearch.trim() && sendMessage(topSearch)}
-          disabled={loading || !topSearch.trim()}
-          style={{ background: loading || !topSearch.trim() ? '#1E3A5F' : 'rgba(255,215,0,0.9)', color:'#0D1E30', border:'none', padding:'0 1.25rem', borderRadius:'0.75rem', fontSize:'0.85rem', fontWeight:800, cursor: loading || !topSearch.trim() ? 'default':'pointer' }}>
-          Search
-        </button>
       </div>
 
       {/* Vehicle selector */}
@@ -470,19 +294,15 @@ export default function MechanicPage() {
               <div style={{ position:'relative', maxWidth:'82%', minWidth:0 }}>
                 <div style={{ background: msg.role === 'user' ? 'rgba(204,0,0,0.08)':'#1B2A3E', border:`1px solid ${msg.role === 'user' ? 'rgba(204,0,0,0.15)':'rgba(255,255,255,0.07)'}`, borderRadius:'0.75rem', borderTopRightRadius: msg.role === 'user' ? '0.25rem':'0.75rem', borderTopLeftRadius: msg.role === 'user' ? '0.75rem':'0.25rem', padding:'0.875rem', fontSize:'0.9rem' }}>
 
-                  {/* Tool result cards */}
-                  {msg.toolResults && msg.toolResults.length > 0 && (
-                    <div style={{ marginBottom:'0.875rem', display:'flex', flexDirection:'column', gap:'0.625rem' }}>
-                      {msg.toolResults.map((tr, ti) => tr.data.length > 0 && (
-                        <div key={ti}>
-                          <p style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.35)', marginBottom:'0.4rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.5px' }}>{TOOL_LABELS[tr.tool] ?? tr.tool}</p>
-                          <div style={{ display:'flex', gap:'0.625rem', overflowX:'auto', paddingBottom:'0.375rem' }}>
-                            {tr.data.slice(0, 6).map((item, ci) => (
-                              <ResultCard key={ci} tool={tr.tool} item={item as AnyItem} onView={() => setPanel({ open:true, type:tr.tool, item: item as AnyItem })} />
-                            ))}
-                          </div>
-                        </div>
-                      ))}
+                  {/* Tool result cards from cards.tsx */}
+                  {msg.cards && msg.cards.length > 0 && (
+                    <div style={{ marginBottom:'0.875rem' }}>
+                      <ResultCards
+                        cards={msg.cards}
+                        onOpen={setActiveCard}
+                        onAddToGarage={addToGarage}
+                        savedIds={savedIds}
+                      />
                     </div>
                   )}
 
@@ -493,7 +313,7 @@ export default function MechanicPage() {
                   {msg.role === 'assistant' && loading && i === messages.length - 1 && !msg.content && (
                     <div style={{ display:'flex', alignItems:'center', gap:'0.625rem' }}>
                       {searchingTool
-                        ? <span style={{ color:'rgba(255,255,255,0.45)', fontSize:'0.82rem' }}>🔍 Searching {TOOL_LABELS[searchingTool] ?? searchingTool}…</span>
+                        ? <span style={{ color:'rgba(255,255,255,0.45)', fontSize:'0.82rem' }}>{TOOL_STATUS[searchingTool] ?? `🔍 Searching ${searchingTool}…`}</span>
                         : <span style={{ display:'inline-flex', gap:'0.3rem' }}>{[0,1,2].map(n => <span key={n} style={{ width:'6px', height:'6px', background:'#CC0000', borderRadius:'50%', opacity:0.7 }}>·</span>)}</span>
                       }
                     </div>
@@ -524,7 +344,7 @@ export default function MechanicPage() {
         </div>
       )}
 
-      {/* Bottom input */}
+      {/* Bottom chat input */}
       <div style={{ display:'flex', gap:'0.75rem' }}>
         <div style={{ flex:1, display:'flex', alignItems:'center', gap:'0.75rem', background:'#1B2A3E', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'0.875rem', padding:'0.75rem 1rem' }}>
           <input
