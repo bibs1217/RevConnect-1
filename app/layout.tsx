@@ -26,6 +26,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           .card-hover{transition:transform 0.2s,box-shadow 0.2s}
           .card-hover:hover{transform:translateY(-4px)}
           .chrome-pill{background:linear-gradient(135deg,rgba(192,192,192,0.15),rgba(255,255,255,0.08));border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(4px)}
+          @keyframes rwb-cycle{0%,29%{color:#E62020}33%,62%{color:#3B82F6}66%,95%{color:#FFFFFF}100%{color:#E62020}}
+          .rwb1{animation:rwb-cycle 6s linear infinite}
+          .rwb2{animation:rwb-cycle 6s linear infinite;animation-delay:-4s}
+          .rwb3{animation:rwb-cycle 6s linear infinite;animation-delay:-2s}
         `}</style>
       </head>
       <body>
