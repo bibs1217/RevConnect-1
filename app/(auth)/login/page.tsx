@@ -37,7 +37,7 @@ export default function LoginPage() {
       <div style={{ width:'100%', maxWidth:'420px' }}>
         <div style={{ textAlign:'center', marginBottom:'2rem' }}>
           <Link href="/" style={{ fontSize:'2rem', fontWeight:900 }}>
-            <span style={{ color:'#CC0000' }}>Victory</span><span style={{ color:'white' }}>Rev</span><span style={{ color:'#3B82F6' }}>Connect</span><span style={{ color:'#FFD700' }}>1</span>
+            <span className="rwb1">Victory</span><span className="rwb2">Rev</span><span className="rwb3">Connect</span><span style={{ color:'#FFD700' }}>1</span>
           </Link>
           <p style={{ color:'#777', marginTop:'0.5rem' }}>Sign in to your account</p>
         </div>
