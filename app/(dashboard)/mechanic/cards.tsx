@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 
 /* ────────────────────────────────────────────────────────────────────────
-   Inline result cards + SlideOverPanel for RevConnect-1 AI.
+   Inline result cards + SlideOverPanel for VictoryRevConnect-1 AI.
    Everything stays in the conversation — primary actions open the
    slide-over panel (bottom sheet on mobile); nothing navigates away.
    ──────────────────────────────────────────────────────────────────────── */
