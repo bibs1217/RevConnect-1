@@ -30,8 +30,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           .rwb1{animation:rwb-cycle 6s linear infinite}
           .rwb2{animation:rwb-cycle 6s linear infinite;animation-delay:-4s}
           .rwb3{animation:rwb-cycle 6s linear infinite;animation-delay:-2s}
-          @keyframes mustang-launch{0%,54%{transform:translateX(0)}57%{transform:translateX(10px)}62%{transform:translateX(-90px)}67%{transform:translateX(-320px)}72%,100%{transform:translateX(-820px)}}
-          .mustang-car{animation:mustang-launch 8s linear infinite}
+          @keyframes gt-launch{0%,54%{transform:translateX(0) rotate(0deg)}57%{transform:translateX(-14px) rotate(1deg)}63%{transform:translateX(10vw) rotate(-2deg)}68%{transform:translateX(40vw) rotate(-1deg)}74%,100%{transform:translateX(130vw) rotate(0deg)}}
+          .gt-rig{animation:gt-launch 8s linear infinite}
+          @keyframes gt-shake{0%,100%{transform:translateY(0)}30%{transform:translateY(-1.5px)}60%{transform:translateY(0.8px)}}
+          .gt-shake{animation:gt-shake 0.16s linear infinite}
           @keyframes mustang-smoke-fade{0%,58%{opacity:1}76%,92%{opacity:0}100%{opacity:1}}
           .mustang-smoke{animation:mustang-smoke-fade 8s linear infinite}
         `}</style>
