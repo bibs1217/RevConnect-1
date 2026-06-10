@@ -10,7 +10,7 @@ const NAV = [
   { href:'/car-search', icon:'🔍', label:'Buy a Car', color:'#3399FF' },
   { href:'/parts', icon:'🔩', label:'Parts', color:'#CC0000' },
   { href:'/tires', icon:'🛞', label:'Tires', color:'#3399FF' },
-  { href:'/mechanic', icon:'🔧', label:'RevConnect AI', color:'#FFD700' },
+  { href:'/mechanic', icon:'🔧', label:'VictoryRevConnect AI', color:'#FFD700' },
   { href:'/car-wash', icon:'🚿', label:'Car Wash', color:'#1539CC' },
   { href:'/auctions', icon:'🏁', label:'Auctions', color:'#FFD700' },
   { href:'/insurance', icon:'🛡️', label:'Insurance', color:'#3399FF' },
@@ -37,7 +37,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       !href.startsWith('/mechanic') &&
       typeof window !== 'undefined' &&
       (window as any).__rcChatActive &&
-      !window.confirm('Leave your RevConnect AI conversation? Your chat will be cleared.')
+      !window.confirm('Leave your VictoryRevConnect AI conversation? Your chat will be cleared.')
     ) {
       e.preventDefault()
     }
@@ -50,7 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <header style={{ background:'#0D1E30', borderBottom:'3px solid transparent', borderImage:'linear-gradient(90deg, #CC0000 0%, #888 30%, #FFFFFF 50%, #888 70%, #1539CC 100%) 1', padding:'0 1.5rem', height:'4rem', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:50, boxShadow:'0 4px 24px rgba(0,0,0,0.4)' }}>
 
         <Link href="/" onClick={e => guardNav(e, '/')} style={{ fontSize:'1.25rem', fontWeight:900, letterSpacing:'-0.5px', display:'flex', alignItems:'center' }}>
-          <span style={{ color:'white' }}>Rev</span>
+          <span style={{ color:'white' }}>VictoryRev</span>
           <span className="chrome-text" style={{ fontSize:'1.25rem' }}>Connect</span>
           <span style={{ color:'#FFD700', textShadow:'0 0 10px rgba(255,215,0,0.5)' }}>-1</span>
         </Link>
@@ -86,7 +86,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div style={{ borderRadius:'0.75rem', overflow:'hidden', marginBottom:'1.25rem', height:'80px', position:'relative', background:'linear-gradient(135deg, rgba(204,0,0,0.2), #1B2A3E)' }}>
             <img src="https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&q=75" alt="Mustang" style={{ width:'100%', height:'100%', objectFit:'cover', opacity:0.7 }} />
             <div style={{ position:'absolute', inset:0, background:'linear-gradient(135deg, rgba(13,30,48,0.5), transparent)' }} />
-            <div style={{ position:'absolute', bottom:'0.5rem', left:'0.75rem', fontSize:'0.6rem', color:'rgba(255,215,0,0.9)', fontWeight:800, letterSpacing:'2px', textTransform:'uppercase' }}>RevConnect-1</div>
+            <div style={{ position:'absolute', bottom:'0.5rem', left:'0.75rem', fontSize:'0.6rem', color:'rgba(255,215,0,0.9)', fontWeight:800, letterSpacing:'2px', textTransform:'uppercase' }}>VictoryRevConnect-1</div>
           </div>
 
           <nav style={{ display:'flex', flexDirection:'column', gap:'0.15rem', flex:1 }}>
