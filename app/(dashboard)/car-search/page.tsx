@@ -603,7 +603,7 @@ export default function CarSearchPage() {
       {/* ── Header ── */}
       <div style={{ background: '#0E1825', borderBottom: `1px solid ${BORDER}`, padding: '14px 24px' }}>
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>
-          <span style={{ color: RED }}>Victory</span><span style={{ color:'white' }}>Rev</span><span style={{ color:'#3B82F6' }}>Connect</span> Car Search
+          <span className="rwb1">Victory</span><span className="rwb2">Rev</span><span className="rwb3">Connect</span> Car Search
         </h1>
         <div style={{ color: MUTED, fontSize: 12, marginTop: 3 }}>
           Live listings from eBay Motors · Direct links to 50+ car sites
