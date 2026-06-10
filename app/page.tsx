@@ -47,7 +47,7 @@ export default function Home() {
         {/* Nav */}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'1.25rem 2.5rem', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ fontSize:'1.5rem', fontWeight:900, letterSpacing:'-0.5px' }}>
-            <span style={{ color:'white' }}>Rev</span>
+            <span style={{ color:'white' }}>VictoryRev</span>
             <span className="chrome-text" style={{ fontSize:'1.5rem' }}>Connect</span>
             <span style={{ color:'#FFD700', textShadow:'0 0 15px rgba(255,215,0,0.4)' }}>-1</span>
           </div>
@@ -70,7 +70,7 @@ export default function Home() {
           <div style={{ marginBottom:'1.5rem' }}>
             <div style={{ fontSize:'clamp(1rem,3vw,1.25rem)', color:'rgba(255,255,255,0.4)', letterSpacing:'6px', textTransform:'uppercase', fontWeight:600, marginBottom:'0.5rem' }}>The Ultimate Platform For</div>
             <h1 style={{ fontSize:'clamp(4.5rem,12vw,9rem)', fontWeight:900, letterSpacing:'-5px', lineHeight:0.85, margin:0 }}>
-              <span style={{ color:'white' }}>Rev</span>
+              <span style={{ color:'white' }}>VictoryRev</span>
               <span className="chrome-text">Connect</span>
             </h1>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'1rem', marginTop:'0.25rem' }}>
@@ -192,7 +192,7 @@ export default function Home() {
           <h2 style={{ fontSize:'2.75rem', fontWeight:900, marginBottom:'1rem', letterSpacing:'-1.5px' }}>Ready to Rev Up?</h2>
           <p style={{ color:'rgba(255,255,255,0.4)', marginBottom:'2rem', fontSize:'1.0625rem' }}>Join thousands of enthusiasts on the only platform built for the culture.</p>
           <Link href="/register" style={{ background:'linear-gradient(135deg, #CC0000, #AA0000)', color:'white', padding:'1.25rem 3rem', borderRadius:'0.875rem', fontWeight:800, fontSize:'1.2rem', boxShadow:'0 6px 40px rgba(204,0,0,0.5)', display:'inline-block', letterSpacing:'0.25px' }}>
-            Join RevConnect-1 Free →
+            Join VictoryRevConnect-1 Free →
           </Link>
         </div>
       </section>
