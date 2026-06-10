@@ -49,7 +49,7 @@ export default function Home() {
           <div style={{ fontSize:'1.5rem', fontWeight:900, letterSpacing:'-0.5px' }}>
             <span style={{ color:'white' }}>VictoryRev</span>
             <span className="chrome-text" style={{ fontSize:'1.5rem' }}>Connect</span>
-            <span style={{ color:'#FFD700', textShadow:'0 0 15px rgba(255,215,0,0.4)' }}>-1</span>
+            <span style={{ color:'#FFD700', textShadow:'0 0 15px rgba(255,215,0,0.4)' }}>1</span>
           </div>
           <div style={{ display:'flex', gap:'1rem' }}>
             <Link href="/login" style={{ color:'rgba(255,255,255,0.6)', fontSize:'0.9rem', padding:'0.5rem 1rem' }}>Sign In</Link>
@@ -75,7 +75,7 @@ export default function Home() {
             </h1>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'1rem', marginTop:'0.25rem' }}>
               <div style={{ height:'4px', flex:1, maxWidth:'120px', background:'linear-gradient(90deg, transparent, #CC0000)' }} />
-              <span style={{ fontSize:'clamp(3.5rem,10vw,7rem)', fontWeight:900, color:'#FFD700', letterSpacing:'-2px', textShadow:'0 0 40px rgba(255,215,0,0.5), 0 0 80px rgba(255,215,0,0.2)' }}>-1</span>
+              <span style={{ fontSize:'clamp(3.5rem,10vw,7rem)', fontWeight:900, color:'#FFD700', letterSpacing:'-2px', textShadow:'0 0 40px rgba(255,215,0,0.5), 0 0 80px rgba(255,215,0,0.2)' }}>1</span>
               <div style={{ height:'4px', flex:1, maxWidth:'120px', background:'linear-gradient(90deg, #1539CC, transparent)' }} />
             </div>
           </div>
@@ -192,7 +192,7 @@ export default function Home() {
           <h2 style={{ fontSize:'2.75rem', fontWeight:900, marginBottom:'1rem', letterSpacing:'-1.5px' }}>Ready to Rev Up?</h2>
           <p style={{ color:'rgba(255,255,255,0.4)', marginBottom:'2rem', fontSize:'1.0625rem' }}>Join thousands of enthusiasts on the only platform built for the culture.</p>
           <Link href="/register" style={{ background:'linear-gradient(135deg, #CC0000, #AA0000)', color:'white', padding:'1.25rem 3rem', borderRadius:'0.875rem', fontWeight:800, fontSize:'1.2rem', boxShadow:'0 6px 40px rgba(204,0,0,0.5)', display:'inline-block', letterSpacing:'0.25px' }}>
-            Join VictoryRevConnect-1 Free →
+            Join VictoryRevConnect1 Free →
           </Link>
         </div>
       </section>
