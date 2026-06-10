@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { MUSTANG_GT } from './mustang-gt'
 
 const MUSTANGS = [
   { year:'1965', name:'First Generation', url:'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=600&q=85', accent:'#CC0000' },
@@ -82,94 +83,44 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Blue Mustang burnout */}
-          <div style={{ display:'flex', justifyContent:'center', marginTop:'1.25rem', marginBottom:'1.5rem' }}>
-            <svg width="360" height="140" viewBox="0 0 560 210" fill="none" aria-label="Blue Mustang doing a burnout" role="img">
-              <defs>
-                <linearGradient id="mBody" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#4A90F4" />
-                  <stop offset="50%" stopColor="#1E50C8" />
-                  <stop offset="100%" stopColor="#102E80" />
-                </linearGradient>
-                <radialGradient id="mSmoke" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="rgba(255,255,255,0.6)" />
-                  <stop offset="65%" stopColor="rgba(220,225,235,0.22)" />
-                  <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-                </radialGradient>
-              </defs>
-              {/* ground */}
-              <rect x="30" y="180" width="500" height="3" rx="1.5" fill="rgba(255,255,255,0.12)" />
-              {/* smoke behind car */}
-              <g className="mustang-smoke">
-              <circle cx="430" cy="150" r="30" fill="url(#mSmoke)">
-                <animate attributeName="r" values="22;42;22" dur="2.8s" repeatCount="indefinite" />
-                <animate attributeName="cy" values="158;118;158" dur="2.8s" repeatCount="indefinite" />
-                <animate attributeName="cx" values="425;455;425" dur="2.8s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.95;0.25;0.95" dur="2.8s" repeatCount="indefinite" />
-              </circle>
-              <circle cx="475" cy="135" r="26" fill="url(#mSmoke)">
-                <animate attributeName="r" values="16;38;16" dur="3.4s" repeatCount="indefinite" />
-                <animate attributeName="cy" values="150;100;150" dur="3.4s" repeatCount="indefinite" />
-                <animate attributeName="cx" values="465;505;465" dur="3.4s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.8;0.15;0.8" dur="3.4s" repeatCount="indefinite" />
-              </circle>
-              <circle cx="510" cy="160" r="22" fill="url(#mSmoke)">
-                <animate attributeName="r" values="14;30;14" dur="2.4s" repeatCount="indefinite" />
-                <animate attributeName="cy" values="168;128;168" dur="2.4s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.7;0.1;0.7" dur="2.4s" repeatCount="indefinite" />
-              </circle>
-              <ellipse cx="430" cy="176" rx="70" ry="14" fill="url(#mSmoke)">
-                <animate attributeName="rx" values="55;85;55" dur="2s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.9;0.5;0.9" dur="2s" repeatCount="indefinite" />
-              </ellipse>
-              {/* friction glow under rear tire */}
-              <ellipse cx="380" cy="180" rx="34" ry="5" fill="rgba(255,90,40,0.3)">
-                <animate attributeName="opacity" values="0.5;0.15;0.5" dur="0.5s" repeatCount="indefinite" />
-              </ellipse>
-              </g>
-              {/* car (launches off-screen) */}
-              <g className="mustang-car">
-              {/* body */}
-              <path d="M118 148 L118 136 Q119 129 128 128 L150 124 Q160 122 178 121 L235 118 L272 96 L330 96 Q345 96 360 101 L430 118 L432 142 L425 150 L408 150 A28 28 0 0 0 352 150 L224 150 A28 28 0 0 0 168 150 L130 150 Q118 150 118 148 Z" fill="url(#mBody)" stroke="#0A1B4D" strokeWidth="2" />
-              {/* greenhouse */}
-              <path d="M245 116 L274 100 L324 100 L332 116 Z" fill="rgba(8,14,26,0.92)" stroke="rgba(160,190,255,0.4)" strokeWidth="1.5" />
-              <path d="M337 102 L352 104 L348 114 L336 114 Z" fill="rgba(8,14,26,0.92)" />
-              {/* side stripe */}
-              <rect x="150" y="138" width="278" height="6" rx="2" fill="rgba(255,255,255,0.85)" />
-              {/* headlight + taillight */}
-              <circle cx="124" cy="133" r="3.5" fill="#FFE9A8" />
-              <rect x="427" y="122" width="5" height="11" rx="1.5" fill="#FF3B3B" />
-              {/* front wheel (static) */}
-              <circle cx="196" cy="156" r="24" fill="#0B0F16" stroke="#283344" strokeWidth="3" />
-              <circle cx="196" cy="156" r="11" fill="#C9CED6" />
-              <g stroke="#5B6470" strokeWidth="2.5">
-                <line x1="196" y1="147" x2="196" y2="165" />
-                <line x1="187" y1="156" x2="205" y2="156" />
-                <line x1="190" y1="150" x2="202" y2="162" />
-                <line x1="202" y1="150" x2="190" y2="162" />
-              </g>
-              {/* rear wheel (spinning) */}
-              <circle cx="380" cy="156" r="24" fill="#0B0F16" stroke="#283344" strokeWidth="3" />
-              <circle cx="380" cy="156" r="24" stroke="rgba(255,255,255,0.3)" strokeWidth="3" strokeDasharray="8 14" fill="none">
-                <animateTransform attributeName="transform" type="rotate" from="0 380 156" to="360 380 156" dur="0.35s" repeatCount="indefinite" />
-              </circle>
-              <circle cx="380" cy="156" r="11" fill="#C9CED6" />
-              <g stroke="#5B6470" strokeWidth="2.5">
-                <animateTransform attributeName="transform" type="rotate" from="0 380 156" to="360 380 156" dur="0.35s" repeatCount="indefinite" />
-                <line x1="380" y1="147" x2="380" y2="165" />
-                <line x1="371" y1="156" x2="389" y2="156" />
-                <line x1="374" y1="150" x2="386" y2="162" />
-                <line x1="386" y1="150" x2="374" y2="162" />
-              </g>
-              </g>
-              {/* smoke wisp in front of rear wheel */}
-              <g className="mustang-smoke">
-              <circle cx="398" cy="148" r="20" fill="url(#mSmoke)" opacity="0.5">
-                <animate attributeName="r" values="14;26;14" dur="1.8s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.6;0.2;0.6" dur="1.8s" repeatCount="indefinite" />
-              </circle>
-              </g>
-            </svg>
+          {/* 2014 Mustang GT burnout */}
+          <div style={{ position:'relative', width:'100%', height:'170px', overflow:'hidden', marginTop:'1.25rem', marginBottom:'1.5rem' }}>
+            <div style={{ position:'absolute', left:'10%', right:'10%', bottom:'16px', height:'3px', borderRadius:'2px', background:'rgba(255,255,255,0.12)' }} />
+            <div className="mustang-smoke" style={{ position:'absolute', left:'50%', marginLeft:'-290px', bottom:0, width:'260px', height:'170px' }}>
+              <svg width="260" height="170" viewBox="0 0 260 170" fill="none">
+                <defs>
+                  <radialGradient id="gtSmoke" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="rgba(255,255,255,0.6)" />
+                    <stop offset="65%" stopColor="rgba(220,225,235,0.22)" />
+                    <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                  </radialGradient>
+                </defs>
+                <circle cx="170" cy="125" r="30" fill="url(#gtSmoke)">
+                  <animate attributeName="r" values="20;40;20" dur="2.6s" repeatCount="indefinite" />
+                  <animate attributeName="cy" values="135;95;135" dur="2.6s" repeatCount="indefinite" />
+                  <animate attributeName="cx" values="175;140;175" dur="2.6s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.95;0.3;0.95" dur="2.6s" repeatCount="indefinite" />
+                </circle>
+                <circle cx="110" cy="115" r="26" fill="url(#gtSmoke)">
+                  <animate attributeName="r" values="16;36;16" dur="3.2s" repeatCount="indefinite" />
+                  <animate attributeName="cy" values="130;85;130" dur="3.2s" repeatCount="indefinite" />
+                  <animate attributeName="cx" values="120;75;120" dur="3.2s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.8;0.15;0.8" dur="3.2s" repeatCount="indefinite" />
+                </circle>
+                <circle cx="55" cy="140" r="22" fill="url(#gtSmoke)">
+                  <animate attributeName="r" values="12;28;12" dur="2.2s" repeatCount="indefinite" />
+                  <animate attributeName="cy" values="150;108;150" dur="2.2s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.7;0.1;0.7" dur="2.2s" repeatCount="indefinite" />
+                </circle>
+                <ellipse cx="150" cy="152" rx="70" ry="13" fill="url(#gtSmoke)">
+                  <animate attributeName="rx" values="55;85;55" dur="1.9s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.9;0.5;0.9" dur="1.9s" repeatCount="indefinite" />
+                </ellipse>
+              </svg>
+            </div>
+            <div className="gt-rig" style={{ position:'absolute', left:'50%', marginLeft:'-180px', bottom:'14px', width:'360px' }}>
+              <img src={MUSTANG_GT} alt="Blue 2014 Ford Mustang GT doing a burnout" className="gt-shake" style={{ width:'100%', height:'auto', display:'block', filter:'drop-shadow(0 10px 12px rgba(0,0,0,0.55))' }} />
+            </div>
           </div>
 
           <p style={{ fontSize:'1.25rem', color:'rgba(255,255,255,0.55)', marginBottom:'0.5rem' }}>Car enthusiasts. One platform.</p>
