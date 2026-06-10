@@ -52,7 +52,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Link href="/" onClick={e => guardNav(e, '/')} style={{ fontSize:'1.25rem', fontWeight:900, letterSpacing:'-0.5px', display:'flex', alignItems:'center' }}>
           <span style={{ color:'white' }}>VictoryRev</span>
           <span className="chrome-text" style={{ fontSize:'1.25rem' }}>Connect</span>
-          <span style={{ color:'#FFD700', textShadow:'0 0 10px rgba(255,215,0,0.5)' }}>-1</span>
+          <span style={{ color:'#FFD700', textShadow:'0 0 10px rgba(255,215,0,0.5)' }}>1</span>
         </Link>
 
         <div style={{ flex:1, maxWidth:'400px', margin:'0 2rem', display:'flex', alignItems:'center', gap:'0.5rem', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'0.625rem', padding:'0.5rem 1rem' }}>
@@ -86,7 +86,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div style={{ borderRadius:'0.75rem', overflow:'hidden', marginBottom:'1.25rem', height:'80px', position:'relative', background:'linear-gradient(135deg, rgba(204,0,0,0.2), #1B2A3E)' }}>
             <img src="https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&q=75" alt="Mustang" style={{ width:'100%', height:'100%', objectFit:'cover', opacity:0.7 }} />
             <div style={{ position:'absolute', inset:0, background:'linear-gradient(135deg, rgba(13,30,48,0.5), transparent)' }} />
-            <div style={{ position:'absolute', bottom:'0.5rem', left:'0.75rem', fontSize:'0.6rem', color:'rgba(255,215,0,0.9)', fontWeight:800, letterSpacing:'2px', textTransform:'uppercase' }}>VictoryRevConnect-1</div>
+            <div style={{ position:'absolute', bottom:'0.5rem', left:'0.75rem', fontSize:'0.6rem', color:'rgba(255,215,0,0.9)', fontWeight:800, letterSpacing:'2px', textTransform:'uppercase' }}>VictoryRevConnect1</div>
           </div>
 
           <nav style={{ display:'flex', flexDirection:'column', gap:'0.15rem', flex:1 }}>
