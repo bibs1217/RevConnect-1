@@ -277,7 +277,7 @@ export default function StorePage() {
                 <img src={p.img} alt={p.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                 {/* Center brand overlay — simulates logo printed on product */}
                 <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'rgba(0,0,0,0.6)', borderRadius:'4px', padding:'0.3rem 0.75rem', border:'1px solid rgba(255,255,255,0.3)', pointerEvents:'none' }}>
-                  <span style={{ fontWeight:700, fontSize:'0.85rem', whiteSpace:'nowrap' }}><span style={{ color:'#FF4444' }}>Victory</span><span style={{ color:'white' }}>Rev</span><span style={{ color:'#3B82F6' }}>Connect</span><span style={{ color:'#FFD700' }}>1</span></span>
+                  <span style={{ fontWeight:700, fontSize:'0.85rem', whiteSpace:'nowrap' }}><span className="rwb1">Victory</span><span className="rwb2">Rev</span><span className="rwb3">Connect</span><span style={{ color:'#FFD700' }}>1</span></span>
                 </div>
                 {/* Brand watermark */}
                 <div style={{ position:'absolute', bottom:'0.75rem', left:'0.75rem', background:'rgba(204,0,0,0.88)', borderRadius:'0.375rem', padding:'0.2rem 0.5rem', backdropFilter:'blur(4px)' }}>
