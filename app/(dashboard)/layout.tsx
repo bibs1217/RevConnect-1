@@ -50,9 +50,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <header style={{ background:'#0D1E30', borderBottom:'3px solid transparent', borderImage:'linear-gradient(90deg, #CC0000 0%, #888 30%, #FFFFFF 50%, #888 70%, #1539CC 100%) 1', padding:'0 1.5rem', height:'4rem', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:50, boxShadow:'0 4px 24px rgba(0,0,0,0.4)' }}>
 
         <Link href="/" onClick={e => guardNav(e, '/')} style={{ fontSize:'1.25rem', fontWeight:900, letterSpacing:'-0.5px', display:'flex', alignItems:'center' }}>
-          <span style={{ color:'#CC0000' }}>Victory</span>
-          <span style={{ color:'white' }}>Rev</span>
-          <span style={{ color:'#3B82F6' }}>Connect</span>
+          <span className="rwb1">Victory</span>
+          <span className="rwb2">Rev</span>
+          <span className="rwb3">Connect</span>
           <span style={{ color:'#FFD700', textShadow:'0 0 10px rgba(255,215,0,0.5)' }}>1</span>
         </Link>
 
