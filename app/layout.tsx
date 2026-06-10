@@ -3,7 +3,7 @@ import { AuthProvider } from './providers/auth-provider'
 import MusicPlayer from './providers/music-player'
 
 export const metadata: Metadata = {
-  title: { default: 'VictoryRevConnect-1', template: '%s | VictoryRevConnect-1' },
+  title: { default: 'VictoryRevConnect1', template: '%s | VictoryRevConnect1' },
   description: 'The ultimate all-in-one platform for car enthusiasts.',
 }
 
