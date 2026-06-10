@@ -233,8 +233,9 @@ export default function MechanicPage() {
       <div style={{ textAlign:'center', padding:'0.75rem 0' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'1rem' }}>
           <h1 style={{ fontSize:'1.6rem', fontWeight:900, letterSpacing:'-0.5px' }}>
-            <span style={{ color:'white' }}>VictoryRev</span>
-            <span className="chrome-text">Connect</span>
+            <span style={{ color:'#CC0000' }}>Victory</span>
+            <span style={{ color:'white' }}>Rev</span>
+            <span style={{ color:'#3B82F6' }}>Connect</span>
             <span style={{ color:'#FFD700' }}>1</span>
             <span style={{ color:'#CC0000', marginLeft:'0.5rem' }}>AI</span>
           </h1>
