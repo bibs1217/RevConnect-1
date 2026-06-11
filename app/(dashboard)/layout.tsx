@@ -46,6 +46,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div style={{ minHeight:'100vh', background:'#1B2A3E', display:'flex', flexDirection:'column' }}>
 
+      {/* DEMO badge */}
+      <div style={{ position:'fixed', bottom:'1rem', right:'1rem', zIndex:300, background:'#FFD700', color:'#1B2A3E', borderRadius:'9999px', padding:'0.45rem 1rem', fontWeight:800, fontSize:'0.8rem', boxShadow:'0 4px 12px rgba(0,0,0,0.35)', pointerEvents:'none' }}>
+        🎬 DEMO · sample data
+      </div>
+
       {/* Nav — bold chrome/red/blue bar */}
       <header style={{ background:'#0D1E30', borderBottom:'3px solid transparent', borderImage:'linear-gradient(90deg, #CC0000 0%, #888 30%, #FFFFFF 50%, #888 70%, #1539CC 100%) 1', padding:'0 1.5rem', height:'4rem', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:50, boxShadow:'0 4px 24px rgba(0,0,0,0.4)' }}>
 
