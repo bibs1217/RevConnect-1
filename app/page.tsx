@@ -36,6 +36,11 @@ export default function Home() {
   return (
     <main style={{ background:'#1B2A3E', minHeight:'100vh', color:'white' }}>
 
+      {/* DEMO banner */}
+      <div style={{ background:'#FFD700', color:'#1B2A3E', textAlign:'center', padding:'0.45rem 1rem', fontWeight:800, fontSize:'0.9rem', letterSpacing:'0.02em' }}>
+        🎬 You are viewing the VictoryRevConnect1 DEMO — explore every feature with sample data
+      </div>
+
       {/* ═══ HERO ═══ */}
       <section style={{ position:'relative', overflow:'hidden', background:'linear-gradient(135deg, #0D1E30 0%, #1B2A3E 40%, #1A2040 100%)', paddingBottom:'4rem' }}>
         {/* Diagonal racing stripe overlay */}
