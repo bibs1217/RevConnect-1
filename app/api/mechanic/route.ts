@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 export const dynamic = 'force-dynamic'
+export const maxDuration = 300
 
 import { VENDORS } from '@/lib/platform-data'
 
